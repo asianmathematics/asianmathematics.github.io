@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {background-color: black; color: white; font-family: 'Lucida Console', Monaco, 'Courier New', Courier, monospace; font-size: 24px;}
+        button {height: 3em; width: 5.5em; text-align: center; display: inline-block; font-size: 1.25em; margin: .1em .25em; cursor: pointer;}
+    </style>
+    <meta charset="UTF-8"/>
+    <title>Gacha Game</title>
+</head>
+<body>
+    <h1 style="font-size: 3em; text-align: center;">LET'S GO GAMBLING!!!</h1>
+    <br>
+    <p style="text-align: center;" id="results">Results will appear here</p>
+    <div style="display: flex; justify-content: center;">
+        <button id="pull10" style="background-color: gray; color: green;">10x pull</button>
+        <button id="pull100" style="background-color: green; color: blue;">100x pull</button>
+        <button id="pull1000" style="background-color: blue; color: purple;">1000x pull</button>
+    </div>
+    <script type="module">
+        import { gacha } from './gacha.js';
+        
+        window.gachaFunc = gacha;
+        
+        // applies onclick to buttons
+        document.getElementById('pull10').addEventListener('click', function() {window.gachaFunc("protoBanner", 10, 1);});
+        document.getElementById('pull100').addEventListener('click', function() {window.gachaFunc("protoBanner", 100, 10, 1);});
+        document.getElementById('pull1000').addEventListener('click', function() {window.gachaFunc("protoBanner", 1000, 100, 10, 1);});
+        
+        // console.log('Event listeners set up successfully');
+    </script>
+</body>
+</html>
