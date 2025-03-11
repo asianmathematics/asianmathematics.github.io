@@ -1,0 +1,210 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+background-color: #2d2d2d;
+}
+
+h1, h2 {
+    color: #ffffff;
+}
+
+#battle-container {
+    background-color: #3a3a3a;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.battle-display {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.team {
+    flex: 1;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.player-team {
+    background-color: #1a365d;
+}
+
+.enemy-team {
+    background-color: #5d1a1a;
+}
+
+.unit {
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.unit.defeated {
+    opacity: 0.5;
+    background-color: #333333;
+}
+
+.unit-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    color: #ffffff;
+}
+
+#selection {
+    background-color: #3a3a3a;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    padding: 20px;
+    color: #e0e0e0;
+}
+
+.action-button {
+    background-color: #2e7d32;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.action-button:hover {
+    background-color: #388e3c;
+}
+
+.action-button.disabled {
+    background-color: #555555;
+    cursor: not-allowed;
+}
+
+form#targetSelection {
+    margin-bottom: 15px;
+}
+
+form#targetSelection div {
+    margin: 10px 0;
+}
+
+button#back {
+    background-color: #c62828;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.message-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 300px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.info-message {
+    background-color: #1a365d;
+    color: #90caf9;
+}
+
+.success-message {
+    background-color: #1b5e20;
+    color: #a5d6a7;
+}
+
+.error-message {
+    background-color: #b71c1c;
+    color: #ffcdd2;
+}
+
+.warning-message {
+    background-color: #e65100;
+    color: #ffe082;
+}
+
+.stat-row {
+    margin-bottom: 6px;
+}
+
+.stat-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    margin-bottom: 2px;
+}
+
+.stat-bar-container {
+    width: 100%;
+    height: 10px;
+    background-color: #333333;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.stat-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease-in-out;
+}
+
+.hp-bar {
+    background-color: #FF5252;
+}
+
+.stamina-bar {
+    background-color: #FFD740;
+}
+
+.mana-bar {
+    background-color: #448AFF;
+}
+
+.energy-bar {
+    background-color: #69F0AE;
+}
+
+.timer-bar {
+    background-color: #B39DDB;
+}
+
+
+.player-team .hp-bar {
+    background-color: #FF5252;
+}
+
+.enemy-team .hp-bar {
+    background-color: #F44336;
+}
+
+.unit.defeated .stat-bar {
+    background-color: #555555;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

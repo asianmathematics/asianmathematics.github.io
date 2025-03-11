@@ -64,7 +64,7 @@ function enemyTurn(unit) {
     }
     if (totalWeight === 0) {
         showMessage(`${unit.name} has no available actions!`, "warning", "message-container");
-        setTimeout(window.combatTick, 1000);
+        setTimeout(() => { window.combatTick(); resolve(); }, 1000);
         return;
     }
     const randChoice = Math.random() * totalWeight;
@@ -76,7 +76,7 @@ function enemyTurn(unit) {
             break;
         }
     }
-    setTimeout(window.combatTick, 1000)
+    setTimeout(() => { window.combatTick(); resolve(); }, 1000);
 }
 
 function randTarget(unitList = allUnits, trueRand = false) {
