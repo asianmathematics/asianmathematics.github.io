@@ -82,7 +82,9 @@ const Dark = {
                 applyMod([this], "evasion", -.5, 1);
                 this.attack *= .75;
                 this.accuracy *= .65;
-                for (let i = 8; i > 0; i--) { attack(this, unitFilter("enemy", "front", false)); }
+                let target = unitFilter("enemy", "front", false);
+                while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target)) }
+                for (let i = 8; i > 0; i--) { attack(this, target); }
                 resetStat(this, ["attack", "accuracy"]);
             }
         }
@@ -91,7 +93,7 @@ const Dark = {
             cost: { stamina: 0 },
             code: () => {
                 this.previousAction = [true, false, false];
-                applyMod([this], "evasion", 3, 1);
+                applyMod([this], "evasion", 2, 1);
             }
         }
     }
