@@ -1,5 +1,5 @@
 import {Dark, enemy} from './unitCombatData.js';
-import { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 
 export function startCombat() {
     createUnit(Dark, 'player');
@@ -115,8 +115,9 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
-function combatTick() {
-    setTimeout(updateBattleDisplay, 500);
+async function combatTick() {
+    updateBattleDisplay();
+    sleep(500);
     const playersAlive = unitFilter("player", "front", false);
     const enemiesAlive = unitFilter("enemy", "front", false);
     if (!playersAlive.length || !enemiesAlive.length) {
@@ -129,7 +130,8 @@ function combatTick() {
         for (const unit of allUnits) {
             if (unit.hp <= 0) { continue; }
             unit.timer -= unit.speed;
-            setTimeout(updateBattleDisplay, 500);
+            updateBattleDisplay();
+            sleep(500);
             if (unit.timer <= 0) { 
                 turn = unit;
                 break;

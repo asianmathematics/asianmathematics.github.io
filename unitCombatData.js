@@ -80,8 +80,8 @@ const Dark = {
                 this.resource.mana -= 40;
                 this.previousAction = [false, true, false];
                 applyMod([this], "evasion", -.5, 1);
-                this.attack *= .75;
-                this.accuracy *= .65;
+                this.attack *= .5;
+                this.accuracy *= .75;
                 let target = unitFilter("enemy", "front", false);
                 while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target)) }
                 for (let i = 8; i > 0; i--) { attack(this, target); }
@@ -89,7 +89,7 @@ const Dark = {
             }
         }
         this.actions.dodge = {
-            name: "Dodge [stamina]",
+            name: "Dodge [physical]",
             cost: { stamina: 0 },
             code: () => {
                 this.previousAction = [true, false, false];

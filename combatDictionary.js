@@ -2,6 +2,10 @@ const allUnits = [];
 const modifiers = {};
 let modifierId = 1;
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
 function unitFilter(team, position, downed = null) {
     return allUnits.filter(unit => {
         const teamMatch = team === '' || unit.team === team;
@@ -223,4 +227,4 @@ function damage(attacker, defenders, critical) {
     }
 }
 
-export { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };
+export { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };
