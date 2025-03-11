@@ -66,14 +66,14 @@ function cloneUnit(unit) {
         resetStat(newUnit, [stat]);
     }
     newUnit.resource.stamina = unit.baseStats.resource.stamina;
-    resetStat(newUnit, ['stamina'])
+    newUnit.resource.staminaRegen = unit.baseStats.resource.staminaRegen;
     if (unit.baseStats.resource.mana) {
         newUnit.resource.mana = unit.baseStats.resource.mana;
-    resetStat(newUnit, ['mana'])
+        newUnit.resource.manaRegen = unit.baseStats.resource.manaRegen;
     }
     if (unit.baseStats.resource.energy) {
-        newUnit.resource.energy = unit.baseStats.resource.energy;
-    resetStat(newUnit, ['energy'])
+        newUnit.resource.energyRegen = unit.baseStats.resource.energyRegen;
+        newUnit.resource.manaRegen = unit.baseStats.resource.manaRegen;
     }
     return newUnit;
 }
@@ -104,18 +104,19 @@ function updateMod(unit) {
 
 function regenerateResources(unit) {
     if (!unit.previousAction[0]) {
-        unit.resource.stamina = Math.min(unit.baseStats.resource.stamina, unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen));
+        unit.resource.stamina = Math.min(unit.baseStats.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen)));
     }
     if (unit.baseStats.resource.mana && !unit.previousAction[1]) {
-        unit.resource.mana = Math.min(unit.baseStats.resource.mana, unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen));
+        unit.resource.mana = Math.min(unit.baseStats.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen)));
     }
     if (unit.baseStats.resource.energy && !unit.previousAction[2]) {
-        unit.resource.energy = Math.min(unit.baseStats.resource.energy, unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen));
+        unit.resource.energy = Math.min(unit.baseStats.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen)));
     }
     unit.previousAction = [false, false, false];
 }
 
 function combatTick() {
+    setTimeout(updateBattleDisplay, 500);
     const playersAlive = unitFilter("player", "front", false);
     const enemiesAlive = unitFilter("enemy", "front", false);
     if (!playersAlive.length || !enemiesAlive.length) {
@@ -123,18 +124,17 @@ function combatTick() {
         else { showMessage("Defeat!", "error", "selection", 0); }
         return;
     }
-    updateBattleDisplay();
     let turn;
     while (turn == undefined) {
         for (const unit of allUnits) {
             if (unit.hp <= 0) { continue; }
             unit.timer -= unit.speed;
+            setTimeout(updateBattleDisplay, 500);
             if (unit.timer <= 0) { 
                 turn = unit;
                 break;
             }
         }
-        updateBattleDisplay();
     }
     regenerateResources(turn);
     updateMod(turn);

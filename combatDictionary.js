@@ -108,8 +108,13 @@ function playerTurn(unit) {
     </div>`;
     window.handleActionClick = function(action, name) {
         const unit = allUnits.find(u => u.name === name);
-        if (unit.actions[action].target) {unit.actions[action].target();}
-        else {unit.actions[action].code();}
+        if (unit.actions[action].target !== undefined) {unit.actions[action].target();}
+        else {
+            unit.actions[action].code();
+            document.getElementById("selection").innerHTML = "";
+            cleanupGlobalHandlers();
+            setTimeout(window.combatTick, 500);
+        }
     };
 }
 
@@ -195,7 +200,7 @@ function cleanupGlobalHandlers() {
 
 function attack(attacker, defenders) {
     let hit = [];
-    for (const unit of defenders) { hit.push(10 * (attacker.accuracy / unit.evasion ) + Math.floor(Math.random() * 100 + 1) - 85); }
+    for (const unit of defenders) { hit.push(Math.floor(10 * (attacker.accuracy / unit.evasion ) + Math.floor(Math.random() * 100 + 1) - 85)); }
     if (hit.some((num) => num > 0)){ crit(attacker, defenders, hit); }
 }
 
@@ -204,7 +209,7 @@ function crit(attacker, defenders, hit) {
     let critical = [];
     for (let i = 0; i < defenders.length; i++) { 
         if (hit[i] < 0) { critical.push(0); continue; }
-        critical.push(hit[i] / (Math.max(10*defenders[i].resist - attacker.crit, 10)));
+        critical.push(Math.floor(hit[i] / (Math.max(10*defenders[i].resist - attacker.crit, 10))));
     }
     damage(attacker, defenders, critical);
 }
@@ -213,8 +218,8 @@ function damage(attacker, defenders, critical) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
     for (let i = 0; i < defenders.length; i++) {
         if (critical[i] === 0) { continue; }
-        if (critical[i] < 1) { defenders[i].hp -= Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce) }
-        else { defenders[i].hp -= (Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce * critical[i]) + attacker.lethality * critical[i])}
+        if (critical[i] < 1) { defenders[i].hp -= Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce)) }
+        else { defenders[i].hp -= Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce * critical[i]) + attacker.lethality * critical[i])}
     }
 }
 
