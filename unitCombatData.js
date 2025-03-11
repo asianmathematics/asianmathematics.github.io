@@ -86,6 +86,14 @@ const Dark = {
                 resetStat(this, ["attack", "accuracy"]);
             }
         }
+        this.actions.dodge = {
+            name: "Dodge [stamina]",
+            cost: { stamina: 0 },
+            code: () => {
+                this.previousAction = [true, false, false];
+                applyMod([this], "evasion", 3, 1);
+            }
+        }
     }
 }
 

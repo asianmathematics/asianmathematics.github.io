@@ -3,7 +3,7 @@ import { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, re
 
 export function startCombat() {
     createUnit(Dark, 'player');
-    createUnit(enemy, 'enemy');
+    for (let i = 3; i > 0; i--) { createUnit(enemy, 'enemy'); }
     updateBattleDisplay();
     combatTick();
 }
