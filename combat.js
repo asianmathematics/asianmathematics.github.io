@@ -17,38 +17,38 @@ function updateBattleDisplay() {
     battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
     for (const unit of unitFilter("player", '')) {
         const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
-        const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.baseStats.hp) * 100));
-        const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.baseStats.resource.stamina) * 100));
+        const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
+        const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
         
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""}'>
             <div class='unit-name'>${unit.name}</div>
             <div class='stat-row'>
-                <div class='stat-label'>HP: ${Math.max(0, unit.hp)}/${unit.baseStats.hp}</div>
+                <div class='stat-label'>HP: ${Math.max(0, unit.hp)}/${unit.base.hp}</div>
                 <div class='stat-bar-container'>
                     <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
                 </div>
             </div>
             <div class='stat-row'>
-                <div class='stat-label'>Stamina: ${Math.floor(unit.resource.stamina)}/${unit.baseStats.resource.stamina}</div>
+                <div class='stat-label'>Stamina: ${Math.floor(unit.resource.stamina)}/${unit.base.resource.stamina}</div>
                 <div class='stat-bar-container'>
                     <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
                 </div>
             </div>`;
-        if (unit.baseStats.resource.mana) {
-            const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.baseStats.resource.mana) * 100));
+        if (unit.base.resource.mana) {
+            const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
             battleDisplay += `
             <div class='stat-row'>
-                <div class='stat-label'>Mana: ${Math.floor(unit.resource.mana)}/${unit.baseStats.resource.mana}</div>
+                <div class='stat-label'>Mana: ${Math.floor(unit.resource.mana)}/${unit.base.resource.mana}</div>
                 <div class='stat-bar-container'>
                     <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
                 </div>
             </div>`;
         }
-        if (unit.baseStats.resource.energy) {
-            const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.baseStats.resource.energy) * 100));
+        if (unit.base.resource.energy) {
+            const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
             battleDisplay += `
             <div class='stat-row'>
-                <div class='stat-label'>Energy: ${Math.floor(unit.resource.energy)}/${unit.baseStats.resource.energy}</div>
+                <div class='stat-label'>Energy: ${Math.floor(unit.resource.energy)}/${unit.base.resource.energy}</div>
                 <div class='stat-bar-container'>
                     <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
                 </div>
@@ -66,8 +66,8 @@ function updateBattleDisplay() {
     battleDisplay += "</div><div class='team enemy-team'><h2>Enemy Team</h2>";
     for (const unit of unitFilter("enemy", '')) {
         const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
-        const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.baseStats.hp) * 100));
-        const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.baseStats.resource.stamina) * 100));
+        const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
+        const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
         
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""}'>
             <div class='unit-name'>${unit.name}</div>
@@ -83,8 +83,8 @@ function updateBattleDisplay() {
                     <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
                 </div>
             </div>`;
-        if (unit.baseStats.resource.mana) {
-            const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.baseStats.resource.mana) * 100));
+        if (unit.base.resource.mana) {
+            const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
             battleDisplay += `
             <div class='stat-row'>
                 <div class='stat-label'>Mana</div>
@@ -93,8 +93,8 @@ function updateBattleDisplay() {
                 </div>
             </div>`;
         }
-        if (unit.baseStats.resource.energy) {
-            const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.baseStats.resource.energy) * 100));
+        if (unit.base.resource.energy) {
+            const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
             battleDisplay += `
             <div class='stat-row'>
                 <div class='stat-label'>Energy</div>
@@ -132,27 +132,27 @@ function cloneUnit(unit) {
     const newUnit = structuredClone({
         name: unit.name,
         previousAction: [false, false, false],
-        baseStats: unit.baseStats,
+        base: unit.base,
         mult: unit.mult,
         resource: {},
         actions: {},
         timer: 1000,
     });
     newUnit.actionInit = unit.actionInit;
-    for (const stat in newUnit.baseStats) {
-        if (typeof newUnit.baseStats[stat] === 'object') { continue; }
-        if (newUnit.mult[stat] == undefined) { newUnit[stat] = newUnit.baseStats[stat]; continue; }
+    for (const stat in newUnit.base) {
+        if (typeof newUnit.base[stat] === 'object') { continue; }
+        if (newUnit.mult[stat] == undefined) { newUnit[stat] = newUnit.base[stat]; continue; }
         resetStat(newUnit, [stat]);
     }
-    newUnit.resource.stamina = unit.baseStats.resource.stamina;
-    newUnit.resource.staminaRegen = unit.baseStats.resource.staminaRegen;
-    if (unit.baseStats.resource.mana) {
-        newUnit.resource.mana = unit.baseStats.resource.mana;
-        newUnit.resource.manaRegen = unit.baseStats.resource.manaRegen;
+    newUnit.resource.stamina = unit.base.resource.stamina;
+    newUnit.resource.staminaRegen = unit.base.resource.staminaRegen;
+    if (unit.base.resource.mana) {
+        newUnit.resource.mana = unit.base.resource.mana;
+        newUnit.resource.manaRegen = unit.base.resource.manaRegen;
     }
-    if (unit.baseStats.resource.energy) {
-        newUnit.resource.energy = unit.baseStats.resource.energy;
-        newUnit.resource.energyRegen = unit.baseStats.resource.energyRegen;
+    if (unit.base.resource.energy) {
+        newUnit.resource.energy = unit.base.resource.energy;
+        newUnit.resource.energyRegen = unit.base.resource.energyRegen;
     }
     return newUnit;
 }
@@ -183,13 +183,13 @@ function updateMod(unit) {
 
 function regenerateResources(unit) {
     if (!unit.previousAction[0]) {
-        unit.resource.stamina = Math.min(unit.baseStats.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen)));
+        unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen)));
     }
-    if (unit.baseStats.resource.mana && !unit.previousAction[1]) {
-        unit.resource.mana = Math.min(unit.baseStats.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen)));
+    if (unit.base.resource.mana && !unit.previousAction[1]) {
+        unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen)));
     }
-    if (unit.baseStats.resource.energy && !unit.previousAction[2]) {
-        unit.resource.energy = Math.min(unit.baseStats.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen)));
+    if (unit.base.resource.energy && !unit.previousAction[2]) {
+        unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen)));
     }
     unit.previousAction = [false, false, false];
 }

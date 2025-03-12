@@ -71,10 +71,10 @@ function resetStat(unit, statList) {
      for (const stat of statList) {
         if (stat.includes('.')) {
             const [parent, child] = stat.split('.');
-            unit[parent][child] = unit.baseStats[parent][child] * unit.mult[parent][child];
+            unit[parent][child] = unit.base[parent][child] * unit.mult[parent][child];
             continue;
         }
-        unit[stat] = unit.baseStats[stat] * unit.mult[stat];
+        unit[stat] = unit.base[stat] * unit.mult[stat];
     }
 }
 

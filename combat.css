@@ -10,7 +10,6 @@ h1, h2, h3 {
     color: #ffffff;
 }
 
-/* Main layout container */
 .game-layout {
     display: flex;
     flex-direction: row;
@@ -18,7 +17,6 @@ h1, h2, h3 {
     margin-top: 20px;
 }
 
-/* Left column for controls and logs */
 .left-column {
     flex: 1;
     max-width: 350px;
@@ -27,7 +25,6 @@ h1, h2, h3 {
     gap: 20px;
 }
 
-/* Right column for the battle display */
 .right-column {
     flex: 2;
 }
@@ -127,7 +124,6 @@ button#back {
 }
 
 .message-container {
-    /* Changed from fixed to relative positioning */
     position: relative;
     z-index: 100;
     max-width: 100%;
@@ -347,7 +343,6 @@ button#back {
     color: #7f8c8d;
 }
 
-/* Responsive layout for smaller screens */
 @media (max-width: 900px) {
     .game-layout {
         flex-direction: column;
@@ -355,11 +350,11 @@ button#back {
     
     .left-column {
         max-width: 100%;
-        order: 2; /* Move left column below on smaller screens */
+        order: 2;
     }
     
     .right-column {
-        order: 1; /* Move battle container to top on smaller screens */
+        order: 1;
     }
     
     #battle-container {
