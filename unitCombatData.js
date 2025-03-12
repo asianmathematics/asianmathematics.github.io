@@ -2,23 +2,23 @@ import { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, ge
 const Dark = {
     name: "Dark",
     baseStats: {
-        hp: 600,
+        hp: 400,
         attack: 60,
-        defense: 10,
-        pierce: 6,
-        lethality: 40,
-        accuracy: 100,
-        evasion: 50,
-        crit: 150,
+        defense: 12,
+        pierce: 7,
+        lethality: 45,
+        accuracy: 115,
+        evasion: 45,
+        crit: 140,
         resist: 40,
         speed: 20,
         presence: 175,
         position: "front",
         resource: {
             stamina: 150,
-            staminaRegen: 15,
+            staminaRegen: 18,
             mana: 200,
-            manaRegen: 30,
+            manaRegen: 25,
         }
     },
     mult: {
@@ -51,7 +51,7 @@ const Dark = {
         };
         this.actions.shootEmUp = {
             name: "Shoot 'em up [mana, physical]",
-            cost: { stamina: 0, mana: 20 },
+            cost: { mana: 20 },
             description: "Costs 20 mana\nIncreases evasion by +100% for 1 turn\nHits a single target twice with x2 attack power and x1.5 accuracy",
             target: () => {
                 if (this.resource.mana < 20) {
@@ -93,7 +93,6 @@ const Dark = {
         }
         this.actions.dodge = {
             name: "Dodge [physical]",
-            cost: { stamina: 0 },
             description: "Increases evasion by +200% for 1 turn",
             code: () => {
                 this.previousAction = [true, false, false];
@@ -103,10 +102,92 @@ const Dark = {
     }
 }
 
+const Servant = {
+    name: "Servant",
+    baseStats: {
+        hp: 700,
+        attack: 55,
+        defense: 15,
+        pierce: 6,
+        lethality: 60,
+        accuracy: 110,
+        evasion: 35,
+        crit: 170,
+        resist: 30,
+        speed: 15,
+        presence: 60,
+        position: "front",
+        resource: {
+            stamina: 120,
+            staminaRegen: 14,
+        }
+    },
+    mult: {
+        attack: 1,
+        defense: 1,
+        pierce: 1,
+        lethality: 1,
+        accuracy: 1,
+        evasion: 1,
+        crit: 1,
+        resist: 1,
+        speed: 1,
+        presence: 1,
+        resource: {
+            staminaRegen: 1,
+        },
+    },
+    actionInit: function() {
+        this.actions.meleeAttack = {
+            name: "Melee Attack",
+            description: "Attacks a single target twice with x2 damage.",
+            target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+            code: (target) => {
+                this.attack *= 2;
+                attack(this, target);
+                attack(this, target);
+                resetStat(this, ["attack"]);
+            }
+        };
+        this.actions.takingOutTrash = {
+            name: "Taking Out Trash [stamina]",
+            cost: { stamina: 30 },
+            description: "Costs 30 stamina\nDirect attack on a single target with guaranteed critical hit.",
+            target: () => {
+                if (this.resource.stamina < 30) {
+                    showMessage("Not enough stamina!", "error", "selection");
+                    return;
+                }
+                selectTarget(this.actions.takingOutTrash, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            },
+            code: (target) => {
+                this.resource.stamina -= 30;
+                this.previousAction = [true, false, false];
+                damage(this, target, [9])
+            }
+        };
+        this.actions.dodge = {
+            name: "Dodge [physical]",
+            description: "Increases evasion by +200% for 1 turn",
+            code: () => {
+                this.previousAction = [true, false, false];
+                applyMod([this], "evasion", 2, 1);
+            }
+        };
+        this.actions.block = {
+            name: "Block",
+            description: "Increases defense by +100% for 1 turn",
+            code: () => {
+                applyMod([this], "defense", 1, 1);
+            }
+        };
+    }
+};
+
 const enemy = {
     name: "Basic Enemy",
     baseStats: {
-        hp: 900,
+        hp: 500,
         attack: 40,
         defense: 10,
         pierce: 4,
@@ -114,7 +195,7 @@ const enemy = {
         accuracy: 100,
         evasion: 20,
         crit: 100,
-        resist: 30,
+        resist: 33,
         speed: 10,
         presence: 100,
         position: "front",
@@ -162,5 +243,6 @@ const enemy = {
 
 Object.freeze(Dark);
 Object.freeze(enemy);
+Object.freeze(Servant);
 
-export {Dark, enemy};
+export {Dark, Servant, enemy};

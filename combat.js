@@ -1,9 +1,10 @@
-import {Dark, enemy} from './unitCombatData.js';
+import {Dark, Servant, enemy} from './unitCombatData.js';
 import { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 
 export function startCombat() {
     createUnit(Dark, 'player');
-    for (let i = 3; i > 0; i--) { createUnit(enemy, 'enemy'); }
+    createUnit(Servant,  'player');
+    for (let i = 6; i > 0; i--) { createUnit(enemy, 'enemy'); }
     updateBattleDisplay();
     combatTick();
 }

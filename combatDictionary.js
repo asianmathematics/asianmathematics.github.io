@@ -98,7 +98,7 @@ function enemyTurn(unit) {
             break;
         }
     }
-    setTimeout(() => { window.combatTick(); resolve(); }, 1000);
+    setTimeout(() => { window.combatTick(); }, 1000);
 }
 
 function randTarget(unitList = allUnits, trueRand = false) {
@@ -130,15 +130,23 @@ function playerTurn(unit) {
         }
     }
     document.getElementById("selection").innerHTML = `${actionButton}
+        <button id='Skip' class='action-button' data-tooltip="Skip current unit's turn" onclick='handleActionClick("Skip")'>Skip</button>
     </div>`;
-    window.handleActionClick = function(action, name) {
-        const unit = allUnits.find(u => u.name === name);
-        if (unit.actions[action].target !== undefined) {unit.actions[action].target();}
-        else {
-            unit.actions[action].code();
+    window.handleActionClick = function(action, name = null) {
+        if (action === "Skip") {
             document.getElementById("selection").innerHTML = "";
             cleanupGlobalHandlers();
             setTimeout(window.combatTick, 500);
+        }
+        else {
+            const unit = allUnits.find(u => u.name === name);
+            if (unit.actions[action].target !== undefined) { unit.actions[action].target(); }
+            else {
+                unit.actions[action].code();
+                document.getElementById("selection").innerHTML = "";
+                cleanupGlobalHandlers();
+                setTimeout(window.combatTick, 500);
+            }
         }
     };
 }
