@@ -1,4 +1,4 @@
-import { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 const Dark = {
     name: "Dark",
     baseStats: {
@@ -41,6 +41,7 @@ const Dark = {
         this.actions.spellAttack = {
             name: "Spell Attack [mystic]",
             cost: { mana: 0, },
+            description: "Attacks a single target 4 times with mystic damage.",
             target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
             code: (target) => {
                 this.previousAction = [false, true, false];
@@ -51,6 +52,7 @@ const Dark = {
         this.actions.shootEmUp = {
             name: "Shoot 'em up [mana, physical]",
             cost: { stamina: 0, mana: 20 },
+            description: "Costs 20 mana\nIncreases evasion by +100% for 1 turn\nHits a single target twice with x2 attack power and x1.5 accuracy",
             target: () => {
                 if (this.resource.mana < 20) {
                     showMessage("Not enough mana!", "error", "selection");
@@ -72,6 +74,7 @@ const Dark = {
         this.actions.bulletHell = {
             name: "Bullet Hell [mana]",
             cost: { mana: 40 },
+            description: "Costs 40 mana\nDecreases evasion by 50% for 1 turn\nHits up to 4 random enemies 8 times with x.5 attack and x.75 accuracy",
             code: () => {
                 if (this.resource.mana < 40) {
                     showMessage("Not enough mana!", "error", "selection");
@@ -91,6 +94,7 @@ const Dark = {
         this.actions.dodge = {
             name: "Dodge [physical]",
             cost: { stamina: 0 },
+            description: "Increases evasion by +200% for 1 turn",
             code: () => {
                 this.previousAction = [true, false, false];
                 applyMod([this], "evasion", 2, 1);

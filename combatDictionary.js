@@ -31,6 +31,28 @@ function applyMod(targets, stat, value, duration) {
     }
 }
 
+function getModifiersDisplay() {
+    let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
+    
+    if (Object.keys(modifiers).length === 0) {
+        modDisplay += "<p>No active modifiers</p>";
+    } else {
+        modDisplay += "<ul class='modifier-list'>";
+        for (const id in modifiers) {
+            const mod = modifiers[id];
+            modDisplay += `<li>
+                <span class="modifier-target">${mod.target.map(unit => unit.name).join(", ")}</span>: 
+                <span class="modifier-stat">${mod.stat}</span> 
+                <span class="modifier-value">${mod.value > 0 ? `+${mod.value * 100}%` : `${mod.value * 100}%`}</span> 
+                <span class="modifier-duration">(${mod.duration} turns)</span>
+            </li>`;
+        }
+        modDisplay += "</ul>";
+    }
+    
+    return modDisplay + "</div>";
+}
+
 function resetStat(unit, statList) {
      for (const stat of statList) {
         if (stat.includes('.')) {
@@ -100,12 +122,11 @@ function playerTurn(unit) {
             let disabled = '';
             if (action.cost) {
                 for (const resource in action.cost) {
-                    buttonText += ` ${resource}: ${action.cost[resource]}`
-                    if (action.cost[resource] && unit.resource[resource] < action.cost[resource]) { disabled = " disabled";}
+                    if (unit.resource[resource] < action.cost[resource]) { disabled = " disabled"; }
                 }
             }
             actionButton += `
-            <button id='${action.name}' class='action-button${disabled}'onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${buttonText}</button>`;
+            <button id='${action.name}' class='action-button${disabled}' data-tooltip='${action.description}' onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${buttonText}</button>`;
         }
     }
     document.getElementById("selection").innerHTML = `${actionButton}
@@ -227,4 +248,4 @@ function damage(attacker, defenders, critical) {
     }
 }
 
-export { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };
+export { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };

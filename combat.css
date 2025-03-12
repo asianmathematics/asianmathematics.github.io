@@ -198,6 +198,66 @@ button#back {
     background-color: #555555;
 }
 
+.modifiers-container {
+    background-color: #3a3a3a;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    padding: 15px;
+    margin-bottom: 20px;
+    color: #e0e0e0;
+}
+
+.modifier-list {
+    list-style: none;
+    padding: 0;
+}
+
+.modifier-list li {
+    margin-bottom: 5px;
+    padding: 5px;
+    background-color: #4a4a4a;
+    border-radius: 4px;
+}
+
+.modifier-target {
+    font-weight: bold;
+    color: #90caf9;
+}
+
+.modifier-stat {
+    color: #ffcc80;
+}
+
+.modifier-value {
+    font-weight: bold;
+    color: #a5d6a7;
+}
+
+.modifier-duration {
+    color: #ef9a9a;
+}
+
+.action-button {
+    position: relative;
+}
+
+.action-button[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: pre-line;
+    z-index: 1000;
+    width: max-content;
+    max-width: 300px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

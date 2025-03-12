@@ -1,5 +1,5 @@
 import {Dark, enemy} from './unitCombatData.js';
-import { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 
 export function startCombat() {
     createUnit(Dark, 'player');
@@ -9,7 +9,8 @@ export function startCombat() {
 }
 
 function updateBattleDisplay() {
-    let battleDisplay = "<div class='battle-display'>";
+    let battleDisplay = getModifiersDisplay();
+    battleDisplay += "<div class='battle-display'>";
     battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
     for (const unit of unitFilter("player", '')) {
         const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
