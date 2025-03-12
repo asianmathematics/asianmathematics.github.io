@@ -1,24 +1,24 @@
 import { selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 
 class Unit {
-    constructor(name, base, actionsInit) {
+    constructor(name, stat, actionsInit) {
         this.name = name;
         this.base = {
-            hp: base[0],
-            attack: base[1],
-            defense: base[2],
-            pierce: base[3],
-            lethality: base[4],
-            accuracy: base[5],
-            evasion: base[6],
-            crit: base[7],
-            resist: base[8],
-            speed: base[9],
-            presence: base[10],
-            position: base[11],
+            hp: stat[0],
+            attack: stat[1],
+            defense: stat[2],
+            pierce: stat[3],
+            lethality: stat[4],
+            accuracy: stat[5],
+            evasion: stat[6],
+            crit: stat[7],
+            resist: stat[8],
+            speed: stat[9],
+            presence: stat[10],
+            position: stat[11],
             resource: {
-                stamina: base[12],
-                staminaRegen: base[13],
+                stamina: stat[12],
+                staminaRegen: stat[13],
             }
         };
         this.mult = {
@@ -36,15 +36,15 @@ class Unit {
                 staminaRegen: 1,
             }
         };
-        if (base[14]) { 
-            this.base.resource.mana = base[14];
-            this.base.resource.manaRegen = base[15];
+        if (stat[14]) { 
+            this.base.resource.mana = stat[14];
+            this.base.resource.manaRegen = stat[15];
             this.mult.resource.manaRegen = 1;
         }
-        if (base[16]) { 
-            this.base.resource.mana = base[16];
-            this.base.resource.manaRegen = base[17];
-            this.mult.resource.manaRegen = 1;
+        if (stat[16]) { 
+            this.base.resource.energy = stat[16];
+            this.base.resource.energyRegen = stat[17];
+            this.mult.resource.energyRegen = 1;
         }
         this.actionInit = actionsInit;
     }
