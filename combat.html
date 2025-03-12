@@ -6,31 +6,38 @@
     <title>Turn-Based Combat Game</title>
     <link rel="stylesheet" href="combat.css">
 </head>
+<body>
     <h1>Turn-Based Combat Game</h1>
     
     <div id="game-controls">
-        <button class="action-button" id="combatStart">Start Combat</button>
         <p>(please don't press this button more than once, thank you.)</p>
+        <button class="action-button" id="combatStart">Start Combat</button>
     </div>
     
-    <div id="battle-container">
+    <div class="game-layout">
+        <div class="left-column">
+            <div id="selection">
+                <!-- Selection content will be loaded here -->
+            </div>
+            
+            <div id="message-container" class="message-container">
+                <!-- Messages will appear here -->
+            </div>
+            
+            <div id="action-log-container">
+                <h3>Combat Log</h3>
+                <div id="action-log"></div>
+            </div>
+        </div>
         
+        <div class="right-column">
+            <div id="battle-container">
+                <!-- Battle content will be loaded here -->
+            </div>
+        </div>
     </div>
-    
 
     <p style="color:white">Hover over (or hold on mobile) action buttons to see description</p>
-    <div id="selection">
-        
-    </div>
-    
-    <div id="message-container" class="message-container">
-        
-    </div>
-
-    <div id="action-log-container">
-        <h3>Combat Log</h3>
-        <div id="action-log"></div>
-    </div>
 
     <script type="module">
         import {startCombat} from './combat.js';

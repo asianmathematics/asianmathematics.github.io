@@ -1,11 +1,12 @@
-import {Dark, Servant, enemy} from './unitCombatData.js';
+import {Dark, Electric, Servant, enemy} from './unitCombatData.js';
 import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 let turnCounter = 1;
 
 export function startCombat() {
     createUnit(Dark, 'player');
+    createUnit(Electric, 'player');
     createUnit(Servant,  'player');
-    for (let i = 6; i > 0; i--) { createUnit(enemy, 'enemy'); }
+    for (let i = 8; i > 0; i--) { createUnit(enemy, 'enemy'); }
     updateBattleDisplay();
     combatTick();
 }
@@ -150,8 +151,8 @@ function cloneUnit(unit) {
         newUnit.resource.manaRegen = unit.baseStats.resource.manaRegen;
     }
     if (unit.baseStats.resource.energy) {
+        newUnit.resource.energy = unit.baseStats.resource.energy;
         newUnit.resource.energyRegen = unit.baseStats.resource.energyRegen;
-        newUnit.resource.manaRegen = unit.baseStats.resource.manaRegen;
     }
     return newUnit;
 }
@@ -172,11 +173,11 @@ function updateMod(unit) {
             if (mod.duration <= 0) {
                 unit.mult[mod.stat] -= mod.value;
                 const index = mod.target.indexOf(unit);
-                resetStat(unit, `${mod.stat}`)
+                resetStat(unit, [mod.stat])
                 if (index > -1) { mod.target.splice(index, 1)}
-                if (mod.target.length === 0) { delete modifiers[id]; }
             }
         }
+        if (mod.target.length === 0) { delete modifiers[id]; }
     }
 }
 

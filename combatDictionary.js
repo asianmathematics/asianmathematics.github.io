@@ -203,7 +203,8 @@ function selectTarget(action, back, target) {
         if (requireMax && checkboxes.length !== maxSelections) {
             showMessage(`Please select exactly ${maxSelections} target${maxSelections !== 1 ? 's' : ''}.`, "error", "validation-message", 0);
             return;
-        } else if (checkboxes.length === 0) {
+        }
+         if (checkboxes.length === 0) {
             showMessage('Please select at least one target.', "error", "validation-message", 0);
             return;
         }
