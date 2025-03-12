@@ -210,7 +210,7 @@ async function combatTick() {
             if (unit.hp <= 0) { continue; }
             unit.timer -= unit.speed;
             updateBattleDisplay();
-            await sleep(1);
+            await sleep(0);
             if (unit.timer <= 0) { 
                 turn = unit;
                 break;
