@@ -1,6 +1,8 @@
 const allUnits = [];
 const modifiers = {};
 let modifierId = 1;
+let turnCounter = 1;
+let currentTurn = null;
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -18,10 +20,22 @@ function unitFilter(team, position, downed = null) {
 }
 //function combineUnitArray(arr1, arr2) { return arr1.filter(unit1 => arr2.some(unit2 => unit1.name === unit2.name)); }
 
+function logAction(message, type = 'info') {
+    const logContainer = document.getElementById('action-log');
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${type}-entry`;
+    logEntry.innerHTML = message;
+    logContainer.appendChild(logEntry);
+    const entries = logContainer.children;
+    while (entries.length > 50) { logContainer.removeChild(entries[0]); }
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
 function applyMod(targets, stat, value, duration) {
     for (const unit of targets) {
         unit.mult[stat] += value;
         resetStat(unit, [stat]);
+        logAction(`${unit.name} ${value > 0 ? "buff" : "debuff"}: ${stat} ${value > 0 ? '+' : ''}${value * 100}% for ${duration} turns`, `${value > 0 ? "buff" : "debuff"}`);
     }
     modifiers[modifierId++] = {
         target: targets,
@@ -94,6 +108,7 @@ function enemyTurn(unit) {
     for (const action in availableActions) {
         cumulativeWeight += unit.actions.actionWeight[action];
         if (randChoice <= cumulativeWeight) {
+            logAction(`${unit.name} uses ${action}`, "action");
             unit.actions[action]();
             break;
         }
@@ -130,16 +145,18 @@ function playerTurn(unit) {
         }
     }
     document.getElementById("selection").innerHTML = `${actionButton}
-        <button id='Skip' class='action-button' data-tooltip="Skip current unit's turn" onclick='handleActionClick("Skip")'>Skip</button>
+        <button id='Skip' class='action-button' data-tooltip="Skip current unit's turn" onclick='handleActionClick("Skip", \"${unit.name}\")'>Skip</button>
     </div>`;
-    window.handleActionClick = function(action, name = null) {
+    window.handleActionClick = function(action, name) {
         if (action === "Skip") {
+            logAction(`${name} skips their turn`, "skip");
             document.getElementById("selection").innerHTML = "";
             cleanupGlobalHandlers();
             setTimeout(window.combatTick, 500);
         }
         else {
             const unit = allUnits.find(u => u.name === name);
+            logAction(`${name} uses ${unit.actions[action].name}`, "action");
             if (unit.actions[action].target !== undefined) { unit.actions[action].target(); }
             else {
                 unit.actions[action].code();
@@ -235,6 +252,7 @@ function attack(attacker, defenders) {
     let hit = [];
     for (const unit of defenders) { hit.push(10 * (attacker.accuracy / unit.evasion ) + Math.floor(Math.random() * 100 + 1) - 85); }
     if (hit.some((num) => num > 0)){ crit(attacker, defenders, hit); }
+    else {logAction(`${attacker.name} misses ${defenders.length === 1 ? defenders[0].name : "all their attacks!"}`, "miss")}
 }
 
 function crit(attacker, defenders, hit) {
@@ -250,10 +268,21 @@ function crit(attacker, defenders, hit) {
 function damage(attacker, defenders, critical) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
     for (let i = 0; i < defenders.length; i++) {
-        if (critical[i] === 0) { continue; }
-        if (critical[i] < 1) { defenders[i].hp -= Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce)) }
-        else { defenders[i].hp -= Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce * critical[i]) + attacker.lethality * critical[i])}
+        if (critical[i] === 0) {
+            logAction(`${attacker.name} misses ${defenders[i].name}!`, "miss");
+            continue;
+        }
+        if (critical[i] < 1) {
+            let result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce));
+            logAction(`${attacker.name} hits ${defenders[i].name} for ${result} damage!`, "hit");
+            defenders[i].hp -= result;
+        }
+        else {
+            let result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce * critical[i]) + attacker.lethality * critical[i]);
+            logAction(`${attacker.name} critically hits ${defenders[i].name} for ${result} damage!`, "crit");
+            defenders[i].hp -= result;
+        }
     }
 }
 
-export { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };
+export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };

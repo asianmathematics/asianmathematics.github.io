@@ -1,5 +1,6 @@
 import {Dark, Servant, enemy} from './unitCombatData.js';
-import { sleep, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+let turnCounter = 1;
 
 export function startCombat() {
     createUnit(Dark, 'player');
@@ -215,12 +216,14 @@ async function combatTick() {
             }
         }
     }
+    logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
     regenerateResources(turn);
     updateMod(turn);
     updateBattleDisplay();
     turn.timer = 1000;
     if (turn.team === "player") { playerTurn(turn); }
     if (turn.team === "enemy") { enemyTurn(turn); }
+    turnCounter++
 }
 
 window.combatTick = combatTick;

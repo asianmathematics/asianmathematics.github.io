@@ -258,6 +258,94 @@ button#back {
     box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
+#action-log {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    font-family: monospace;
+    border: 1px solid #444;
+    padding: 10px;
+    margin-top: 20px;
+    height: 200px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.4;
+    border-radius: 5px;
+}
+
+.log-entry {
+    margin-bottom: 4px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    word-wrap: break-word;
+}
+
+.turn-entry {
+    background-color: #2c3e50;
+    color: #ffffff;
+    padding: 5px;
+    margin-top: 5px;
+    border-left: 3px solid #3498db;
+}
+
+.action-entry {
+    color: #3498db;
+}
+
+.hit-entry {
+    color: #ffffff;
+}
+
+.miss-entry {
+    color: #95a5a6;
+    font-style: italic;
+}
+
+.crit-entry {
+    color: #f39c12;
+    font-weight: bold;
+}
+
+.buff-entry {
+    color: #2ecc71;
+}
+
+.debuff-entry {
+    color: #e67e22;
+}
+
+.skip-entry {
+    color: #bdc3c7;
+    font-style: italic;
+}
+
+.info-entry {
+    color: #7f8c8d;
+}
+
+/*
+.damage-entry {
+    color: #e74c3c;
+}
+
+.defeat-entry {
+    color: #c0392b;
+    font-weight: bold;
+}
+
+.success-entry {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.warning-entry {
+    color: #f1c40f;
+}
+
+.error-entry {
+    color: #c0392b;
+}
+*/
+
 @keyframes fadeIn {
     from {
         opacity: 0;
