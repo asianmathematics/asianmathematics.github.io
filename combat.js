@@ -1,4 +1,4 @@
-import {Dark, Electric, Servant, enemy} from './unitCombatData.js';
+import {Dark, Electric, Servant, ClassicJoy, enemy} from './unitCombatData.js';
 import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 let turnCounter = 1;
 
@@ -6,6 +6,7 @@ export function startCombat() {
     createUnit(Dark, 'player');
     createUnit(Electric, 'player');
     createUnit(Servant,  'player');
+    createUnit(ClassicJoy, 'player')
     for (let i = 8; i > 0; i--) { createUnit(enemy, 'enemy'); }
     updateBattleDisplay();
     combatTick();
@@ -19,9 +20,9 @@ function updateBattleDisplay() {
         const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
         const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
         const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
-        
-        battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""}'>
+        battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
             <div class='unit-name'>${unit.name}</div>
+            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
             <div class='stat-row'>
                 <div class='stat-label'>HP: ${Math.max(0, unit.hp)}/${unit.base.hp}</div>
                 <div class='stat-bar-container'>
@@ -68,9 +69,9 @@ function updateBattleDisplay() {
         const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
         const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
         const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
-        
-        battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""}'>
+        battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
             <div class='unit-name'>${unit.name}</div>
+            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
             <div class='stat-row'>
                 <div class='stat-label'>HP</div>
                 <div class='stat-bar-container'>
@@ -163,9 +164,11 @@ function updateMod(unit) {
         if (mod.target.includes(unit)) {
             mod.duration--;
             if (mod.duration <= 0) {
-                unit.mult[mod.stat] -= mod.value;
+                for (let i = 0; i < mod.stat.length; i++) {
+                    unit.mult[mod.stat[i]] -= mod.value[i];
+                    resetStat(unit, [mod.stat[i]]);
+                }
                 const index = mod.target.indexOf(unit);
-                resetStat(unit, [mod.stat])
                 if (index > -1) { mod.target.splice(index, 1)}
             }
         }

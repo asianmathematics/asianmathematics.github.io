@@ -30,11 +30,19 @@ function logAction(message, type = 'info') {
 }
 
 function applyMod(targets, stat, value, duration) {
+    if (stat.length !== value.length) { throw new TypeError("Stats and values arrays must have the same length"); }
+    let modMessage = '';
     for (const unit of targets) {
-        unit.mult[stat] += value;
-        resetStat(unit, [stat]);
-        logAction(`${unit.name} ${value > 0 ? "buff" : "debuff"}: ${stat} ${value > 0 ? '+' : ''}${value * 100}% for ${duration} turns`, `${value > 0 ? "buff" : "debuff"}`);
+        modMessage += `${unit.name}`;
+        for (let i = 0; i < stat.length; i++) {
+            unit.mult[stat[i]] += value[i];
+            resetStat(unit, [stat[i]]);
+            if (i === 0) { modMessage += ` ${value[i] > 0 ? "buff" : "debuff"}: `; }
+            else { modMessage += ", "; }
+            modMessage += `${stat[i]} ${value[i] > 0 ? '+' : ''}${value[i] * 100}%`;
+        }
     }
+    logAction(`${modMessage} for ${duration} turns`, `${value[0] > 0 ? "buff" : "debuff"}`);
     modifiers[modifierId++] = {
         target: targets,
         stat: stat,
@@ -45,33 +53,32 @@ function applyMod(targets, stat, value, duration) {
 
 function getModifiersDisplay() {
     let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
-    if (Object.keys(modifiers).length === 0) {
-        modDisplay += "<p>No active modifiers</p>";
-    } else {
+    if (Object.keys(modifiers).length === 0) { modDisplay += "<p>No active modifiers</p>"; }
+    else {
         modDisplay += "<ul class='modifier-list'>";
         for (const id in modifiers) {
             const mod = modifiers[id];
-            modDisplay += `<li>
-                <span class="modifier-target">${mod.target.map(unit => unit.name).join(", ")}</span>: 
-                <span class="modifier-stat">${mod.stat}</span> 
-                <span class="modifier-value">${mod.value > 0 ? `+${mod.value * 100}%` : `${mod.value * 100}%`}</span> 
-                <span class="modifier-duration">(${mod.duration} turns)</span>
-            </li>`;
+            modDisplay += `<li><span class="modifier-target">${mod.target.map(unit => unit.name).join(", ")}</span>: `;
+            for (let i = 0; i < mod.stat.length; i++) {
+                if (i > 0) modDisplay += ", ";
+                modDisplay += `<span class="modifier-stat">${mod.stat[i]}</span> `;
+                modDisplay += `<span class="modifier-value">${mod.value[i] > 0 ? `+${mod.value[i] * 100}%` : `${mod.value[i] * 100}%`}</span>`;
+            }
+            modDisplay += ` <span class="modifier-duration">(${mod.duration} turns)</span></li>`;
         }
-        modDisplay += "</ul>";
     }
     
-    return modDisplay + "</div>";
+    return modDisplay + "</ul></div>";
 }
 
 function resetStat(unit, statList) {
      for (const stat of statList) {
         if (stat.includes('.')) {
             const [parent, child] = stat.split('.');
-            unit[parent][child] = unit.base[parent][child] * unit.mult[parent][child];
+            unit[parent][child] = unit.base[parent][child] * Math.max(0.2, unit.mult[parent][child]);
             continue;
         }
-        unit[stat] = unit.base[stat] * unit.mult[stat];
+        unit[stat] = unit.base[stat] * Math.max(0.2, unit.mult[stat]);
     }
 }
 

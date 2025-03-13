@@ -78,6 +78,22 @@ h1, h2, h3 {
     color: #ffffff;
 }
 
+.unit.back {
+    border-left: 4px solid #9C27B0;
+    background-color: #3d2d4a;
+}
+
+.unit.back .unit-name {
+    color: #CE93D8;
+}
+
+.position-indicator {
+    font-size: 0.8em;
+    color: #CE93D8;
+    font-style: italic;
+    margin-bottom: 5px;
+}
+
 #selection {
     background-color: #3a3a3a;
     border-radius: 8px;
@@ -339,6 +355,10 @@ button#back {
     font-style: italic;
 }
 
+.warning-entry {
+    color: #f1c40f;
+}
+
 .info-entry {
     color: #7f8c8d;
 }
@@ -386,10 +406,6 @@ button#back {
 .success-entry {
     color: #27ae60;
     font-weight: bold;
-}
-
-.warning-entry {
-    color: #f1c40f;
 }
 
 .error-entry {
