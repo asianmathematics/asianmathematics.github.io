@@ -157,14 +157,6 @@ function cloneUnit(unit) {
     return newUnit;
 }
 
-/* old name check
-function unitNameCheck(unit) {
-    const nameCheck = '^' + unit.name + '$|^' + unit.name + '\\s\d$|^' + unit.name + '\\s\d\d$';
-    let dupe = 1;
-    for (let x of allUnits) { dupe += nameCheck.test(x.name); }
-    if (dupe > 1) { unit.name += ' ' + dupe; }
-}*/
-
 function updateMod(unit) {
     for (const id in modifiers) {
         const mod = modifiers[id];

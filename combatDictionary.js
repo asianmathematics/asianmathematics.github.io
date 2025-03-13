@@ -4,9 +4,7 @@ let modifierId = 1;
 let turnCounter = 1;
 let currentTurn = null;
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 function unitFilter(team, position, downed = null) {
     return allUnits.filter(unit => {
@@ -47,7 +45,6 @@ function applyMod(targets, stat, value, duration) {
 
 function getModifiersDisplay() {
     let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
-    
     if (Object.keys(modifiers).length === 0) {
         modDisplay += "<p>No active modifiers</p>";
     } else {
@@ -129,20 +126,16 @@ function randTarget(unitList = allUnits, trueRand = false) {
 
 function playerTurn(unit) {
     let actionButton = "<div>";
-    let buttonText;
     for (const actionKey in unit.actions) { 
         const action = unit.actions[actionKey];
-        if (action.name) {
-            buttonText = action.name;
-            let disabled = '';
-            if (action.cost) {
-                for (const resource in action.cost) {
-                    if (unit.resource[resource] < action.cost[resource]) { disabled = " disabled"; }
-                }
+        let disabled = '';
+        if (action.cost) {
+            for (const resource in action.cost) {
+                if (unit.resource[resource] < action.cost[resource]) { disabled = " disabled"; }
             }
-            actionButton += `
-            <button id='${action.name}' class='action-button${disabled}' data-tooltip='${action.description}' onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${buttonText}</button>`;
         }
+        actionButton += `
+        <button id='${action.name}' class='action-button${disabled}' data-tooltip='${action.description}' onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${action.name}</button>`;
     }
     document.getElementById("selection").innerHTML = `${actionButton}
         <button id='Skip' class='action-button' data-tooltip="Skip current unit's turn" onclick='handleActionClick("Skip", \"${unit.name}\")'>Skip</button>
