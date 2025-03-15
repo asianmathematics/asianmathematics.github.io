@@ -1,6 +1,7 @@
 import {Dark, Electric, Servant, ClassicJoy, enemy} from './unitCombatData.js';
 import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 let turnCounter = 1;
+let currentTurn = 0;
 
 export function startCombat() {
     createUnit(Dark, 'player');
@@ -17,7 +18,7 @@ function updateBattleDisplay() {
     battleDisplay += "<div class='battle-display'>";
     battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
     for (const unit of unitFilter("player", '')) {
-        const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
+        const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
         const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
         const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
@@ -66,7 +67,7 @@ function updateBattleDisplay() {
     }
     battleDisplay += "</div><div class='team enemy-team'><h2>Enemy Team</h2>";
     for (const unit of unitFilter("enemy", '')) {
-        const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
+        const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
         const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
         const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
@@ -127,6 +128,7 @@ function createUnit(unit, team) {
     newUnit.team = team;
     allUnits.push(newUnit);
     newUnit.actionInit();
+    newUnit.timer = 300
 }
 
 function cloneUnit(unit) {
@@ -137,7 +139,6 @@ function cloneUnit(unit) {
         mult: unit.mult,
         resource: {},
         actions: {},
-        timer: 1000,
     });
     newUnit.actionInit = unit.actionInit;
     for (const stat in newUnit.base) {
@@ -201,22 +202,24 @@ async function combatTick() {
     }
     let turn;
     while (turn == undefined) {
-        for (const unit of allUnits) {
+        for (let i = 0; i < allUnits.length; i++) {
+            const unit = allUnits[(currentTurn + i) % allUnits.length];
             if (unit.hp <= 0) { continue; }
             unit.timer -= unit.speed;
-            updateBattleDisplay();
-            await sleep(0);
-            if (unit.timer <= 0) { 
+            if (unit.timer <= 0) {
                 turn = unit;
+                currentTurn = (currentTurn + i) + allUnits.length;
                 break;
             }
+            updateBattleDisplay();
+            await sleep(0);
         }
     }
     logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
     regenerateResources(turn);
     updateMod(turn);
     updateBattleDisplay();
-    turn.timer = 1000;
+    turn.timer = 300;
     if (turn.team === "player") { playerTurn(turn); }
     if (turn.team === "enemy") { enemyTurn(turn); }
     turnCounter++

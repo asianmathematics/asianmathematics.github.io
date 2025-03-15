@@ -53,7 +53,7 @@ class Unit {
 const darkActionsInit = function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
-        description: "Attacks a single target 4 times with mystic damage.",
+        description: "Attacks a single target 4 times.",
         target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.previousAction = [false, true, false];
@@ -65,7 +65,7 @@ const darkActionsInit = function() {
     this.actions.shootEmUp = {
         name: "Shoot 'em up [mana, physical]",
         cost: { mana: 20 },
-        description: "Costs 20 mana\nIncreases evasion by +100% for 1 turn\nHits a single target twice with x2 attack power and x1.5 accuracy",
+        description: "Costs 20 mana\nIncreases evasion by +100% for 1 turn\nHits a single target twice with increased accuracy and damage",
         target: () => {
             if (this.resource.mana < 20) {
                 showMessage("Not enough mana!", "error", "selection");
@@ -88,7 +88,7 @@ const darkActionsInit = function() {
     this.actions.bulletHell = {
         name: "Bullet Hell [mana]",
         cost: { mana: 40 },
-        description: "Costs 40 mana\nDecreases evasion by 50% for 1 turn\nHits up to 4 random enemies 8 times with x.5 attack and x.75 accuracy",
+        description: "Costs 40 mana\nDecreases evasion for 1 turn\nHits up to 4 random enemies 8 times with decreased accuracy and damage",
         code: () => {
             if (this.resource.mana < 40) {
                 showMessage("Not enough mana!", "error", "selection");
@@ -108,7 +108,7 @@ const darkActionsInit = function() {
 
     this.actions.dodge = {
         name: "Dodge [physical]",
-        description: "Increases evasion by +200% for 1 turn",
+        description: "Increases evasion for 1 turn",
         code: () => {
             this.previousAction = [true, false, false];
             applyMod([this], ["evasion"], [2], 1);
@@ -120,7 +120,7 @@ const electricActionsInit = function() {
     this.actions.electricDischarge = {
         name: "Electric Discharge [mystic, energy]",
         cost: { energy: 60 },
-        description: "Costs 60 energy\nDeals 5 x1.3 damage attacks to a single target with increased crit and minimum damage",
+        description: "Costs 60 energy\nDeals 5  attacks to a single target with increased crit and damage",
         target: () => {
             if (this.resource.energy < 60) {
                 showMessage("Not enough energy!", "error", "selection");
@@ -174,7 +174,7 @@ const electricActionsInit = function() {
 
     this.actions.block = {
         name: "Block",
-        description: "Increases defense by +100% for 1 turn",
+        description: "Increases defense for 1 turn",
         code: () => {
             applyMod([this], ["defense"], [1], 1);
         }
@@ -182,7 +182,7 @@ const electricActionsInit = function() {
 
     this.actions.dodge = {
         name: "Dodge [physical]",
-        description: "Increases evasion by +200% for 1 turn",
+        description: "Increases evasion for 1 turn",
         code: () => {
             this.previousAction = [true, false, false];
             applyMod([this], ["evasion"], [2], 1);
@@ -193,7 +193,7 @@ const electricActionsInit = function() {
 const servantActionsInit = function() {
     this.actions.meleeAttack = {
         name: "Melee Attack",
-        description: "Attacks a single target twice with x2 damage.",
+        description: "Attacks a single target twice with increased damage.",
         target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.attack *= 2;
@@ -223,7 +223,7 @@ const servantActionsInit = function() {
 
     this.actions.dodge = {
         name: "Dodge [physical]",
-        description: "Increases evasion by +200% for 1 turn",
+        description: "Increases evasion for 1 turn",
         code: () => {
             this.previousAction = [true, false, false];
             applyMod([this], ["evasion"], [2], 1);
@@ -232,7 +232,7 @@ const servantActionsInit = function() {
 
     this.actions.block = {
         name: "Block",
-        description: "Increases defense by +100% for 1 turn",
+        description: "Increases defense for 1 turn",
         code: () => {
             applyMod([this], ["defense"], [1], 1);
         }
@@ -264,7 +264,7 @@ const classicJoyActionsInit = function() {
     this.actions.emp = {
         name: "EMP [energy]",
         cost: { energy: 55 },
-        description: "Costs 55 energy\nSets target\'s energy to 0 and disables energy regeneration for next turn",
+        description: "Costs 55 energy\nSets energy of target to 0 and disables energy regeneration for next turn",
         target: () => {
             if (this.resource.energy < 55) {
                 showMessage("Not enough energy!", "error", "selection");
@@ -286,21 +286,21 @@ const classicJoyActionsInit = function() {
 
     this.actions.synthesizeMedicine = {
         name: "Synthesize Medicine [techno]",
-        description: "Heals target 40 HP",
+        description: "Heals target 80 HP",
         target: () => {
             selectTarget(this.actions.synthesizeMedicine, () => { playerTurn(this); }, [1, true, unitFilter("player", "")]);
         },
         code: (target) => {
             this.previousAction = [false, false, true];
-            target[0].hp = Math.min(target[0].base.hp, target[0].hp + 40);
-            logAction(`${this.name} heals ${target[0].name} for 40 HP!`, "heal");
+            target[0].hp = Math.min(target[0].base.hp, target[0].hp + 80);
+            logAction(`${this.name} heals ${target[0].name} for 80 HP!`, "heal");
         }
     };
 
     this.actions.joy = {
         name: "Joy [stamina]",
         cost: { stamina: 40 },
-        description: "Costs 40 stamina & 46 HP\nWas it worth it?",
+        description: "Costs 40 stamina & 50 HP\nWas it worth it?",
         target: () => {
             if (this.resource.stamina < 40) {
                 showMessage("Not enough stamina!", "error", "selection");
@@ -311,9 +311,9 @@ const classicJoyActionsInit = function() {
         code: (target) => {
             this.resource.stamina -= 40;
             this.previousAction = [true, false, false];
-            this.hp -= 46;
-            logAction(`${this.name} gave ${target[0].name} joy. He will never live it down`, "warning");
-            applyMod(target, ["accuracy", "crit", "defense", "resist", "pierce"], [0.5, 0.4, 1, 0.4, 0.3], 3);
+            this.hp -= 50;
+            logAction(`${this.name} gave ${target[0].name} Joy. He will never live it down`, "warning");
+            applyMod(target, ["accuracy", "crit", "defense", "resist", "pierce", "attack", "evasion", "speed", "accuracy"], [0.5, 0.4, 1, 0.4, 0.3, 0.25, 0.25, 0.1, 0.25], 3);
             applyMod(target, ["attack", "defense", "evasion", "speed", "accuracy"], [-0.25, -0.4, -0.25, -0.1, -0.25], 9);
         }
     };
@@ -347,11 +347,11 @@ const enemyActionsInit = function() {
     };
 };
 
-const Dark = new Unit("Dark", [400, 60, 12, 7, 45, 115, 45, 140, 40, 20, 175, "front", 150, 18, 200, 25], darkActionsInit);
-const Electric = new Unit("Electric", [450, 50, 8, 12, 35, 105, 40, 120, 35, 25, 150, "front", 100, 15, 75, 10, 200, 20], electricActionsInit);
-const Servant = new Unit("Servant", [700, 55, 15, 6, 60, 110, 35, 170, 30, 15, 60, "front", 120, 14], servantActionsInit);
-const ClassicJoy = new Unit ("Classical (Joy)", [380, 75, 10, 15, 75, 145, 25, 170, 30, 8, 110, "back", 120, 15, 0, 0, 90, 10], classicJoyActionsInit);
-const enemy = new Unit("Basic Enemy", [500, 40, 10, 4, 25, 100, 20, 100, 33, 10, 100, "front", 100, 10], enemyActionsInit);
+const Dark = new Unit("Dark", [400, 60, 12, 7, 45, 115, 45, 120, 25, 20, 175, "front", 150, 18, 200, 25], darkActionsInit);
+const Electric = new Unit("Electric", [450, 50, 8, 12, 35, 105, 25, 110, 30, 25, 150, "front", 100, 15, 75, 10, 200, 20], electricActionsInit);
+const Servant = new Unit("Servant", [700, 55, 15, 6, 60, 110, 35, 125, 30, 15, 60, "front", 120, 14], servantActionsInit);
+const ClassicJoy = new Unit ("Classical (Joy)", [380, 75, 10, 15, 75, 120, 15, 130, 30, 8, 110, "back", 120, 15, undefined, undefined, 90, 10], classicJoyActionsInit);
+const enemy = new Unit("Basic Enemy", [500, 40, 10, 4, 25, 100, 20, 100, 35, 10, 100, "front", 100, 10], enemyActionsInit);
 
 Object.freeze(Dark);
 Object.freeze(Electric);
