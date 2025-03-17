@@ -1,4 +1,4 @@
-const allUnits = [];
+let allUnits = [];
 const modifiers = {};
 let modifierId = 1;
 
@@ -7,7 +7,9 @@ function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function unitFilter(team, position, downed = null) {
     return allUnits.filter(unit => {
         const teamMatch = team === '' || unit.team === team;
-        const positionMatch = position === '' || unit.position === position;
+        let positionMatch;
+        if (position === "mid") { positionMatch = unit.base.position === "mid"; }
+        else { positionMatch = position === '' || unit.position === position; }
         let healthMatch = true;
         if (downed === true) { healthMatch = unit.hp <= 0; }
         if (downed === false) { healthMatch = unit.hp > 0; }
@@ -25,6 +27,12 @@ function logAction(message, type = 'info') {
     const entries = logContainer.children;
     while (entries.length > 50) { logContainer.removeChild(entries[0]); }
     logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function resistDebuff(attacker, defenders) {
+    let will= []
+    for (const unit of defenders) { will.push((attacker.presence / (100 - attacker.presence + unit.presence) ) + Math.floor(Math.random() * 100)); }
+    return will;
 }
 
 function applyMod(targets, stat, value, duration) {
@@ -49,26 +57,6 @@ function applyMod(targets, stat, value, duration) {
     }
 }
 
-function getModifiersDisplay() {
-    let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
-    if (Object.keys(modifiers).length === 0) { modDisplay += "<p>No active modifiers</p>"; }
-    else {
-        modDisplay += "<ul class='modifier-list'>";
-        for (const id in modifiers) {
-            const mod = modifiers[id];
-            modDisplay += `<li><span class="modifier-target">${mod.target.map(unit => unit.name).join(", ")}</span>: `;
-            for (let i = 0; i < mod.stat.length; i++) {
-                if (i > 0) modDisplay += ", ";
-                modDisplay += `<span class="modifier-stat">${mod.stat[i]}</span> `;
-                modDisplay += `<span class="modifier-value">${mod.value[i] > 0 ? `+${mod.value[i] * 100}%` : `${mod.value[i] * 100}%`}</span>`;
-            }
-            modDisplay += ` <span class="modifier-duration">(${mod.duration} turns)</span></li>`;
-        }
-    }
-    
-    return modDisplay + "</ul></div>";
-}
-
 function resetStat(unit, statList) {
      for (const stat of statList) {
         if (stat.includes('.')) {
@@ -79,7 +67,6 @@ function resetStat(unit, statList) {
         unit[stat] = unit.base[stat] * Math.max(0.2, unit.mult[stat]);
     }
 }
-
 
 function enemyTurn(unit) {
     const availableActions = {};
@@ -110,8 +97,7 @@ function enemyTurn(unit) {
     for (const action in availableActions) {
         cumulativeWeight += unit.actions.actionWeight[action];
         if (randChoice <= cumulativeWeight) {
-            logAction(`${unit.name} uses ${action}`, "action");
-            unit.actions[action]();
+            unit.actions[action].code();
             break;
         }
     }
@@ -154,7 +140,6 @@ function playerTurn(unit) {
         }
         else {
             const unit = allUnits.find(u => u.name === name);
-            logAction(`${name} uses ${unit.actions[action].name}`, "action");
             if (unit.actions[action].target !== undefined) { unit.actions[action].target(); }
             else {
                 unit.actions[action].code();
@@ -202,7 +187,7 @@ function selectTarget(action, back, target) {
             showMessage(`Please select exactly ${maxSelections} target${maxSelections !== 1 ? 's' : ''}.`, "error", "validation-message", 0);
             return;
         }
-         if (checkboxes.length === 0) {
+        if (checkboxes.length === 0) {
             showMessage('Please select at least one target.', "error", "validation-message", 0);
             return;
         }
@@ -249,7 +234,14 @@ function cleanupGlobalHandlers() {
 
 function attack(attacker, defenders) {
     let hit = [];
-    for (const unit of defenders) { hit.push(10 * (attacker.accuracy / unit.evasion ) + Math.floor(Math.random() * 100 + 1) - 85); }
+    for (const unit of defenders) { 
+        const roll = Math.floor(Math.random() * 100 + 1);
+        if (roll === 1) {
+            hit.push(0);
+            return;
+        }
+        hit.push(10 * ((roll === 100 ? 2 * attacker.accuracy : attacker.accuracy) / unit.evasion ) + roll - 85);
+    }
     if (hit.some((num) => num > 0)){ crit(attacker, defenders, hit); }
     else {logAction(`${attacker.name} misses ${defenders.length === 1 ? defenders[0].name : "all their attacks!"}`, "miss")}
 }
@@ -286,11 +278,11 @@ function damage(attacker, defenders, critical) {
             crit.push(`${defenders[i].name} (${result})`);
             total += result;
         }
-        defenders[i].hp -= result;
+        defenders[i].hp = Math.max(defenders[i].hp - result, 0);
     }
     if (miss.length > 0) { logAction(`${attacker.name} missed ${miss.join(", ")}!`, "miss"); }
     if (hit.length > 0) { logAction(`${attacker.name} hits ${hit.join(", ")}${hit.length > 1 ? ` for a total of ${total} damage!` : '!'}`, "hit"); }
     if (crit.length > 0) { logAction(`${attacker.name} critically hits ${crit.join(", ")}!`, "crit"); }
 }
 
-export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };
+export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };

@@ -1,16 +1,39 @@
-import {Dark, Electric, Servant, ClassicJoy, enemy} from './unitCombatData.js';
-import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, applyMod, getModifiersDisplay, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import {Dark, Electric, Servant, ClassicJoy, enemy, mysticEnemy, technoEnemy, magitechEnemy} from './unitCombatData.js';
+import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
+let wave = 1;
 
 export function startCombat() {
     createUnit(Dark, 'player');
     createUnit(Electric, 'player');
     createUnit(Servant,  'player');
     createUnit(ClassicJoy, 'player')
-    for (let i = 8; i > 0; i--) { createUnit(enemy, 'enemy'); }
+    createUnit(enemy, 'enemy');
+    createUnit(enemy, 'enemy');
+    createUnit(magitechEnemy, 'enemy');
     updateBattleDisplay();
     combatTick();
+}
+
+function getModifiersDisplay() {
+    let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
+    if (Object.keys(modifiers).length === 0) { modDisplay += "<p>No active modifiers</p>"; }
+    else {
+        modDisplay += "<ul class='modifier-list'>";
+        for (const id in modifiers) {
+            const mod = modifiers[id];
+            modDisplay += `<li><span class="modifier-target">${mod.target.map(unit => unit.name).join(", ")}</span>: `;
+            for (let i = 0; i < mod.stat.length; i++) {
+                if (i > 0) modDisplay += ", ";
+                modDisplay += `<span class="modifier-stat">${mod.stat[i]}</span> `;
+                modDisplay += `<span class="modifier-value">${mod.value[i] > 0 ? `+${mod.value[i] * 100}%` : `${mod.value[i] * 100}%`}</span>`;
+            }
+            modDisplay += ` <span class="modifier-duration">(${mod.duration} turns)</span></li>`;
+        }
+    }
+    
+    return modDisplay + "</ul></div>";
 }
 
 function updateBattleDisplay() {
@@ -18,110 +41,116 @@ function updateBattleDisplay() {
     battleDisplay += "<div class='battle-display'>";
     battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
     for (const unit of unitFilter("player", '')) {
-        const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
-        const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
-        const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
             <div class='unit-name'>${unit.name}</div>
-            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
-            <div class='stat-row'>
-                <div class='stat-label'>HP: ${Math.max(0, unit.hp)}/${unit.base.hp}</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
+            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>`
+            if (unit.hp > 0) {
+                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
+                const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
+                const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
+                battleDisplay += `
+                <div class='stat-row'>
+                    <div class='stat-label'>HP: ${Math.max(0, unit.hp)}/${unit.base.hp}</div>
+                    <div class='stat-bar-container'>
+                        <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
+                    </div>
                 </div>
-            </div>
-            <div class='stat-row'>
-                <div class='stat-label'>Stamina: ${Math.floor(unit.resource.stamina)}/${unit.base.resource.stamina}</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
-                </div>
-            </div>`;
-        if (unit.base.resource.mana) {
-            const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
-            battleDisplay += `
-            <div class='stat-row'>
-                <div class='stat-label'>Mana: ${Math.floor(unit.resource.mana)}/${unit.base.resource.mana}</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
-                </div>
-            </div>`;
-        }
-        if (unit.base.resource.energy) {
-            const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
-            battleDisplay += `
-            <div class='stat-row'>
-                <div class='stat-label'>Energy: ${Math.floor(unit.resource.energy)}/${unit.base.resource.energy}</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
-                </div>
-            </div>`;
-        }
-        battleDisplay += `
-            <div class='stat-row'>
-                <div class='stat-label'>Ready: ${unit.timer <= 0 ? 'Yes!' : 'Charging...'}</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
-                </div>
-            </div>
-        </div>`;
+                <div class='stat-row'>
+                    <div class='stat-label'>Stamina: ${Math.floor(unit.resource.stamina)}/${unit.base.resource.stamina}</div>
+                    <div class='stat-bar-container'>
+                        <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
+                    </div>
+                </div>`;
+                if (unit.base.resource.mana) {
+                    const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
+                    battleDisplay += `
+                    <div class='stat-row'>
+                        <div class='stat-label'>Mana: ${Math.floor(unit.resource.mana)}/${unit.base.resource.mana}</div>
+                        <div class='stat-bar-container'>
+                            <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
+                        </div>
+                    </div>`;
+                }
+                if (unit.base.resource.energy) {
+                    const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
+                    battleDisplay += `
+                    <div class='stat-row'>
+                        <div class='stat-label'>Energy: ${Math.floor(unit.resource.energy)}/${unit.base.resource.energy}</div>
+                        <div class='stat-bar-container'>
+                            <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
+                        </div>
+                    </div>`;
+                }
+                battleDisplay += `
+                <div class='stat-row'>
+                    <div class='stat-label'>Ready: ${unit.timer <= 0 ? 'Yes!' : 'Charging...'}</div>
+                    <div class='stat-bar-container'>
+                        <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
+                    </div>
+                </div>`;
+            }
+            battleDisplay += `</div>`;
     }
-    battleDisplay += "</div><div class='team enemy-team'><h2>Enemy Team</h2>";
+    battleDisplay += `</div><div class='team enemy-team'><h2>Enemy Team: Wave ${wave}</h2>`;
     for (const unit of unitFilter("enemy", '')) {
-        const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
-        const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
-        const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
             <div class='unit-name'>${unit.name}</div>
-            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
-            <div class='stat-row'>
-                <div class='stat-label'>HP</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
+            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>`
+            if (unit.hp > 0) {
+                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
+                const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
+                const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
+                battleDisplay += `
+                <div class='stat-row'>
+                    <div class='stat-label'>HP</div>
+                    <div class='stat-bar-container'>
+                        <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
+                    </div>
                 </div>
-            </div>
-            <div class='stat-row'>
-                <div class='stat-label'>Stamina</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
-                </div>
-            </div>`;
-        if (unit.base.resource.mana) {
-            const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
-            battleDisplay += `
-            <div class='stat-row'>
-                <div class='stat-label'>Mana</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
-                </div>
-            </div>`;
-        }
-        if (unit.base.resource.energy) {
-            const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
-            battleDisplay += `
-            <div class='stat-row'>
-                <div class='stat-label'>Energy</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
-                </div>
-            </div>`;
-        }
-        battleDisplay += `
-            <div class='stat-row'>
-                <div class='stat-label'>Ready</div>
-                <div class='stat-bar-container'>
-                    <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
-                </div>
-            </div>
-        </div>`;
+                <div class='stat-row'>
+                    <div class='stat-label'>Stamina</div>
+                    <div class='stat-bar-container'>
+                        <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
+                    </div>
+                </div>`;
+                if (unit.base.resource.mana) {
+                    const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
+                    battleDisplay += `
+                    <div class='stat-row'>
+                        <div class='stat-label'>Mana</div>
+                        <div class='stat-bar-container'>
+                            <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
+                        </div>
+                    </div>`;
+                }
+                if (unit.base.resource.energy) {
+                    const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
+                    battleDisplay += `
+                    <div class='stat-row'>
+                        <div class='stat-label'>Energy</div>
+                        <div class='stat-bar-container'>
+                            <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
+                        </div>
+                    </div>`;
+                }
+                battleDisplay += `
+                <div class='stat-row'>
+                    <div class='stat-label'>Ready: ${unit.timer <= 0 ? 'Yes!' : 'Charging...'}</div>
+                    <div class='stat-bar-container'>
+                        <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
+                    </div>
+                </div>`;
+            }
+            battleDisplay += `</div>`;
     }
     document.getElementById("battle-container").innerHTML = battleDisplay + "</div></div>";
 }
 
 function createUnit(unit, team) {
-    let newUnit = cloneUnit(unit);
+    const newUnit = cloneUnit(unit);
     let name = unit.name;
     let dupe = 1;
-    let filter = allUnits.filter(obj => obj.name.includes(name));
+    const filter = allUnits.filter(obj => obj.name.includes(name));
     while (filter.some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}`; }
     newUnit.name = name;
     if (newUnit.position === "mid") { newUnit.position = "back"; }
@@ -190,16 +219,73 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
-async function combatTick() {
-    updateBattleDisplay();
-    await sleep(500);
+function advanceWave() {
+    let turnId = allUnits[currentTurn].name;
+    switch (wave) {
+        case 1:
+            allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0)))
+            createUnit(enemy, 'enemy');
+            createUnit(enemy, 'enemy');
+            createUnit(magitechEnemy, 'enemy');
+            createUnit(mysticEnemy, 'enemy');
+            createUnit(technoEnemy, 'enemy');
+            currentTurn = allUnits.findIndex(unit => unit.name === turnId);
+            wave +=1;
+            break;
+        case 2:
+            allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0)))
+            createUnit(enemy, 'enemy');
+            createUnit(enemy, 'enemy');
+            createUnit(enemy, 'enemy');
+            createUnit(magitechEnemy, 'enemy');
+            createUnit(mysticEnemy, 'enemy');
+            createUnit(mysticEnemy, 'enemy');
+            createUnit(technoEnemy, 'enemy');
+            createUnit(technoEnemy, 'enemy');
+            currentTurn = allUnits.findIndex(unit => unit.name === turnId);
+            wave += 1;
+            break;
+        case 3:
+        default:
+            return true;
+    }
+}
+
+function frontTest() {
     const playersAlive = unitFilter("player", "front", false);
     const enemiesAlive = unitFilter("enemy", "front", false);
     if (!playersAlive.length || !enemiesAlive.length) {
-        if (playersAlive.length) { showMessage("Victory!", "success", "selection", 0); }
-        else { showMessage("Defeat!", "error", "selection", 0); }
-        return;
+        if (!playersAlive.length) {
+            const midLine = unitFilter("player", "mid", false);
+            if (midLine.length) {
+                for (const unit of midLine) { unit.position = "front"; }
+                logAction(`All player midline units moved to the frontline!`, "turn")
+            }
+            else {
+                showMessage("Defeat!", "error", "selection", 0);
+                return true;
+            }
+        }
+        if (!enemiesAlive.length) {
+            const midLine = unitFilter("enemy", "mid", false);
+            if (midLine.length) {
+                for (const unit of midLine) { unit.actions.switchPosition.code(); }
+                logAction(`All enemy midline units moved to the frontline!`, "turn");
+            }
+            const win = advanceWave();
+            if (win && !unitFilter("enemy", "front", false).length) {
+                showMessage("Victory!", "success", "selection", 0);
+                return true;
+            }
+        }
     }
+}
+
+async function combatTick() {
+    updateBattleDisplay();
+    await sleep(500);
+    if (frontTest()) { return; }
+    if (currentTurn === -1) { currentTurn = 0; }
     let turn;
     while (turn == undefined) {
         for (let i = 0; i < allUnits.length; i++) {
@@ -208,7 +294,7 @@ async function combatTick() {
             unit.timer -= unit.speed;
             if (unit.timer <= 0) {
                 turn = unit;
-                currentTurn = (currentTurn + i) + allUnits.length;
+                currentTurn = (currentTurn + i) % allUnits.length;
                 break;
             }
             updateBattleDisplay();
