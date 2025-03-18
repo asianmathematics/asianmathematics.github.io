@@ -16,7 +16,6 @@ function unitFilter(team, position, downed = null) {
         return teamMatch && positionMatch && healthMatch;
     });
 }
-//function combineUnitArray(arr1, arr2) { return arr1.filter(unit1 => arr2.some(unit2 => unit1.name === unit2.name)); }
 
 function logAction(message, type = 'info') {
     const logContainer = document.getElementById('action-log');
@@ -25,7 +24,8 @@ function logAction(message, type = 'info') {
     logEntry.innerHTML = message;
     logContainer.appendChild(logEntry);
     const entries = logContainer.children;
-    while (entries.length > 50) { logContainer.removeChild(entries[0]); }
+    const maxEntries = window.innerWidth < 800 ? 100 : 250;
+    while (entries.length > maxEntries) { logContainer.removeChild(entries[0]); }
     logContainer.scrollTop = logContainer.scrollHeight;
 }
 
@@ -230,7 +230,6 @@ function cleanupGlobalHandlers() {
     window.exitTargetSelection = null;
     window.handleActionClick = null;
 }
-
 
 function attack(attacker, defenders) {
     let hit = [];

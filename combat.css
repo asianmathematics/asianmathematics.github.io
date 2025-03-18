@@ -1,2 +1,78 @@
-.battle-display,.game-layout,.left-column{gap:20px;display:flex}#battle-container,#selection{background-color:#3a3a3a;box-shadow:0 2px 10px rgba(0,0,0,.3);padding:20px}body{font-family:Arial,sans-serif;max-width:1200px;margin:0 auto;padding:20px;background-color:#2d2d2d}.hit-entry,h1,h2,h3{color:#fff}.game-layout{flex-direction:row;margin-top:20px}.left-column{flex:1;max-width:350px;flex-direction:column}.right-column{flex:2}#battle-container{border-radius:8px;margin-bottom:20px}.battle-display{justify-content:space-between}.team{flex:1;padding:15px;border-radius:5px}.player-team{background-color:#1a365d}.enemy-team{background-color:#5d1a1a}.modifier-list li,.unit{background-color:#4a4a4a}.unit{border:1px solid #555;border-radius:5px;padding:10px;margin-bottom:10px;color:#e0e0e0}.unit.defeated{opacity:.5;background-color:#333}.unit-name{font-weight:700;font-size:.9em;margin-bottom:5px;color:#fff}.unit.back{border-left:4px solid #9c27b0;background-color:#3d2d4a}.unit.back .unit-name{color:#ce93d8}.position-indicator{font-size:.6em;color:#ce93d8;font-style:italic;margin-bottom:5px}.action-button,button#back{color:#fff;padding:10px 15px;cursor:pointer}#selection{border-radius:8px;color:#e0e0e0}.action-button{background-color:#2e7d32;border:none;margin:5px;border-radius:4px;font-size:14px;position:relative}.action-button:hover{background-color:#388e3c}.action-button.disabled{background-color:#555;cursor:not-allowed}form#targetSelection{margin-bottom:15px}form#targetSelection div{margin:10px 0}button#back{background-color:#c62828;border:none;border-radius:4px}.message-container{position:relative;z-index:100;max-width:100%}.message{margin-bottom:10px;padding:12px 16px;border-radius:4px;box-shadow:0 2px 4px rgba(0,0,0,.4);animation:.3s ease-out fadeIn}.info-message{background-color:#1a365d;color:#90caf9}.success-message{background-color:#1b5e20;color:#a5d6a7}.error-message{background-color:#b71c1c;color:#ffcdd2}.warning-message{background-color:#e65100;color:#ffe082}.stat-row{margin-bottom:6px}.stat-label{display:flex;justify-content:space-between;font-size:.7em;margin-bottom:2px}.stat-bar-container{width:100%;height:7px;background-color:#333;border-radius:5px;overflow:hidden}.stat-bar{height:100%;border-radius:3px;transition:width .3s ease-in-out}.hp-bar,.player-team .hp-bar{background-color:#ff5252}.stamina-bar{background-color:#ffd740}.mana-bar{background-color:#448aff}.energy-bar{background-color:#69f0ae}.timer-bar{background-color:#b39ddb}.enemy-team .hp-bar{background-color:#f44336}.unit.defeated .stat-bar{background-color:#555}.modifiers-container{background-color:#3a3a3a;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.3);padding:15px;margin-bottom:20px;color:#e0e0e0}.modifier-list{list-style:none;padding:0}.modifier-list li{margin-bottom:5px;padding:5px;border-radius:4px}.modifier-target{font-weight:700;color:#90caf9}.modifier-stat{color:#ffcc80}.modifier-value{font-weight:700;color:#a5d6a7}.modifier-duration{color:#ef9a9a}.action-button[data-tooltip]:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background-color:#2d2d2d;color:#e0e0e0;padding:5px 10px;border-radius:4px;white-space:pre-line;z-index:1000;width:max-content;max-width:300px;box-shadow:0 2px 10px rgba(0,0,0,.5)}#action-log-container{width:100%}#action-log{background-color:#1a1a1a;color:#e0e0e0;font-family:monospace;border:1px solid #444;padding:10px;height:350px;overflow-y:auto;font-size:14px;line-height:1.4;border-radius:5px;width:100%}.log-entry{margin-bottom:4px;padding:2px 5px;border-radius:3px;word-wrap:break-word}.turn-entry{background-color:#2c3e50;color:#fff;padding:5px;margin-top:5px;border-left:3px solid #3498db}.action-entry{color:#3498db}.miss-entry{color:#95a5a6;font-style:italic}.crit-entry{color:#f39c12;font-weight:700}.buff-entry{color:#2ecc71}.debuff-entry{color:#e67e22}.skip-entry{color:#bdc3c7;font-style:italic}.warning-entry{color:#f1c40f}.info-entry{color:#7f8c8d}@media (max-width:900px){.game-layout{flex-direction:column}.left-column{max-width:100%;order:1}.right-column{order:2}#action-log{height: 200px;}#battle-container{margin-bottom:20px}}@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
-/*.damage-entry{color:#e74c3c;}.defeat-entry{color:#c0392b;font-weight:bold;}.success-entry{color:#27ae60;font-weight:bold;}.error-entry{color:#c0392b;}*/
+.battle-display,.game-layout,.left-column{gap:20px;display:flex}
+#battle-container,#selection{background-color:#3a3a3a;box-shadow:0 2px 10px rgba(0,0,0,.3);padding:20px}
+body{font-family:Arial,sans-serif;max-width:1200px;margin:0 auto;padding:20px;background-color:#2d2d2d}
+.hit-entry,h1,h2,h3{color:#fff}
+.game-layout{flex-direction:row;margin-top:20px}
+.left-column{flex:1;max-width:350px;flex-direction:column}
+.right-column{flex:2}
+#battle-container{border-radius:8px;margin-bottom:20px}
+.battle-display{justify-content:space-between}
+.team{flex:1;padding:15px;border-radius:5px}
+.player-team{background-color:#1a365d}
+.enemy-team{background-color:#5d1a1a}
+.modifier-list li,.unit{background-color:#4a4a4a}
+.unit{border:1px solid #555;border-radius:5px;padding:10px;margin-bottom:10px;color:#e0e0e0}
+.unit.defeated{opacity:.5;background-color:#333}
+.unit-name{font-weight:700;font-size:.9em;margin-bottom:5px;color:#fff}
+.unit.back{border-left:4px solid #9c27b0;background-color:#3d2d4a}
+.unit.back .unit-name{color:#ce93d8}
+.position-indicator{font-size:.6em;color:#ce93d8;font-style:italic;margin-bottom:5px}
+.action-button,button#back{color:#fff;padding:10px 15px;cursor:pointer}
+#selection{border-radius:8px;color:#e0e0e0}
+.action-button{background-color:#2e7d32;border:none;margin:5px;border-radius:4px;font-size:14px;position:relative}
+.action-button:hover{background-color:#388e3c}
+.action-button.disabled{background-color:#555;cursor:not-allowed}
+form#targetSelection{margin-bottom:15px}
+form#targetSelection div{margin:10px 0}
+button#back{background-color:#c62828;border:none;border-radius:4px}
+.message-container{position:relative;z-index:100;max-width:100%}
+.message{margin-bottom:10px;padding:12px 16px;border-radius:4px;box-shadow:0 2px 4px rgba(0,0,0,.4);animation:.3s ease-out fadeIn}
+.info-message{background-color:#1a365d;color:#90caf9}
+.success-message{background-color:#1b5e20;color:#a5d6a7}
+.error-message{background-color:#b71c1c;color:#ffcdd2}
+.warning-message{background-color:#e65100;color:#ffe082}
+.stat-row{margin-bottom:6px}
+.stat-label{display:flex;justify-content:space-between;font-size:.7em;margin-bottom:2px}
+.stat-bar-container{width:100%;height:7px;background-color:#333;border-radius:5px;overflow:hidden}
+.stat-bar{height:100%;border-radius:3px;transition:width .3s ease-in-out}
+.hp-bar,.player-team .hp-bar{background-color:#ff5252}
+.stamina-bar{background-color:#ffd740}
+.mana-bar{background-color:#448aff}
+.energy-bar{background-color:#69f0ae}
+.timer-bar{background-color:#b39ddb}
+.enemy-team .hp-bar{background-color:#f44336}
+.unit.defeated .stat-bar{background-color:#555}
+.modifiers-container{background-color:#3a3a3a;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.3);padding:15px;margin-bottom:20px;color:#e0e0e0}
+.modifier-list{list-style:none;padding:0}
+.modifier-list li{margin-bottom:5px;padding:5px;border-radius:4px}
+.modifier-target{font-weight:700;color:#90caf9}
+.modifier-duration{color:#ef9a9a}
+.action-button[data-tooltip]:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background-color:#2d2d2d;color:#e0e0e0;padding:5px 10px;border-radius:4px;white-space:pre-line;z-index:1000;width:max-content;max-width:300px;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#action-log-container{width:100%}#action-log{background-color:#1a1a1a;color:#e0e0e0;font-family:monospace;border:1px solid #444;padding:10px;height:350px;overflow-y:auto;font-size:14px;line-height:1.4;border-radius:5px;width:100%}
+.log-entry{margin-bottom:4px;padding:2px 5px;border-radius:3px;word-wrap:break-word}
+.turn-entry{background-color:#2c3e50;color:#fff;padding:5px;margin-top:5px;border-left:3px solid #3498db}
+.action-entry{color:#3498db}
+.miss-entry{color:#95a5a6;font-style:italic}
+.crit-entry{color:#f39c12;font-weight:700}
+.buff-entry{color:#2ecc71}
+.debuff-entry{color:#e67e22}
+.skip-entry{color:#bdc3c7;font-style:italic}
+.warning-entry{color:#f1c40f}
+.info-entry{color:#7f8c8d}
+@media (max-width:900px){
+    .game-layout{flex-direction:column}
+    .left-column{max-width:100%;order:1}
+    .right-column{order:2}
+    #action-log{height:200px;}
+    #battle-container{margin-bottom:20px}
+}
+@keyframes fadeIn{
+    from{opacity:0;transform:translateY(-20px)}
+    to{opacity:1;transform:translateY(0)}
+}
+/*.modifier-stat{color:#ffcc80}
+.modifier-value{font-weight:700;color:#a5d6a7}
+.damage-entry{color:#e74c3c;}
+.defeat-entry{color:#c0392b;font-weight:bold;}
+.success-entry{color:#27ae60;font-weight:bold;}
+.error-entry{color:#c0392b;}*/

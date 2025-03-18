@@ -207,45 +207,29 @@ function updateMod(unit) {
 }
 
 function regenerateResources(unit) {
-    if (!unit.previousAction[0]) {
-        unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen)));
-    }
-    if (unit.base.resource.mana && !unit.previousAction[1]) {
-        unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen)));
-    }
-    if (unit.base.resource.energy && !unit.previousAction[2]) {
-        unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen)));
-    }
+    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen))); }
+    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen))); }
+    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen))); }
     unit.previousAction = [false, false, false];
 }
 
 function advanceWave() {
     let turnId = allUnits[currentTurn].name;
+    if (wave < 3) { allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))) }
     switch (wave) {
-        case 1:
-            allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0)))
-            createUnit(enemy, 'enemy');
-            createUnit(enemy, 'enemy');
-            createUnit(magitechEnemy, 'enemy');
-            createUnit(mysticEnemy, 'enemy');
-            createUnit(technoEnemy, 'enemy');
-            currentTurn = allUnits.findIndex(unit => unit.name === turnId);
-            wave +=1;
-            break;
         case 2:
-            allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0)))
             createUnit(enemy, 'enemy');
+            createUnit(mysticEnemy, 'enemy');
+            createUnit(technoEnemy, 'enemy');
+        case 1:
             createUnit(enemy, 'enemy');
             createUnit(enemy, 'enemy');
             createUnit(magitechEnemy, 'enemy');
             createUnit(mysticEnemy, 'enemy');
-            createUnit(mysticEnemy, 'enemy');
-            createUnit(technoEnemy, 'enemy');
             createUnit(technoEnemy, 'enemy');
             currentTurn = allUnits.findIndex(unit => unit.name === turnId);
             wave += 1;
             break;
-        case 3:
         default:
             return true;
     }
@@ -254,29 +238,28 @@ function advanceWave() {
 function frontTest() {
     const playersAlive = unitFilter("player", "front", false);
     const enemiesAlive = unitFilter("enemy", "front", false);
-    if (!playersAlive.length || !enemiesAlive.length) {
-        if (!playersAlive.length) {
-            const midLine = unitFilter("player", "mid", false);
-            if (midLine.length) {
-                for (const unit of midLine) { unit.position = "front"; }
-                logAction(`All player midline units moved to the frontline!`, "turn")
-            }
-            else {
-                showMessage("Defeat!", "error", "selection", 0);
-                return true;
-            }
+    if (playersAlive.length && enemiesAlive.length) {return;}
+    if (!playersAlive.length) {
+        const midLine = unitFilter("player", "mid", false);
+        if (midLine.length) {
+            for (const unit of midLine) { unit.actions.switchPosition.code(); }
+            logAction(`All player midline units moved to the frontline!`, "turn")
         }
-        if (!enemiesAlive.length) {
-            const midLine = unitFilter("enemy", "mid", false);
-            if (midLine.length) {
-                for (const unit of midLine) { unit.actions.switchPosition.code(); }
-                logAction(`All enemy midline units moved to the frontline!`, "turn");
-            }
-            const win = advanceWave();
-            if (win && !unitFilter("enemy", "front", false).length) {
-                showMessage("Victory!", "success", "selection", 0);
-                return true;
-            }
+        else {
+            showMessage("Defeat!", "error", "selection", 0);
+            return true;
+        }
+    }
+    if (!enemiesAlive.length) {
+        const midLine = unitFilter("enemy", "mid", false);
+        if (midLine.length) {
+            for (const unit of midLine) { unit.actions.switchPosition.code(); }
+            logAction(`All enemy midline units moved to the frontline!`, "turn");
+        }
+        const win = advanceWave();
+        if (win && !unitFilter("enemy", "front", false).length) {
+            showMessage("Victory!", "success", "selection", 0);
+            return true;
         }
     }
 }
