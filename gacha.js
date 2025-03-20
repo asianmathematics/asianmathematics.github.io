@@ -59,8 +59,7 @@ function rateup(rarity, i = 1, star = 0) {
 }
 
 function assignUnits(banner, star) {
-    let bannerArray = eval(banner);
-    let unitPool = bannerArray[star];
+    let unitPool = banner[star];
     return unitPool[Math.floor(Math.random() * unitPool.length)];
 }
 
