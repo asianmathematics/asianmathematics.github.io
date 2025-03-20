@@ -19,13 +19,14 @@
     </div>
     <script type="module">
         import { gacha } from './gacha.js';
+        import { protoBanner } from './banner.js';
         
         window.gachaFunc = gacha;
+        window.protoBanner = protoBanner;
         
-        // applies onclick to buttons
-        document.getElementById('pull10').addEventListener('click', function() {window.gachaFunc("protoBanner", 10, 1);});
-        document.getElementById('pull100').addEventListener('click', function() {window.gachaFunc("protoBanner", 100, 10, 1);});
-        document.getElementById('pull1000').addEventListener('click', function() {window.gachaFunc("protoBanner", 1000, 100, 10, 1);});
+        document.getElementById('pull10').addEventListener('click', function() {window.gachaFunc(protoBanner, 10, 1);});
+        document.getElementById('pull100').addEventListener('click', function() {window.gachaFunc(protoBanner, 100, 10, 1);});
+        document.getElementById('pull1000').addEventListener('click', function() {window.gachaFunc(protoBanner, 1000, 100, 10, 1);});
         
         // console.log('Event listeners set up successfully');
     </script>
