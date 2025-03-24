@@ -8,4 +8,4 @@ const protoBanner = {
 
 Object.freeze(protoBanner);
 
-export default protoBanner;
+export { protoBanner };
