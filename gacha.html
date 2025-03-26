@@ -3,7 +3,11 @@
 <head>
     <style>
         body {background-color: black; color: white; font-family: 'Lucida Console', Monaco, 'Courier New', Courier, monospace; font-size: 24px;}
-        button {height: 3em; width: 5.5em; text-align: center; display: inline-block; font-size: 1.25em; margin: .1em .25em; cursor: pointer;}
+        button {height: 3em; width: auto; padding: 0 1em; text-align: center; display: inline-block; font-size: 1.25em; margin: .2em; cursor: pointer; border-radius: 5px; border: none;}
+        #field10 {background-color: #4CAF50; color: white;}
+        #field100 {background-color: #2196F3; color: white;}
+        #squad1 {background-color: #FF9800; color: black;}
+        #squad10 {background-color: #9C27B0; color: white;}
     </style>
     <meta charset="UTF-8"/>
     <title>Gacha Game</title>
@@ -12,23 +16,20 @@
     <h1 style="font-size: 3em; text-align: center;">LET'S GO GAMBLING!!!</h1>
     <br>
     <p style="text-align: center;" id="results">Results will appear here</p>
-    <div style="display: flex; justify-content: center;">
-        <button id="pull10" style="background-color: gray; color: green;">10x pull</button>
-        <button id="pull100" style="background-color: green; color: blue;">100x pull</button>
-        <button id="pull1000" style="background-color: blue; color: purple;">1000x pull</button>
+    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+        <button id="field10">Field pull x10</button>
+        <button id="field100">Field pull x100</button>
+        <button id="squad1">Squad pull x1</button>
+        <button id="squad10">Squad pull x10</button>
     </div>
     <script type="module">
         import { gacha } from './gacha.js';
-        import { protoBanner } from './banner.js';
+        import { protoField, protoSquad } from './banner.js';
         
-        window.gachaFunc = gacha;
-        window.protoBanner = protoBanner;
-        
-        document.getElementById('pull10').addEventListener('click', function() {window.gachaFunc(protoBanner, 10, 1);});
-        document.getElementById('pull100').addEventListener('click', function() {window.gachaFunc(protoBanner, 100, 10, 1);});
-        document.getElementById('pull1000').addEventListener('click', function() {window.gachaFunc(protoBanner, 1000, 100, 10, 1);});
-        
-        // console.log('Event listeners set up successfully');
+        document.getElementById('field10').addEventListener('click', function() { gacha(protoField, 10, 1); });
+        document.getElementById('field100').addEventListener('click', function() { gacha(protoField, 100, 15, 2); });
+        document.getElementById('squad1').addEventListener('click', function() { gacha(protoSquad, 1, 0, 1); });
+        document.getElementById('squad10').addEventListener('click', function() { gacha(protoSquad, 10, 0, 10, 1); });
     </script>
 </body>
 </html>

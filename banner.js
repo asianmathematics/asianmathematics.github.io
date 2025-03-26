@@ -1,11 +1,60 @@
-const protoBanner = {
-    oneStar: ["Artificial", "Human", "Exotic", "Darkener", "Techno", "Mystic", "Goner"],
-    twoStar: ["class 1", "class 2", "class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiments"],
-    threeStar: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dark", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
-    fourStar: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past (Time Guardian)", "Present (Time Guardian)", "Future (Time Guardian)", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
-    fiveStar: ["Creator (Generic)", "Dark (Space)", "RhIme", "R. Random", "Green Knight"],
+const protoField = {
+    oneStar: {
+        rate: 0.70,
+        units: ["Artificial", "Human", "Exotic", "Darkener", "Techno", "Mystic", "Goner"],
+        rates: [1, 1, 1, 1, 1, 1, 1]
+    },
+    twoStar: {
+        rate: 0.28,
+        units: ["class 1", "class 2", "class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiments"],
+        rates: [1, 1, 1, 1, 1, 1, 1]
+    },
+    threeStar: {
+        rate: 0.015,
+        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dark", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
+        rates: Array(15).fill(1)
+    },
+    fourStar: {
+        rate: 0.005,
+        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past (Time Guardian)", "Present (Time Guardian)", "Future (Time Guardian)", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
+        rates: Array(15).fill(1)
+    },
+    fiveStar: {
+        rate: 0,
+        units: [],
+        rates: []
+    }
 };
 
-Object.freeze(protoBanner);
+const protoSquad = {
+    oneStar: {
+        rate: 0,
+        units: [],
+        rates: []
+    },
+    twoStar: {
+        rate: 0,
+        units: [],
+        rates: []
+    },
+    threeStar: {
+        rate: 0.72,
+        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dark", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
+        rates: Array(15).fill(1)
+    },
+    fourStar: {
+        rate: 0.25,
+        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past (Time Guardian)", "Present (Time Guardian)", "Future (Time Guardian)", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
+        rates: Array(15).fill(1)
+    },
+    fiveStar: {
+        rate: 0.03,
+        units: ["Creator (Generic)", "Dark (Space)", "RhIme", "R. Random", "Green Knight"],
+        rates: [1, 1, 1, 1, 1]
+    }
+};
 
-export { protoBanner };
+Object.freeze(protoField);
+Object.freeze(protoSquad);
+
+export { protoField, protoSquad };
