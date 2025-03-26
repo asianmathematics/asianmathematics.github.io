@@ -58,7 +58,7 @@ function guarantee(banner, i, fivestar, fourstar, threestar, twostar) {
                     return "fourStar";
                 case (star !== "fourStar" && star !== "fiveStar" && i <= threestar):
                     return "threeStar";
-                case (star !== "threeStar" && star !== "fourStar" && star !== "fiveStar" && i <= fivestar):
+                case (star !== "threeStar" && star !== "fourStar" && star !== "fiveStar" && i <= twostar):
                     return "twoStar";
                 default:
                     return star; 
