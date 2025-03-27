@@ -6,7 +6,7 @@ const protoField = {
     },
     twoStar: {
         rate: 0.28,
-        units: ["class 1", "class 2", "class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiments"],
+        units: ["Class 1", "Class 2", "Class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiments"],
         rates: [1, 1, 1, 1, 1, 1, 1]
     },
     threeStar: {
