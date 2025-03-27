@@ -6,8 +6,8 @@
         button {height: 3em; width: auto; padding: 0 1em; text-align: center; display: inline-block; font-size: 1.25em; margin: .2em; cursor: pointer; border-radius: 5px; border: none;}
         #field10 {background-color: #4CAF50; color: white;}
         #field100 {background-color: #2196F3; color: white;}
-        #squad1 {background-color: #FF9800; color: black;}
-        #squad10 {background-color: #9C27B0; color: white;}
+        #squad1 {background-color: #9C27B0; color: black;}
+        #squad10 {background-color: #FF9800; color: white;}
     </style>
     <meta charset="UTF-8"/>
     <title>Gacha Game</title>
@@ -15,12 +15,15 @@
 <body>
     <h1 style="font-size: 3em; text-align: center;">LET'S GO GAMBLING!!!</h1>
     <br>
-    <p style="text-align: center;" id="results">Results will appear here</p>
     <div style="display: flex; justify-content: center; flex-wrap: wrap;">
         <button id="field10">Field pull x10</button>
         <button id="field100">Field pull x100</button>
         <button id="squad1">Squad pull x1</button>
         <button id="squad10">Squad pull x10</button>
+    </div>
+    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+        <div id="results" style="margin: 0 20px;">Results will appear here</div>
+        <div id="collection" style="margin: 0 20px;">Collection will appear here</div>
     </div>
     <script type="module">
         import { gacha } from './gacha.js';

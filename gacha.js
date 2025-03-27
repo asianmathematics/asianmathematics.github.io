@@ -38,9 +38,13 @@ export function gacha(banner, pull, twostar = 0, threestar = 0, fourstar = 0, fi
     }
     const results = "One Star: " + stars[0] + "<br>Two Star: " + stars[1] + "<br>Three Star: " + stars[2] + "<br>Four Star: " + stars[3] + "<br>Five Star: " + stars[4];
     console.log("Results:", stars[0], stars[1], stars[2], stars[3], stars[4]);
-    primativeUnitList.forEach((x) => completeUnitList[x] = (completeUnitList[x] || 0) + 1);
+    primativeUnitList.forEach((x) => {
+        completeUnitList[x] = (completeUnitList[x] || 0) + 1;
+        unitData[x].count += + 1;
+    });
     console.log(completeUnitList);
     document.getElementById("results").innerHTML = results + "<br>" + unitDisplay(completeUnitList, banner, stars);
+    document.getElementById("collection").innerHTML = "<b>Collection:</b><br>" + collectionDisplay();
 }
 
 function guarantee(banner, i, fivestar, fourstar, threestar, twostar) {
@@ -58,7 +62,7 @@ function guarantee(banner, i, fivestar, fourstar, threestar, twostar) {
                     return "fourStar";
                 case (star !== "fourStar" && star !== "fiveStar" && i <= threestar):
                     return "threeStar";
-                case (star !== "threeStar" && star !== "fourStar" && star !== "fiveStar" && i <= fivestar):
+                case (star !== "threeStar" && star !== "fourStar" && star !== "fiveStar" && i <= twostar):
                     return "twoStar";
                 default:
                     return star; 
@@ -82,26 +86,36 @@ function assignUnits(banner, star) {
     return list[list.length -1];
 }
 
-function unitDisplay(obj, banner, stars) {
+function collectionDisplay() {
     const colors = ['white', 'green', 'blue', 'purple', 'gold'];
     let html = '<div>';
-    for (let i = 0; i < stars.length; i++) {
-        const starLevel = i + 1;
-        html += `<p style="margin: 1px; font-size: .75em;"><b style="color: ${colors[i]}">${starLevel} Star:</b> ${stars[i]}</p>`;
+    const collectedUnits = Object.entries(unitData)
+        .filter(([_, data]) => data.count > 0)
+        .sort(([aName, aData], [bName, bData]) => {
+            return bData.rarity - aData.rarity || aName.localeCompare(bName);
+        });
+    for (const [unit, data] of collectedUnits) {
+        const rarityIndex = data.rarity - 1;
+        html += `<p style="margin: 1px; font-size: .75em;">
+            <b style="color: ${colors[rarityIndex]}">${unit}:</b> ${data.count}
+        </p>`;
     }
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            let starLevel = 0;
-            const bannerArrays = ["oneStar", "twoStar", "threeStar", "fourStar", "fiveStar"];
-            for (let i = 0; i < bannerArrays.length; i++) {
-                if (banner[bannerArrays[i]].units.includes(key)) {
-                    starLevel = i;
-                    break;
-                }
-            }
-            html += `<p style="margin: 1px; font-size: .75em;"><b style="color: ${colors[starLevel]}">${key}:</b> ${obj[key]}</p>`;
-        }
+    return html + '</div>';
+}
+
+function unitDisplay(obj, banner) {
+    const colors = ['white', 'green', 'blue', 'purple', 'gold'];
+    let html = '<div>';
+    const sortedUnits = Object.keys(obj).sort((a, b) => {
+        const aRarity = unitData[a].rarity;
+        const bRarity = unitData[b].rarity;
+        return bRarity - aRarity || a.localeCompare(b);
+    });
+    for (const key of sortedUnits) {
+        const rarityIndex = unitData[key].rarity - 1;
+        html += `<p style="margin: 1px; font-size: .75em;">
+            <b style="color: ${colors[rarityIndex]}">${key}:</b> ${obj[key]}
+        </p>`;
     }
-    html += '</div>';
-    return html;
+    return html + '</div>';
 }

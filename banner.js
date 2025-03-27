@@ -6,7 +6,7 @@ const protoField = {
     },
     twoStar: {
         rate: 0.28,
-        units: ["class 1", "class 2", "class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiments"],
+        units: ["Class 1", "Class 2", "Class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiment"],
         rates: [1, 1, 1, 1, 1, 1, 1]
     },
     threeStar: {
@@ -16,7 +16,7 @@ const protoField = {
     },
     fourStar: {
         rate: 0.005,
-        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past (Time Guardian)", "Present (Time Guardian)", "Future (Time Guardian)", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
+        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
         rates: Array(15).fill(1)
     },
     fiveStar: {
@@ -44,12 +44,12 @@ const protoSquad = {
     },
     fourStar: {
         rate: 0.25,
-        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past (Time Guardian)", "Present (Time Guardian)", "Future (Time Guardian)", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
+        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
         rates: Array(15).fill(1)
     },
     fiveStar: {
         rate: 0.03,
-        units: ["Creator (Generic)", "Dark (Space)", "RhIme", "R. Random", "Green Knight"],
+        units: ["Creator (Generic)", "Dark (Space)", "Fate", "R. Random", "Green Knight"],
         rates: [1, 1, 1, 1, 1]
     }
 };
