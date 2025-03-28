@@ -86,7 +86,7 @@ function assignUnits(banner, star) {
     return list[list.length -1];
 }
 
-function collectionDisplay() {
+export function collectionDisplay() {
     const colors = ['white', 'green', 'blue', 'purple', 'gold'];
     let html = '<div>';
     const collectedUnits = Object.entries(unitData)

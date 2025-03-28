@@ -1,4 +1,4 @@
-import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
 
 class Unit {
     constructor(name, stat, actionsInit) {
@@ -50,6 +50,55 @@ class Unit {
     }
 }
 
+const dodgeAction = {
+    name: "Dodge [physical]",
+    description: "Increases evasion for 1 turn",
+    code: function() {
+        this.previousAction = [true, false, false];
+        createMod("Dodge", "Evasion increased",
+            { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
+            (vars) => {
+                    vars.caster.mult[vars.stat] += vars.value;
+                    resetStat(vars.caster, [vars.stat]);
+                logAction(`${vars.caster.name} dodges.`, "buff");
+            },
+            (vars, unit) => {
+                if (vars.caster === unit) {
+                    vars.targets.forEach(unit => {
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
+                    });
+                    return true;
+                }
+            }
+        );
+    }
+};
+
+const blockAction = {
+    name: "Block",
+    description: "Increases defense for 1 turn",
+    code: function() {
+        createMod("Block", "Defense increased",
+            { caster: this, targets: [this], duration: 1, stat: "defense", value: 1 },
+            (vars) => {
+                vars.caster.mult[vars.stat] += vars.value;
+                resetStat(vars.caster, [vars.stat]);
+                logAction(`${vars.caster.name} blocks.`, "buff");
+            },
+            (vars, unit) => {
+                if (vars.caster === unit) {
+                    vars.targets.forEach(unit => {
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
+                    });
+                    return true;
+                }
+            }
+        );
+    }
+};
+
 const darkActionsInit = function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
@@ -76,13 +125,36 @@ const darkActionsInit = function() {
         code: (target) => {
             this.resource.mana -= 20;
             this.previousAction = [true, true, false];
-            applyMod([this], ["evasion"], [1], 1);
             this.attack *= 2;
             this.accuracy *= 1.5;
             logAction(`${this.name} focus fires on ${target[0].name}!`, "action")
             attack(this, target);
             attack(this, target);
             resetStat(this, ["attack", "accuracy"]);
+            const self = this;
+            const modifier = createMod("Shoot 'em Up Evasion", "Temporary evasion boost",
+                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [1] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                    logAction(`${vars.caster.name}'s evasion surges!`, "buff");
+                },
+                (vars, unit) => {
+                    if(vars.caster === unit) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                    }
+                }
+            );
         }
     };
     this.actions.bulletHell = {
@@ -96,7 +168,6 @@ const darkActionsInit = function() {
             }
             this.resource.mana -= 40;
             this.previousAction = [false, true, false];
-            applyMod([this], ["evasion"], [-.5], 1);
             this.attack *= .5;
             this.accuracy *= .75;
             logAction(`${this.name} shoots some damaku!`, "action")
@@ -104,6 +175,29 @@ const darkActionsInit = function() {
             while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target, true)) }
             for (let i = 8; i > 0; i--) { attack(this, target); }
             resetStat(this, ["attack", "accuracy"]);
+            const self = this;
+            createMod("Evasion Penalty", "Evasion reduced during bullet hell",
+                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if(vars.caster === unit) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                    }
+                }
+            );
         }
     };
     this.actions.dispelMagic = {
@@ -132,15 +226,11 @@ const darkActionsInit = function() {
             }
             else { logAction(`${target[0].name} has no magic to dispel!`, "warning"); }
         }
-      };
+    };
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
-        code: () => {
-            this.previousAction = [true, false, false];
-            logAction(`${this.name} dodges.`, "buff");
-            applyMod([this], ["evasion"], [2], 1);
-        }
+        name: dodgeAction.name,
+        description: dodgeAction.description,
+        code: dodgeAction.code.bind(this)
     };
 };
 
@@ -182,7 +272,30 @@ const electricActionsInit = function() {
             this.resource.energy -= 40;
             this.previousAction = [false, false, true];
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
-            applyMod(target, ["speed", "presence"], [0.5, 0.7], 3);
+            const self = this;
+            createMod("Sick Beats Buff", "Rhythmic performance enhancement",
+                { caster: self, targets: target, duration: 3, stats: ["speed", "presence"], values: [0.5, 0.7] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if(vars.targets.includes(unit)) {
+                        vars.duration--;
+                        if(vars.duration <= 0) {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        return true;
+                        }
+                    }
+                }
+            );
         }
     };
     this.actions.recharge = {
@@ -201,21 +314,14 @@ const electricActionsInit = function() {
         }
     };
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
-        code: () => {
-            this.previousAction = [true, false, false];
-            logAction(`${this.name} dodges.`, "buff");
-            applyMod([this], ["evasion"], [2], 1);
-        }
+        name: dodgeAction.name,
+        description: dodgeAction.description,
+        code: dodgeAction.code.bind(this)
     };
     this.actions.block = {
-        name: "Block",
-        description: "Increases defense for 1 turn",
-        code: () => {
-            logAction(`${this.name} blocks.`, "buff");
-            applyMod([this], ["defense"], [1], 1);
-        }
+        name: blockAction.name,
+        description: blockAction.description,
+        code: blockAction.code.bind(this)
     };
 };
 
@@ -255,50 +361,83 @@ const servantActionsInit = function() {
         cost: { stamina: 45 },
         description: "Costs 45 stamina\nLowers presence and increases accuracy and crit for 1 turns",
         code: () => {
-          if (this.resource.stamina < 45) {
-            showMessage("Not enough stamina!", "error", "selection");
-            return;
-          }
-          this.resource.stamina -= 45;
-          this.previousAction = [true, false, false];
-          applyMod([this], ["presence", "accuracy", "crit", "lethality"], [-0.5, 0.5, 0.9, 1], 1);
-        }
-      };
-    this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
-        code: () => {
+            if (this.resource.stamina < 45) {
+                showMessage("Not enough stamina!", "error", "selection");
+                return;
+            }
+            this.resource.stamina -= 45;
             this.previousAction = [true, false, false];
-            logAction(`${this.name} dodges.`, "buff");
-            applyMod([this], ["evasion"], [2], 1);
+            const self = this;
+            createMod("Sharp Focus Adjustment", "Combat focus modification",
+                { caster: self, targets: [self], duration: 1, stats: ["presence", "accuracy", "crit", "lethality"], values: [-0.5, 0.5, 0.9, 1] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                    logAction(`${vars.caster.name} enters a hyper-focused state!`, "buff");
+                },
+                (vars, unit) => {
+                    if(vars.caster === unit) {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] -= vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                        return true;
+                    }
+                }
+            );
         }
     };
+    this.actions.dodge = {
+        name: dodgeAction.name,
+        description: dodgeAction.description,
+        code: dodgeAction.code.bind(this)
+    };
     this.actions.block = {
-        name: "Block",
-        description: "Increases defense for 1 turn",
-        code: () => {
-            logAction(`${this.name} blocks.`, "buff");
-            applyMod([this], ["defense"], [1], 1);
-        }
+        name: blockAction.name,
+        description: blockAction.description,
+        code: blockAction.code.bind(this)
     };
 };
 
 const classicJoyActionsInit = function() {
     this.actions.rapidFire = {
         name: "Rapid Fire [techno]",
-        description: "Costs 20 energy\nAttacks a single target twice but increases speed by 40% for 1 turn",
+        description: "Attacks a single target twice but increases speed by 40% for 1 turn",
         target: () => {
-        selectTarget(this.actions.rapidFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.rapidFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (targets) => {
-          this.resource.energy -= 20;
-          this.previousAction = [false, false, true];
-          attack(this, targets);
-          attack(this, targets);
-          applyMod([this], ["speed"], [0.4], 1);
-          logAction(`${this.name} performs a Rapid Fire, boosting speed for 1 turn!`, "buff");
+            this.previousAction = [false, false, true];
+            attack(this, targets);
+            attack(this, targets);
+            logAction(`${this.name} performs a Rapid Fire, boosting speed for 1 turn!`, "buff");
+            const self = this;
+            createMod("Rapid Fire Speed", "Temporary speed boost",
+                { caster: self, targets: [self], duration: 1, stats: ["speed"], values: [0.4] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if(vars.caster === unit) {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] -= vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                        return true;
+                    }
+                }
+            );
         }
-      };
+    };
     this.actions.semiAutomatic = {
         name: "Energy Rifle [energy]",
         cost: { energy: 30 },
@@ -311,7 +450,7 @@ const classicJoyActionsInit = function() {
             selectTarget(this.actions.semiAutomatic, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
-            this.resource.energy -= 35;
+            this.resource.energy -= 30;
             this.previousAction = [false, false, true];
             this.accuracy *= 2;
             this.lethality *= 2.2;
@@ -361,7 +500,7 @@ const classicJoyActionsInit = function() {
     this.actions.joy = {
         name: "Joy [stamina]",
         cost: { stamina: 40 },
-        description: "Costs 40 stamina & 50 HP\nWas it worth it?",
+        description: "Costs 40 stamina & 50 HP\nDelayed consequences",
         target: () => {
             if (this.resource.stamina < 40) {
                 showMessage("Not enough stamina!", "error", "selection");
@@ -371,11 +510,44 @@ const classicJoyActionsInit = function() {
         },
         code: (target) => {
             this.resource.stamina -= 40;
-            this.previousAction = [true, false, false];
             this.hp = Math.max(this.hp - 50, 0);
-            logAction(`${this.name} gave ${target[0].name} Joy. He will never live it down`, "warning");
-            applyMod(target, ["accuracy", "crit", "defense", "resist", "pierce", "attack", "evasion", "speed", "accuracy"], [0.5, 0.4, 1, 0.4, 0.3, 0.25, 0.25, 0.1, 0.25], 3);
-            applyMod(target, ["attack", "defense", "evasion", "speed", "accuracy"], [-0.25, -0.4, -0.25, -0.1, -0.25], 9);
+            const self = this;
+            createMod("Joy", "Overall increase?",
+                { caster: self, targets: target, duration: 9, buffs: ["accuracy", "crit", "defense", "resist", "pierce"], buffValues: [0.25, 0.4, 0.6, 0.4, 0.3], debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: [-0.25, -0.4, -0.25, -0.1, -0.25], self: null },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.buffs.forEach((stat, i) => {
+                            unit.mult[stat] += vars.buffValues[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                    logAction(`${vars.caster.name} gives ${vars.targets[0].name} some joy!`, "buff");
+                    vars.self = modifier;
+                },
+                (vars, unit) => {
+                    if (vars.targets[0] === unit) { vars.duration--; }
+                    if (vars.duration === 6) {
+                        vars.targets.forEach(unit => {
+                            vars.buffs.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.buffValues[i];
+                                resetStat(unit, [stat]);
+                            });
+                            vars.debuffs.forEach((stat, i) => {
+                                unit.mult[stat] += vars.debuffValues[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        logAction(`${vars.targets[0].name} is feeling the side effects!`, "debuff");
+                        vars.self.description = "Long side effect period";
+                    }
+                    if (vars.duration === 0) {
+                        vars.debuffs.forEach((stat, i) => {
+                            unit.mult[stat] -= vars.debuffValues[i];
+                            resetStat(unit, [stat]);
+                        });
+                        return true;
+                    }
+            });
         }
     };
 };
@@ -408,21 +580,14 @@ const enemyActionsInit = function() {
         }
     };
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
-        code: () => {
-            this.previousAction = [true, false, false];
-            logAction(`${this.name} dodges.`, "buff");
-            applyMod([this], ["evasion"], [2], 1);
-        }
+        name: dodgeAction.name,
+        description: dodgeAction.description,
+        code: dodgeAction.code.bind(this)
     };
     this.actions.block = {
-        name: "Block",
-        description: "Increases defense for 1 turn",
-        code: () => {
-            logAction(`${this.name} blocks.`, "buff");
-            applyMod([this], ["defense"], [1], 1);
-        }
+        name: blockAction.name,
+        description: blockAction.description,
+        code: blockAction.code.bind(this)
     };
     this.actions.actionWeight = { basicAttack: 0.25, strongAttack: 0.6, dodge: 0.1, block: 0.05 };
 };
@@ -445,17 +610,36 @@ const mysticEnemyActionsInit = function() {
     this.actions.curseField = {
         name: "Curse Field [mana]",
         cost: { mana: 40 },
-        description: "Costs 40 mana\nReduces accuracy and evasion of all front-line enemies for 2 turns",
+        description: "Costs 40 mana\nReduces accuracy and evasion of all front-line enemies",
         code: () => {
-            this.previousAction = [false, true, false];
             this.resource.mana -= 40;
-            logAction(`${this.name} casts Curse Field!`, "action");
-            const target = unitFilter("player", "front", false);
-            const will = resistDebuff(this, target);
-            for (let i = 0; i < target.length; i++) {
-                if (will[i] > 25) { applyMod([target[i]], ["accuracy", "evasion"], [-0.15, -0.15], 2); }
-                else { logAction(`${target[i].name} resists the curse field!`, "miss")}
-            }
+            const self = this;
+            createMod("Curse Field", "Reduces accuracy and evasion",
+                { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: [-0.15, -0.15] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        if(resistDebuff(vars.caster, unit) > 50) {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] += vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        }
+                        else { vars.targets.splice(vars.targets.indexOf(unit), 1); }
+                    });
+                    logAction(`${vars.caster.name} casts Curse Field!`, "action");
+                },
+                (vars, unit) => {
+                    if (vars.targets.includes(unit)) {
+                        if(resistDebuff(vars.caster, unit) > 30) {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                            vars.targets.splice(vars.targets.indexOf(unit), 1);
+                        }
+                    }
+                    if(vars.targets.length === 0) { return true; }
+            });
         }
     };
     this.actions.drainLife = {
@@ -485,7 +669,30 @@ const mysticEnemyActionsInit = function() {
             this.previousAction = [true, true, false];
             this.resource.mana -= 25;
             logAction(`${this.name} creates an arcane shield, enhancing their defenses!`, "buff");
-            applyMod([this], ["defense", "resist"], [0.5, 0.3], 2);
+            const self = this;
+            createMod("Arcane Shield", "Enhanced defenses",
+                { caster: this, targets: [this], duration: 2, stats: ["defense", "resist"], values: [0.5, 0.3] },
+                    (vars) => {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] += vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                    },
+                    (vars) => {
+                        vars.duration--;
+                        if(vars.duration <= 0) {
+                            vars.targets.forEach(unit => {
+                                vars.stats.forEach((stat, i) => {
+                                    unit.mult[stat] -= vars.values[i];
+                                    resetStat(unit, [stat]);
+                                });
+                            });
+                        return true;
+                    }
+                }
+            );
         }
     };
     this.actions.meditate = {
@@ -525,7 +732,30 @@ const technoEnemyActionsInit = function() {
             this.resource.energy -= 35;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} disrupts ${target[0].name}'s defenses!`, "action");
-            applyMod(target, ["defense", "resist"], [-0.3, -0.3], 2);
+            const self = this;
+            createMod("Shield Disruption", "Defense reduction",
+                { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: [-0.3, -0.3] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars) => {
+                    vars.duration--;
+                    if(vars.duration <= 0) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                    return true;
+                    }
+                }
+            );
         }
     };
     this.actions.naniteRepair = {
@@ -552,7 +782,31 @@ const technoEnemyActionsInit = function() {
             this.previousAction = [true, false, true];
             this.resource.stamina -= 10;
             this.resource.energy -= 30;
-            applyMod([this], ["attack", "speed"], [0.4, 0.3], 2);
+            const self = this;
+            createMod("Overcharge Boost", "Power surge",
+                { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.4, 0.3] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                    logAction(`${vars.caster.name}'s systems overcharge!`, "buff");
+                },
+                (vars) => {
+                    vars.duration--;
+                    if(vars.duration <= 0) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                    }
+                }
+            );
         }
     };
     this.actions.backupPower = {
@@ -595,13 +849,9 @@ const technoEnemyActionsInit = function() {
         }
     };
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
-        code: () => {
-            this.previousAction = [true, false, false];
-            logAction(`${this.name} dodges.`, "buff");
-            applyMod([this], ["evasion"], [2], 1);
-        }
+        name: dodgeAction.name,
+        description: dodgeAction.description,
+        code: dodgeAction.code.bind(this)
     };
     this.actions.actionWeight = {laserBlast: 0.5, shieldDisruptor: 0, naniteRepair: 0, overcharge: 0.25, backupPower: 0.2, switchPosition: 0.05, dodge: 0 }
 };
@@ -628,26 +878,85 @@ const magitechEnemyActionsInit = function() {
         description: "Shifts to fire or ice element, gaining different bonuses",
         code: () => {
             this.previousAction = [false, true, false];
+            const self = this;
             if (Math.random() < .5) {
                 logAction(`${this.name} shifts to fire element, becoming more aggressive!`, "buff");
-                applyMod([this], ["attack", "speed"], [0.3, 0.2], 2);
+                createMod("Fire Element", "Offensive enhancement",
+                    { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.3, 0.2] },
+                    (vars) => {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] += vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                    },
+                    (vars) => {
+                        vars.duration--;
+                        if(vars.duration <= 0) {
+                            vars.targets.forEach(unit => {
+                                vars.stats.forEach((stat, i) => {
+                                    unit.mult[stat] -= vars.values[i];
+                                    resetStat(unit, [stat]);
+                                });
+                            });
+                            return true;
+                        }
+                    }
+                );
             } else {
                 logAction(`${this.name} shifts to ice element, becoming more defensive!`, "buff");
-                applyMod([this], ["defense", "resist"], [0.3, 0.2], 2);
+                createMod("Ice Element", "Defensive enhancement",
+                    { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: [0.3, 0.2] },
+                    (vars) => {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] += vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                    },
+                    (vars) => {
+                        vars.duration--;
+                        if(vars.duration <= 0) {
+                            vars.targets.forEach(unit => {
+                                vars.stats.forEach((stat, i) => {
+                                    unit.mult[stat] -= vars.values[i];
+                                    resetStat(unit, [stat]);
+                                });
+                            });
+                            return true;
+                        }
+                    }
+                );
             }
         }
     };
     this.actions.magitechBarrier = {
         name: "Magitech Barrier [mana, energy]",
         cost: { mana: 25, energy: 25 },
-        description: "Costs 25 mana & 25 energy\nIncreases defense of all allies for 2 turns",
+        description: "Costs 25 mana & 25 energy\nIncreases defense of all allies",
         code: () => {
-            this.previousAction = [false, true, true];
             this.resource.mana -= 25;
             this.resource.energy -= 25;
-            const allies = unitFilter("enemy", "", false);
-            applyMod(allies, ["defense"], [0.25], 2);
-            logAction(`${this.name} creates a protective barrier for all allies!`, "buff");
+            createMod("Magitech Barrier", "Defensive field",
+            { caster: this, targets: unitFilter("enemy", "", false), duration: 1, stat: "defense", value: 0.25 },
+            (vars) => {
+                vars.targets.forEach(unit => {
+                    unit.mult[vars.stat] += vars.value;
+                    resetStat(unit, [vars.stat]);
+                });
+                logAction(`${vars.caster.name} creates a protective barrier!`, "buff");
+            },
+            (vars, unit) => {
+                if(vars.caster === unit) {
+                    vars.targets.forEach(unit => {
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
+                    });
+                    return true;
+                }
+            });
         }
     };
     this.actions.essenceAbsorption = {
@@ -691,7 +1000,7 @@ const magitechEnemyActionsInit = function() {
             resetStat(this, ["attack"]);
         }
     };
-    this.actions.actionWeight = { arcaneCannon: 0.25, elementalShift: 0.20, magitechBarrier: 0.20, essenceAbsorption: 0.15, energyWave: 0.10, coreOverload: 0.10 };
+    this.actions.actionWeight = { arcaneCannon: 0.10, elementalShift: 0.20, magitechBarrier: 0.20, essenceAbsorption: 0.15, energyWave: 0.10, coreOverload: 0.25 };
 };
 
 const Dark = new Unit("Dark", [400, 60, 12, 7, 45, 115, 45, 120, 25, 20, 175, "front", 150, 18, 200, 25], darkActionsInit);

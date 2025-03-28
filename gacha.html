@@ -1,38 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body {background-color: black; color: white; font-family: 'Lucida Console', Monaco, 'Courier New', Courier, monospace; font-size: 24px;}
-        button {height: 3em; width: auto; padding: 0 1em; text-align: center; display: inline-block; font-size: 1.25em; margin: .2em; cursor: pointer; border-radius: 5px; border: none;}
-        #field10 {background-color: #4CAF50; color: white;}
-        #field100 {background-color: #2196F3; color: white;}
-        #squad1 {background-color: #9C27B0; color: black;}
-        #squad10 {background-color: #FF9800; color: white;}
-    </style>
-    <meta charset="UTF-8"/>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="gacha.css">
+    <meta charset="UTF-8">
     <title>Gacha Game</title>
 </head>
 <body>
-    <h1 style="font-size: 3em; text-align: center;">LET'S GO GAMBLING!!!</h1>
-    <br>
-    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+    <h1>LET'S GO GAMBLING!!!</h1>
+    <div class="flex-container">
         <button id="field10">Field pull x10</button>
         <button id="field100">Field pull x100</button>
         <button id="squad1">Squad pull x1</button>
         <button id="squad10">Squad pull x10</button>
     </div>
-    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
-        <div id="results" style="margin: 0 20px;">Results will appear here</div>
-        <div id="collection" style="margin: 0 20px;">Collection will appear here</div>
+    <div id="costDisplay" style="text-align: center; margin: 20px; font-size: 1.5em; color: #00ff00;">Total Spent: 0 Credits</div>
+    <div id="pityDisplay" style="text-align: center; margin: 20px; font-size: 1.5em; color: #ff00ff;">Pity Points: 0</div>
+    <div class="flex-container">
+        <div style="text-align: center; margin: 20px;">
+            <h2 style="color: #ff00ff;">PITY SHOP</h2>
+            <select id="fourStarSelect" style="font-family: 'Press Start 2P'; background: black; color: white; border: 2px solid purple; margin: 5px;"></select>
+            <button id="redeem4Star" style="color: purple; border-color: purple;">Redeem 4★ (500pp)</button>
+            <br>
+            <select id="fiveStarSelect" style="font-family: 'Press Start 2P'; background: black; color: white; border: 2px solid gold; margin: 5px;"></select>
+            <button id="redeem5Star" style="color: gold; border-color: gold;">Redeem 5★ (1500pp)</button>
+        </div>
+    </div>
+    <div class="flex-container">
+        <div id="results">Results will appear here</div>
+        <div id="collection">Collection will appear here</div>
     </div>
     <script type="module">
-        import { gacha } from './gacha.js';
-        import { protoField, protoSquad } from './banner.js';
-        
-        document.getElementById('field10').addEventListener('click', function() { gacha(protoField, 10, 1); });
-        document.getElementById('field100').addEventListener('click', function() { gacha(protoField, 100, 15, 2); });
-        document.getElementById('squad1').addEventListener('click', function() { gacha(protoSquad, 1, 0, 1); });
-        document.getElementById('squad10').addEventListener('click', function() { gacha(protoSquad, 10, 0, 10, 1); });
+        import { initPitySystem } from './pity.js';
+        initPitySystem();
     </script>
 </body>
 </html>

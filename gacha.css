@@ -1,0 +1,19 @@
+body{background-color:black;color: white;font-family:'Lucida Console', Monaco, 'Courier New', Courier, monospace;font-size:24px;margin:0;padding:20px;}
+h1{font-size:3em;text-align:center;margin:20px 0;}
+button{height:3em;width:auto;padding:0 1em;font-family:'Press Start 2P', cursive;font-size:1em;margin:0.5em;cursor:pointer;border:3px solid;background-color:#000000;text-shadow:0 0 5px currentColor;box-shadow:3px 3px 0;transition:all 0.1s ease;position:relative;}
+button:hover{transform:translate(-2px, -2px);box-shadow:5px 5px 0;}
+button:active{transform:translate(1px, 1px);box-shadow:1px 1px 0;}
+#field10{color:#4CAF50;border-color:#4CAF50;box-shadow:3px 3px 0 #4CAF50;}
+#field100{color:#2196F3;border-color:#2196F3;box-shadow:3px 3px 0 #2196F3;}
+#squad1{color:#9C27B0;border-color:#9C27B0;box-shadow:3px 3px 0 #9C27B0;}
+#squad10{color:#FF9800;border-color:#FF9800;box-shadow:3px 3px 0 #FF9800;}
+button::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0, 0, 0, 0.15) 0px,rgba(0, 0, 0, 0.15) 1px,transparent 1px,transparent 2px);pointer-events:none;}
+.flex-container{display:flex;justify-content:center;flex-wrap:wrap;gap:20px;margin:20px 0;}
+#results, #collection{margin:0 20px;max-width:400px;word-break:break-word;}
+#costDisplay, #pityDisplay{text-align:center;margin:20px;font-size:1.5em;text-shadow:0 0 5px currentColor;font-family:'Press Start 2P', cursive;}
+#costDisplay{color:#00ff00;}
+#pityDisplay{color:#ff00ff;}
+select{font-size:0.8em;padding:5px;margin:10px;background:#000000;border:2px solid;color:white;}
+#redeem4Star, #redeem5Star{font-size:0.9em;height:auto;padding:8px;margin:5px;}
+#redeem4Star:hover{color:#ff00ff !important;border-color:#ff00ff !important;}
+#redeem5Star:hover{color:#ffff00 !important;border-color:#ffff00 !important;}

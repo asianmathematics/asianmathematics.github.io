@@ -1,6 +1,15 @@
 let allUnits = [];
-const modifiers = {};
-let modifierId = 1;
+const modifiers = [];
+
+class Modifier {
+    constructor(name, description, vars, initFunc, onTurnFunc) {
+      this.name = name;
+      this.description = description;
+      this.vars = vars;
+      this.init = () => initFunc(this.vars);
+      this.onTurn = (unit) => onTurnFunc(this.vars, unit);
+    }
+}
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -31,29 +40,28 @@ function logAction(message, type = 'info') {
 
 function resistDebuff(attacker, defenders) {
     let will= []
-    for (const unit of defenders) { will.push((attacker.presence / (100 - attacker.presence + unit.presence) ) + Math.floor(Math.random() * 100)); }
+    for (const unit of defenders) {
+        const roll = Math.floor(Math.random() * 100);
+        if (roll === 1 || roll === 100) {
+            will.push(roll);
+            continue;
+        }
+        will.push((attacker.presence / Math.max(100 - attacker.presence + unit.presence, 10) ) + roll);
+    }
     return will;
 }
 
-function applyMod(targets, stat, value, duration) {
-    if (stat.length !== value.length) { throw new TypeError("Stats and values arrays must have the same length"); }
-    let modMessage = '';
-    for (const unit of targets) {
-        modMessage += `${unit.name}`;
-        for (let i = 0; i < stat.length; i++) {
-            unit.mult[stat[i]] += value[i];
-            resetStat(unit, [stat[i]]);
-            if (i === 0) { modMessage += ` ${value[i] > 0 ? "buff" : "debuff"}: `; }
-            else { modMessage += ", "; }
-            modMessage += `${stat[i]} ${value[i] > 0 ? '+' : ''}${value[i] * 100}%`;
-        }
-    }
-    logAction(`${modMessage} for ${duration} turns`, `${value[0] > 0 ? "buff" : "debuff"}`);
-    modifiers[modifierId++] = {
-        target: targets,
-        stat: stat,
-        value: value,
-        duration: duration,
+function createMod(name, description, vars, initFunc, onTurnFunc) {
+    const modifier = new Modifier(name, description, vars, initFunc, onTurnFunc);
+    modifiers.push(modifier);
+    modifier.init();
+    return modifier;
+}
+
+function updateMod(unit) {
+    for (let i = modifiers.length - 1; i >= 0; i--) {
+        const modifier = modifiers[i];
+        if (modifier.onTurn(unit)) { modifiers.splice(i, 1); }
     }
 }
 
@@ -284,4 +292,4 @@ function damage(attacker, defenders, critical) {
     if (crit.length > 0) { logAction(`${attacker.name} critically hits ${crit.join(", ")}!`, "crit"); }
 }
 
-export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId };
+export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, };

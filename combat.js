@@ -1,5 +1,5 @@
 import {Dark, Electric, Servant, ClassicJoy, enemy, mysticEnemy, technoEnemy, magitechEnemy} from './unitCombatData.js';
-import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, applyMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, modifierId } from './combatDictionary.js';
+import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -18,22 +18,25 @@ export function startCombat() {
 
 function getModifiersDisplay() {
     let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
-    if (Object.keys(modifiers).length === 0) { modDisplay += "<p>No active modifiers</p>"; }
+    if (modifiers.length === 0) { 
+        modDisplay += "<p>No active modifiers</p>"; 
+    }
     else {
         modDisplay += "<ul class='modifier-list'>";
-        for (const id in modifiers) {
-            const mod = modifiers[id];
-            modDisplay += `<li><span class="modifier-target">${mod.target.map(unit => unit.name).join(", ")}</span>: `;
-            for (let i = 0; i < mod.stat.length; i++) {
-                if (i > 0) modDisplay += ", ";
-                modDisplay += `<span class="modifier-stat">${mod.stat[i]}</span> `;
-                modDisplay += `<span class="modifier-value">${mod.value[i] > 0 ? `+${mod.value[i] * 100}%` : `${mod.value[i] * 100}%`}</span>`;
-            }
-            modDisplay += ` <span class="modifier-duration">(${mod.duration} turns)</span></li>`;
+        for (const modifier of modifiers) {
+            const caster = modifier.vars.caster?.name || "System";
+            const targets = modifier.vars.targets.map(u => u.name).join(", ");
+            modDisplay += `
+            <li class="modifier-item">
+                <span class="modifier-caster">${caster}'s</span>
+                <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
+                <div class="modifier-targets">Targets: ${targets}</div>
+                <div class="modifier-duration">${modifier.vars.duration} turn(s) left</div>
+            </li>`;
         }
+        modDisplay += "</ul>";
     }
-    
-    return modDisplay + "</ul></div>";
+    return modDisplay + "</div>";
 }
 
 function updateBattleDisplay() {
@@ -186,24 +189,6 @@ function cloneUnit(unit) {
         newUnit.resource.energyRegen = unit.base.resource.energyRegen;
     }
     return newUnit;
-}
-
-function updateMod(unit) {
-    for (const id in modifiers) {
-        const mod = modifiers[id];
-        if (mod.target.includes(unit)) {
-            mod.duration--;
-            if (mod.duration <= 0) {
-                for (let i = 0; i < mod.stat.length; i++) {
-                    unit.mult[mod.stat[i]] -= mod.value[i];
-                    resetStat(unit, [mod.stat[i]]);
-                }
-                const index = mod.target.indexOf(unit);
-                if (index > -1) { mod.target.splice(index, 1)}
-            }
-        }
-        if (mod.target.length === 0) { delete modifiers[id]; }
-    }
 }
 
 function regenerateResources(unit) {
