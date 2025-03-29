@@ -164,29 +164,19 @@ function createUnit(unit, team) {
 }
 
 function cloneUnit(unit) {
-    const newUnit = structuredClone({
+    const newUnit = {
         name: unit.name,
         previousAction: [false, false, false],
-        base: unit.base,
-        mult: unit.mult,
-        resource: {},
+        base: structuredClone(unit.base),
+        mult: structuredClone(unit.mult),
+        resource: { ...unit.base.resource },
         actions: {},
-    });
+    };
     newUnit.actionInit = unit.actionInit;
     for (const stat in newUnit.base) {
         if (typeof newUnit.base[stat] === 'object') { continue; }
-        if (newUnit.mult[stat] == undefined) { newUnit[stat] = newUnit.base[stat]; continue; }
-        resetStat(newUnit, [stat]);
-    }
-    newUnit.resource.stamina = unit.base.resource.stamina;
-    newUnit.resource.staminaRegen = unit.base.resource.staminaRegen;
-    if (unit.base.resource.mana) {
-        newUnit.resource.mana = unit.base.resource.mana;
-        newUnit.resource.manaRegen = unit.base.resource.manaRegen;
-    }
-    if (unit.base.resource.energy) {
-        newUnit.resource.energy = unit.base.resource.energy;
-        newUnit.resource.energyRegen = unit.base.resource.energyRegen;
+        if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat]; }
+        else { resetStat(newUnit, [stat]); }
     }
     return newUnit;
 }
