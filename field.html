@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Battlefield Hex Grid</title>
+    <link rel="stylesheet" href="field.css">
+    <script type="module">
+        import { defineHex, Grid, rectangle, spiral, hexToPoint } from 'https://unpkg.com/honeycomb-grid@4.1.5/dist/honeycomb-grid.mjs'
+        window.Honeycomb = { defineHex, Grid, rectangle, spiral, hexToPoint }
+    </script>
+</head>
+<body>
+    <button class="action-button" id="combatStart">Start Combat</button>
+    <div id="grid-container">
+        <div id="hex-grid"></div>
+        <div id="selection"></div>
+        <div id="message-container"></div>
+        <div id="action-log-container">
+            <h3>Combat Log</h3>
+            <div id="action-log"></div>
+        </div>
+        <div id="status-panel">
+            <div id="coordinates"></div>
+            <div id="terrain-info"></div>
+        </div>
+    </div>
+    <script type="module" src="field.js" defer></script>
+    <script type="module" src="fieldCombat.js" defer></script>
+    <script type="module">
+        import { startCombat } from './fieldCombat.js';
+        document.getElementById('combatStart').addEventListener('click', startCombat);
+    </script>
+</body>
+</html>

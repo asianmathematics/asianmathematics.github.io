@@ -159,20 +159,55 @@ function playerTurn(unit) {
     };
 }
 
-function selectTarget(action, back, target) {
+function selectTarget(action, back, target, targetType = 'unit') {
     const requireMax = target[1];
     let maxSelections = target[0];
     if (target[0] === -1 || target[0] > target[2].length) { maxSelections = target[2].length; }
-    let unitButton = `<h1>Action: ${action.name}</h1>
-    <form id='targetSelection' onsubmit='submitTargetSelection(event)'>`;
+    // Debug log - remove in production
+    console.log("Target data:", {
+        action: action.name,
+        targetCount: target[2].length,
+        targetType: targetType,
+        firstItem: target[2][0]
+    });
+    let selectionTitle = `<h1>Action: ${action.name}</h1>`;
+    let selectionForm = `<form id='targetSelection' onsubmit='submitTargetSelection(event)'>`;
+    // Add hex container if we're selecting hexes
+    if (targetType === 'hex') { selectionForm += `<div class="hex-selection-container">`; }
     for (const obj of target[2]) {
-        unitButton += `
-        <div>
-            <input type='checkbox' id='${obj.name}' name='${obj.name}' value='${obj.name}' onclick='checkTargetSelection(this, ${maxSelections})'>
-            <label for='${obj.name}'>${obj.name}</label>
-        </div>`;
+        // Different label/value based on target type
+        let objId, objLabel, objValue;
+        if (targetType === 'hex') {
+            // For hex targets, use the coordinates as identifier
+            const coords = `${obj.coord.q},${obj.coord.r},${obj.coord.s}`;
+            objId = `hex-${obj.coord.q}-${obj.coord.r}-${obj.coord.s}`;
+            objLabel = obj.name || `Hex (${obj.coord.q},${obj.coord.r},${obj.coord.s})`;
+            objValue = coords;
+            // For hexes, create a visual representation
+            selectionForm += `
+            <div class="hex-option">
+                <input type='checkbox' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
+                <label for='${objId}' class="hex-label ${obj.terrain ? `terrain-${obj.terrain}` : ''}">
+                    ${objLabel}
+                </label>
+            </div>`;
+        }
+        else {
+            // Default to unit behavior
+            objId = obj.name;
+            objLabel = obj.name;
+            objValue = obj.name;
+            selectionForm += `
+            <div>
+                <input type='checkbox' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
+                <label for='${objId}'>${objLabel}</label>
+            </div>`;
+        }
     }
-    document.getElementById("selection").innerHTML = `${unitButton}
+    // Close hex container if needed
+    if (targetType === 'hex') { selectionForm += `</div>`; }
+    document.getElementById("selection").innerHTML = `${selectionTitle}
+        ${selectionForm}
         <div id='validation-message' style='color: red;'></div>
         <button type='submit'>Submit</button>
     </form>
@@ -201,8 +236,24 @@ function selectTarget(action, back, target) {
         }
         const selectedTargets = [];
         for (const checkbox of checkboxes) {
-            const targetUnit = allUnits.find(unit => unit.name === checkbox.value);
-            if (targetUnit) { selectedTargets.push(targetUnit); }
+            if (targetType === 'hex') {
+                // For hex targets, parse coordinates and find the matching hex
+                const coords = checkbox.value.split(',').map(Number);
+                const targetHex = target[2].find(hex => 
+                    hex.coord.q === coords[0] && 
+                    hex.coord.r === coords[1] && 
+                    hex.coord.s === coords[2]
+                );
+                if (targetHex) { 
+                    selectedTargets.push(targetHex); 
+                    console.log("Selected hex:", targetHex);
+                }
+            }
+            else {
+                // Original behavior for unit type
+                const targetUnit = allUnits.find(unit => unit.name === checkbox.value);
+                if (targetUnit) { selectedTargets.push(targetUnit); }
+            }
         }
         action.code(selectedTargets);
         document.getElementById("selection").innerHTML = "";
@@ -213,7 +264,6 @@ function selectTarget(action, back, target) {
     window.checkTargetSelection = checkTargetSelection;
     window.submitTargetSelection = submitTargetSelection;
     window.exitTargetSelection = exitTargetSelection;
-    
 }
 
 function showMessage(message, type = 'info', elementId = 'message-container', duration = 3000) {
