@@ -44,11 +44,11 @@
 .terrain-hill { background: #795548; }
 .terrain-water { background: #1976d2; }
 .terrain-bridge {
-    background: #d4a574 linear-gradient(
-        45deg,
-        transparent 48%,
+    background: #1976d2 linear-gradient(
+        0deg,
+        transparent 33%,
         #8b4513 50%,
-        transparent 52%
+        transparent 66%
     );
 }
 
@@ -66,7 +66,7 @@
 
 .terrain-cave {
     background: #36454F;
-    position: relative;
+    position: absolute;
 }
 
 .terrain-cave::after {
@@ -114,14 +114,12 @@
 
 
 #selection {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-0%);
+    left: 0%;
+    width: 25%;
     background: rgba(0,0,0,0.7);
     padding: 1rem;
     border-radius: 8px;
-    z-index: 2000;
 }
 
 .action-button {
@@ -201,6 +199,30 @@
     font-size: 0.8em;
     color: #00ff88;
     margin-bottom: 4px;
+}
+
+.elevation-marker {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+
+.terrain-water::after {
+    content: '^';
+    color: rgba(255,255,255,0.7);
+    position: absolute;
+    font-size: 36px;
+    animation: flow 1.4s ease-out .3s infinite;
+}
+
+@keyframes flow {
+    from { transform: translateY(75%); }
+    to { transform: translateY(-25%); }
 }
 
 @media (max-width: 768px) {

@@ -1,5 +1,5 @@
 import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
-import { initHexGrid, grid, Hex, Grid } from './field.js';
+import { initHexGrid, generateStrategicMap, grid, Hex, Grid } from './field.js';
 const Honeycomb = window.Honeycomb;
 let turnCounter = 1;
 let currentTurn = 0;
@@ -7,66 +7,119 @@ let wave = 1;
 const scout = {
     name: "Scout",
     base: {
-        hp: 100,
-        speed: 20,
+        hp: 180,
         attack: 15,
-        defense: 8,
-        movement: 2,
+        defense: 4,
+        crit: 35,
+        resist: 12,
+        presence: 35,
+        speed: 35,
+        resource: {
+            stamina: 35,
+            staminaRegen: 4
+        }
     },
-    mult: {},
-    actionInit: function() {
-        this.actions.move = {
-            name: 'Move',
-            description: 'Relocate unit to adjacent hex',
-            target: () => {
-                try {
-                console.log("Scout coord: " + this.coord);
-                const validHexes = validHex(this.coord, 1);
-                console.log("Valid hexes found: " + validHexes.length);
-                selectTarget(
-                    this.actions.move, 
-                    () => { playerTurn(this); }, 
-                    [1, true, validHexes], 
-                    'hex'
-                );
-                } catch(err){ console.log(err.message); }
-            },
-            code: (hex) => {
-                console.log("Selected hex for movement:", hex[0]);
-                moveUnit(this, hex[0].coord);
-                combatTick();
+};
+const commander = {
+    name: 'commander',
+    base: {
+        hp: 300,
+        attack: 25,
+        defense: 6,
+        crit: 60,
+        resist: 20,
+        presence: 60,
+        speed: 60,
+        resource: {
+            stamina: 60,
+            staminaRegen: 6
+        }
+    },
+}
+class Battalion {
+    constructor(name, commander, unit, dupe) {
+        this.name = name;
+        this.base = { resource: {} };
+        this.mult = {
+            speed: 1,
+            attack: 1,
+            defense: 1,
+            crit: 1,
+            resist: 1,
+            presence: 1,
+            resource: {
+                staminaRegen: 1
+            }
+        };
+        this.resource = {};
+        this.commander = commander;
+        this.unit = unit;
+        this.dupe = dupe;
+        this.actions = {};
+        this.actionInit = () => {
+            this.actions.move = {
+                name: 'Move',
+                description: 'Relocate unit to adjacent hex.',
+                target: () => { selectTarget(this.actions.move, () => { playerTurn(this); }, [1, true, validHex(this.coord)], 'hex'); },
+                code: (hex) => { moveUnit(this, hex[0].coord); }
+            }
+            this.actions.engage = {
+                name: 'Engage',
+                description: 'attacks adjacent unit.',
+                target: () => { selectTarget(this.actions.engage, () => { playerTurn(this); }, [1, true, validHex(this.coord)], 'hex'); },
+                code: (hex) => { console.log('attacked: ' + hex[0].coord); }
             }
         }
     }
-};
+}
 
 export function startCombat() {
     initHexGrid();
-    createUnit(scout, "player", new Hex({ q: 5, r: 5, s: -10 }));
+    generateStrategicMap();
+    createUnit(new Battalion("Player army", commander, scout, 100), "player", new Hex({ q: 8, r: 3, s: -11 }));
+    createUnit(new Battalion("Enemy army", commander, scout, 50), "enemy", new Hex({ q: 3, r: 0, s: -3 }));
     updateBattleDisplay();
     combatTick();
 }
 
-function validHex(centerHex, range, actionType = 'move') {
-    try {
+function battalionStat(battalion) {
+    for (const stat in battalion.unit.base) {
+        if (typeof battalion.base[stat] === 'object') { continue; }
+        if (stat === 'hp') { 
+            battalion.base.hp = .1 * battalion.unit.base.hp * battalion.dupe;
+            continue;
+        }
+        if (stat === 'speed') {
+            battalion.base.speed = (battalion.unit.base.speed + battalion.commander.base.speed)/2 * (1 - .1 * Math.log10(battalion.dupe));
+            continue;
+        } 
+        battalion.base[stat] = .1 * battalion.unit.base[stat] * battalion.dupe + battalion.commander.base[stat];
+        resetStat(battalion, [stat]);
+    }
+    battalion.base.resource.stamina = .1 * battalion.unit.base.resource.stamina * battalion.dupe + battalion.commander.base.resource.stamina;
+    battalion.base.resource.staminaRegen = .1 * battalion.unit.base.resource.staminaRegen * battalion.dupe + battalion.commander.base.resource.staminaRegen;
+    resetStat(battalion, ['resource.staminaRegen']);
+}
+
+function validHex(centerHex, range = 1, action = 'move') {
         const spiralTraverser = Honeycomb.spiral({ start: centerHex, radius: range });
         const spiralGrid = Array.from(new Grid(Hex, spiralTraverser));
-        console.log("Center Hex (q, r, s):", centerHex.q, centerHex.r, centerHex.s);
-        return Array.from(spiralGrid
+        return spiralGrid
             .filter(hex => {
-                const hexKey = `${hex.q},${hex.r},${hex.s}`;
-                const terrainData = grid.state.terrainData.get(hexKey);
-                if (!terrainData) return false;
-                let isValid = terrainData.isPassable;
-                if (actionType === 'move') {
-                    isValid = isValid && !terrainData.unit;
-                }
+                const terrainData = grid.state.terrainData.get(`${hex.q},${hex.r},${hex.s}`);
+                if (!terrainData) { return false; }
+                let isValid;
+                switch (action) {
+                    case 'move':
+                        isValid = terrainData.isPassable;
+                        break;
+                    default:
+                        isvalid = terrainData.isPassable;
+                } 
                 return isValid;
             })
             .map(hex => {
-                const hexKey = `${hex.q},${hex.r},${hex.s}`;
-                const terrainData = grid.state.terrainData.get(hexKey);
-                console.log("Valid hex found: " + hexKey);
+                const terrainData = grid.state.terrainData.get(`${hex.q},${hex.r},${hex.s}`);
                 return {
                     coord: hex,
                     name: `Hex (${hex.q},${hex.r},${hex.s}) [${terrainData.type}]`,
@@ -75,11 +128,7 @@ function validHex(centerHex, range, actionType = 'move') {
                     isPassable: terrainData.isPassable,
                     unitPresent: !!terrainData.unit,
                 };
-            }));
-    } catch(err) {
-        console.log("validHex error:", err);
-        return [];
-    }
+            });
 }
 
 function moveUnit(unit, hex) {
@@ -90,11 +139,8 @@ function moveUnit(unit, hex) {
     grid.state.terrainData.get(newKey).unit = unit;
     const oldHex = document.querySelector(`[data-cube="${oldKey}"]`);
     const newHex = document.querySelector(`[data-cube="${newKey}"]`);
-    if(oldHex && newHex) {
-        const unitDiv = oldHex.querySelector('.battle-unit');
-        newHex.appendChild(unitDiv);
-    }
-    logAction(`${unit.name} moved to (${hex.x},${hex.y},${hex.z})`);
+    if(oldHex && newHex) { newHex.appendChild(oldHex.querySelector('.battle-unit')); }
+    logAction(`${unit.name} moved to (${hex.q},${hex.r},${hex.s})`);
 }
 
 function renderUnit(unit) {
@@ -112,17 +158,21 @@ function updateBattleDisplay() {
         const unitDiv = document.getElementById(unit.id);
         if (unitDiv) {
             const currentHex = document.querySelector(`[data-cube="${unit.coord.q},${unit.coord.r},${unit.coord.s}"]`);
-            if (currentHex && !currentHex.contains(unitDiv)) {
-                currentHex.appendChild(unitDiv);
-            }
+            if (currentHex && !currentHex.contains(unitDiv)) { currentHex.appendChild(unitDiv); }
         }
     });
 }
 
-function createUnit(unit, team, coord) {
-    const newUnit = cloneUnit(unit);
+function createUnit(newUnit, team, coord) {
+    battalionStat(newUnit);
+    for (const stat in newUnit.base) {
+        if (typeof newUnit.base[stat] === 'object') { continue; }
+        if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat]; }
+        else { resetStat(newUnit, [stat]); }
+    }
+    newUnit.previousAction = [false, false, false];
     newUnit.id = `${team}-unit-${allUnits.length}`;
-    let name = unit.name;
+    let name = newUnit.name;
     let dupe = 1;
     const filter = allUnits.filter(obj => obj.name.includes(name));
     while (filter.some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}`; }
@@ -132,25 +182,7 @@ function createUnit(unit, team, coord) {
     allUnits.push(newUnit);
     newUnit.actionInit();
     renderUnit(newUnit);
-    newUnit.timer = 100;
-}
-
-function cloneUnit(unit) {
-    const newUnit = {
-        name: unit.name,
-        previousAction: [false, false, false],
-        base: structuredClone(unit.base),
-        mult: structuredClone(unit.mult),
-        resource: { ...unit.base.resource },
-        actions: {},
-    };
-    newUnit.actionInit = unit.actionInit;
-    for (const stat in newUnit.base) {
-        if (typeof newUnit.base[stat] === 'object') { continue; }
-        if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat]; }
-        else { resetStat(newUnit, [stat]); }
-    }
-    return newUnit;
+    newUnit.timer = 500;
 }
 
 function regenerateResources(unit) {
@@ -181,10 +213,10 @@ async function combatTick() {
         }
     }
     logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
-    //regenerateResources(turn);
+    regenerateResources(turn);
     updateMod(turn);
     updateBattleDisplay();
-    turn.timer = 100;
+    turn.timer = 500;
     if (turn.team === "player") { playerTurn(turn); }
     if (turn.team === "enemy") { enemyTurn(turn); }
     turnCounter++

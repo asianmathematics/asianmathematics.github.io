@@ -39,14 +39,14 @@ function logAction(message, type = 'info') {
 }
 
 function resistDebuff(attacker, defenders) {
-    let will= []
+    const will= []
     for (const unit of defenders) {
         const roll = Math.floor(Math.random() * 100);
         if (roll === 1 || roll === 100) {
             will.push(roll);
             continue;
         }
-        will.push((attacker.presence / Math.max(100 - attacker.presence + unit.presence, 10) ) + roll);
+        will.push(((attacker.presence + attacker.crit) / Math.max(200 - (attacker.presence + attacker.crit) + (unit.presence + unit.resist), 20) ) + roll);
     }
     return will;
 }
@@ -97,7 +97,7 @@ function enemyTurn(unit) {
     }
     if (totalWeight === 0) {
         showMessage(`${unit.name} has no available actions!`, "warning", "message-container");
-        setTimeout(() => { window.combatTick(); resolve(); }, 1000);
+        setTimeout(window.combatTick, 1000);
         return;
     }
     const randChoice = Math.random() * totalWeight;
@@ -109,7 +109,7 @@ function enemyTurn(unit) {
             break;
         }
     }
-    setTimeout(() => { window.combatTick(); }, 1000);
+    setTimeout(window.combatTick, 1000);
 }
 
 function randTarget(unitList = allUnits, trueRand = false) {
@@ -160,30 +160,18 @@ function playerTurn(unit) {
 }
 
 function selectTarget(action, back, target, targetType = 'unit') {
-    const requireMax = target[1];
     let maxSelections = target[0];
     if (target[0] === -1 || target[0] > target[2].length) { maxSelections = target[2].length; }
-    // Debug log - remove in production
-    console.log("Target data:", {
-        action: action.name,
-        targetCount: target[2].length,
-        targetType: targetType,
-        firstItem: target[2][0]
-    });
     let selectionTitle = `<h1>Action: ${action.name}</h1>`;
     let selectionForm = `<form id='targetSelection' onsubmit='submitTargetSelection(event)'>`;
-    // Add hex container if we're selecting hexes
     if (targetType === 'hex') { selectionForm += `<div class="hex-selection-container">`; }
     for (const obj of target[2]) {
-        // Different label/value based on target type
         let objId, objLabel, objValue;
         if (targetType === 'hex') {
-            // For hex targets, use the coordinates as identifier
             const coords = `${obj.coord.q},${obj.coord.r},${obj.coord.s}`;
             objId = `hex-${obj.coord.q}-${obj.coord.r}-${obj.coord.s}`;
-            objLabel = obj.name || `Hex (${obj.coord.q},${obj.coord.r},${obj.coord.s})`;
+            objLabel = obj.name || `Hex (${coords})`;
             objValue = coords;
-            // For hexes, create a visual representation
             selectionForm += `
             <div class="hex-option">
                 <input type='checkbox' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
@@ -193,7 +181,6 @@ function selectTarget(action, back, target, targetType = 'unit') {
             </div>`;
         }
         else {
-            // Default to unit behavior
             objId = obj.name;
             objLabel = obj.name;
             objValue = obj.name;
@@ -204,7 +191,6 @@ function selectTarget(action, back, target, targetType = 'unit') {
             </div>`;
         }
     }
-    // Close hex container if needed
     if (targetType === 'hex') { selectionForm += `</div>`; }
     document.getElementById("selection").innerHTML = `${selectionTitle}
         ${selectionForm}
@@ -220,13 +206,13 @@ function selectTarget(action, back, target, targetType = 'unit') {
         }
         else { 
             const validationMsg = document.getElementById('validation-message');
-            if (validationMsg) {validationMsg.innerHTML = '';}
+            if (validationMsg) { validationMsg.innerHTML = ''; }
         }
     };
     function submitTargetSelection(event) {
         event.preventDefault();
         const checkboxes = document.querySelectorAll('#targetSelection input[type="checkbox"]:checked');
-        if (requireMax && checkboxes.length !== maxSelections) {
+        if (target[1] && checkboxes.length !== maxSelections) {
             showMessage(`Please select exactly ${maxSelections} target${maxSelections !== 1 ? 's' : ''}.`, "error", "validation-message", 0);
             return;
         }
@@ -237,20 +223,11 @@ function selectTarget(action, back, target, targetType = 'unit') {
         const selectedTargets = [];
         for (const checkbox of checkboxes) {
             if (targetType === 'hex') {
-                // For hex targets, parse coordinates and find the matching hex
                 const coords = checkbox.value.split(',').map(Number);
-                const targetHex = target[2].find(hex => 
-                    hex.coord.q === coords[0] && 
-                    hex.coord.r === coords[1] && 
-                    hex.coord.s === coords[2]
-                );
-                if (targetHex) { 
-                    selectedTargets.push(targetHex); 
-                    console.log("Selected hex:", targetHex);
-                }
+                const targetHex = target[2].find(hex => hex.coord.q === coords[0] && hex.coord.r === coords[1] && hex.coord.s === coords[2]);
+                if (targetHex) { selectedTargets.push(targetHex); }
             }
             else {
-                // Original behavior for unit type
                 const targetUnit = allUnits.find(unit => unit.name === checkbox.value);
                 if (targetUnit) { selectedTargets.push(targetUnit); }
             }
@@ -290,7 +267,7 @@ function cleanupGlobalHandlers() {
 }
 
 function attack(attacker, defenders) {
-    let hit = [];
+    const hit = [];
     for (const unit of defenders) { 
         const roll = Math.floor(Math.random() * 100 + 1);
         if (roll === 1) {
@@ -305,7 +282,7 @@ function attack(attacker, defenders) {
 
 function crit(attacker, defenders, hit) {
     if (hit.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and hit (${hit}) array lengths are not equal`); }
-    let critical = [];
+    const critical = [];
     for (let i = 0; i < defenders.length; i++) { 
         if (hit[i] < 0) { critical.push(0); continue; }
         critical.push(hit[i] / (Math.max(5*defenders[i].resist - attacker.crit, 10)));
@@ -315,16 +292,16 @@ function crit(attacker, defenders, hit) {
 
 function damage(attacker, defenders, critical) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
-    let hit = [];
-    let miss = [];
-    let crit = [];
+    const hit = [];
+    const miss = [];
+    const crit = [];
     let total = 0;
     for (let i = 0; i < defenders.length; i++) {
         if (critical[i] === 0) {
             miss.push(defenders[i].name);
             continue;
         }
-        let result
+        let result;
         if (critical[i] < 1) {
             result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce));
             hit.push(`${defenders[i].name} (${result})`);
