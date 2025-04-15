@@ -10,6 +10,7 @@ const scout = {
         hp: 180,
         attack: 15,
         defense: 4,
+        pierce: 1,
         crit: 35,
         resist: 12,
         presence: 35,
@@ -26,6 +27,7 @@ const commander = {
         hp: 300,
         attack: 25,
         defense: 6,
+        pierce: 2,
         crit: 60,
         resist: 20,
         presence: 60,
@@ -44,6 +46,7 @@ class Battalion {
             speed: 1,
             attack: 1,
             defense: 1,
+            pierce: 1,
             crit: 1,
             resist: 1,
             presence: 1,
@@ -67,8 +70,15 @@ class Battalion {
                 name: 'Engage',
                 description: 'attacks adjacent unit.',
                 target: () => { selectTarget(this.actions.engage, () => { playerTurn(this); }, [1, true, validHex(this.coord)], 'hex'); },
-                code: (hex) => { console.log('attacked: ' + hex[0].coord); }
-            }
+                code: (hex) => {
+                    if (!grid.state.terrainData.get(`${hex[0].coord.q},${hex[0].coord.r},${hex[0].coord.s}`).unit) {
+                        logAction('No units found.');
+                        return;
+                    }   
+                    combatRound(this, hex[0].coord);
+                    this.previousAction[0] = false
+                }
+            } 
         }
     }
 }
@@ -76,10 +86,10 @@ class Battalion {
 export function startCombat() {
     initHexGrid();
     generateStrategicMap();
-    createUnit(new Battalion("Player army", commander, scout, 100), "player", new Hex({ q: 8, r: 3, s: -11 }));
-    createUnit(new Battalion("Enemy army", commander, scout, 50), "enemy", new Hex({ q: 3, r: 0, s: -3 }));
+    createUnit(new Battalion("Player-army", commander, scout, 100), "player", new Hex({ q: 4, r: 0, s: -4 })); //8,3
+    createUnit(new Battalion("Enemy-army", commander, scout, 50), "enemy", new Hex({ q: 3, r: 0, s: -3 }));
     updateBattleDisplay();
-    combatTick();
+    combatTick(); 
 }
 
 function battalionStat(battalion) {
@@ -91,6 +101,7 @@ function battalionStat(battalion) {
         }
         if (stat === 'speed') {
             battalion.base.speed = (battalion.unit.base.speed + battalion.commander.base.speed)/2 * (1 - .1 * Math.log10(battalion.dupe));
+            resetStat(battalion, [stat]);
             continue;
         } 
         battalion.base[stat] = .1 * battalion.unit.base[stat] * battalion.dupe + battalion.commander.base[stat];
@@ -99,6 +110,64 @@ function battalionStat(battalion) {
     battalion.base.resource.stamina = .1 * battalion.unit.base.resource.stamina * battalion.dupe + battalion.commander.base.resource.stamina;
     battalion.base.resource.staminaRegen = .1 * battalion.unit.base.resource.staminaRegen * battalion.dupe + battalion.commander.base.resource.staminaRegen;
     resetStat(battalion, ['resource.staminaRegen']);
+}
+
+function calcDupe(battalion) {
+    const hp = battalion.hp;
+    const dupe = Math.ceil(10 * hp / battalion.unit.base.hp);
+    if (dupe < 1) {
+        logAction(`${battalion.name} was defeated!`);
+        const unitElement = document.getElementById(battalion.name);
+        if (unitElement) { unitElement.remove(); }
+        grid.state.terrainData.get(`${battalion.coord.q},${battalion.coord.r},${battalion.coord.s}`).unit = null;
+        allUnits.splice(allUnits.findIndex(u => u.name === battalion.name), 1);
+
+    }
+    if (battalion.dupe !== dupe) {
+        battalion.dupe = dupe;
+        console.log(battalion.name + " now has " + dupe + " units left!");
+        battalionStat(battalion);
+    }
+}
+
+function resolveCombat(vars) {
+    const totalAttack = {
+        attackers: vars.attackers.reduce((sum, unit) => sum + unit.attack + (vars.attackBonuses[vars.attackers.findIndex(u => u.name === unit.name)] || 0), 0),
+        defenders: vars.defenders.reduce((sum, unit) => sum + unit.attack + (vars.attackBonuses[vars.attackers.findIndex(u => u.name === unit.name)] || 0), 0)
+    };
+    const pierceTotals = {
+        attackers: vars.attackers.reduce((sum, unit) => sum + unit.pierce, 0),
+        defenders: vars.defenders.reduce((sum, unit) => sum + unit.pierce, 0)
+    };
+    vars.attackers.forEach(attacker => {
+        const damage = Math.max(totalAttack.defenders - (attacker.defense * vars.defenders.length), pierceTotals.defenders);
+        attacker.hp -= damage;
+        logAction(`${attacker.name} took ${damage} damage from defenders}`);
+        calcDupe(attacker);
+    });
+    vars.defenders.forEach(defender => {
+        const damage = Math.max(totalAttack.attackers - (defender.defense * vars.attackers.length), pierceTotals.attackers);
+        defender.hp -= damage;
+        logAction(`${defender.name} took ${damage} damage from attackers}`);
+        calcDupe(defender);
+    });
+}
+
+function combatRound(attacker, hex) {
+    const defender = grid.state.terrainData.get(`${hex.q},${hex.r},${hex.s}`).unit;
+    createMod(
+        `Combat Round ${attacker.name}`,
+        "Active engagement between units",
+        {
+            attackers: [attacker],
+            defenders: [defender],
+            attackBonuses: {},
+            defenseBonuses: {},
+            duration: 1
+        },
+        (vars) => { logAction(`${attacker.name} initiated combat with ${defender.name}`); },
+        (vars, unit) => { if (unit === attacker) { resolveCombat(vars); return true; } }
+    );
 }
 
 function validHex(centerHex, range = 1, action = 'move') {
@@ -139,23 +208,24 @@ function moveUnit(unit, hex) {
     grid.state.terrainData.get(newKey).unit = unit;
     const oldHex = document.querySelector(`[data-cube="${oldKey}"]`);
     const newHex = document.querySelector(`[data-cube="${newKey}"]`);
-    if(oldHex && newHex) { newHex.appendChild(oldHex.querySelector('.battle-unit')); }
+    if (oldHex && newHex) { newHex.appendChild(oldHex.querySelector('.battle-unit')); }
     logAction(`${unit.name} moved to (${hex.q},${hex.r},${hex.s})`);
 }
 
 function renderUnit(unit) {
+    if (unit.hp <= 0) { return; }
     const hexElement = document.querySelector(`[data-cube="${unit.coord.q},${unit.coord.r},${unit.coord.s}"]`);
     if (hexElement && !hexElement.querySelector('.battle-unit')) {
         const unitDiv = document.createElement('div');
         unitDiv.className = `battle-unit ${unit.team}`;
-        unitDiv.id = unit.id;
+        unitDiv.id = unit.name;
         hexElement.appendChild(unitDiv);
     }
 }
 
 function updateBattleDisplay() {
     allUnits.forEach(unit => {
-        const unitDiv = document.getElementById(unit.id);
+        const unitDiv = document.getElementById(unit.name);
         if (unitDiv) {
             const currentHex = document.querySelector(`[data-cube="${unit.coord.q},${unit.coord.r},${unit.coord.s}"]`);
             if (currentHex && !currentHex.contains(unitDiv)) { currentHex.appendChild(unitDiv); }
@@ -171,16 +241,17 @@ function createUnit(newUnit, team, coord) {
         else { resetStat(newUnit, [stat]); }
     }
     newUnit.previousAction = [false, false, false];
-    newUnit.id = `${team}-unit-${allUnits.length}`;
     let name = newUnit.name;
     let dupe = 1;
     const filter = allUnits.filter(obj => obj.name.includes(name));
-    while (filter.some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}`; }
+    while (filter.some(obj => obj.name === name)) { name = `${unit.name}-${++dupe}`; }
     newUnit.name = name;
     newUnit.team = team;
-    newUnit.coord = coord;
     allUnits.push(newUnit);
     newUnit.actionInit();
+    newUnit.coord = coord; 
+    const newKey = `${coord.q},${coord.r},${coord.s}`;
+    grid.state.terrainData.get(newKey).unit = newUnit;
     renderUnit(newUnit);
     newUnit.timer = 500;
 }

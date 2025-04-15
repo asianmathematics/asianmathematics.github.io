@@ -9,19 +9,31 @@ const Hex = Honeycomb.defineHex({
 });
 const Grid = Honeycomb.Grid;
 
+function createHex(hex, terrainData = { type: 'plains', elevation: 0, unit: null, isPassable: true}) {
+    const tile = document.createElement('div');
+    const point = Honeycomb.hexToPoint(hex);
+    tile.className = `hex-tile terrain-${terrainData.type}`;
+    tile.style.left = `${point.x}px`;
+    tile.style.top = `${point.y}px`;
+    tile.dataset.cube = `${hex.q},${hex.r},${hex.s}`;
+    tile.addEventListener('click', (event) => { updateStatusPanel(event.target.dataset.cube, grid.state.terrainData.get(event.target.dataset.cube)); });
+    return tile;
+}
+
 function initHexGrid() {
     const hexes = new Grid(Hex, Honeycomb.rectangle({ width: grid.config.width, height: grid.config.height }));
+    const fragment = document.createDocumentFragment();
     hexes.forEach(hex => {
-        const point = Honeycomb.hexToPoint(hex);
-        const tile = document.createElement('div');
-        tile.className = 'hex-tile terrain-plains';
-        tile.style.left = `${point.x}px`;
-        tile.style.top = `${point.y}px`;
-        tile.dataset.cube = `${hex.q},${hex.r},${hex.s}`;
-        grid.state.terrainData.set(tile.dataset.cube, { type: 'plains', elevation: 0, unit: null, isPassable: true });
-        tile.addEventListener('click', (event) => { updateStatusPanel(event.target.dataset.cube, grid.state.terrainData.get(event.target.dataset.cube)); });
-        document.getElementById('hex-grid').appendChild(tile);
+        const tile = createHex(hex);
+        grid.state.terrainData.set(tile.dataset.cube, { 
+            type: 'plains', 
+            elevation: 0, 
+            unit: null, 
+            isPassable: true 
+        });
+        fragment.appendChild(tile);
     });
+    document.getElementById('hex-grid').appendChild(fragment);
 }
 
 function updateStatusPanel(cubeStr, terrain) {
@@ -81,6 +93,7 @@ function generateStrategicMap() {
         '1,7,-8': { type: 'cave' }
     };
     const hexes = new Grid(Hex, Honeycomb.rectangle({ width: grid.config.width, height: grid.config.height }));
+    const fragment = document.createDocumentFragment();
     hexes.forEach(hex => {
         const cubeStr = `${hex.q},${hex.r},${hex.s}`;
         const terrain = specialLocations[cubeStr] || 
@@ -88,22 +101,16 @@ function generateStrategicMap() {
                         (hex.q < 4 && hex.r > 5 ? TERRAIN_TYPES.HILL :
                         (hex.q < 7 && hex.r > 1 ? TERRAIN_TYPES.FOREST :
                         { type: 'plains' })));
-        const tile = document.createElement('div');
-        const point = Honeycomb.hexToPoint(hex);
-        tile.className = `hex-tile terrain-${terrain.type}`;
-        tile.style.left = `${point.x}px`;
-        tile.style.top = `${point.y}px`;
-        tile.dataset.cube = cubeStr;
-        tile.addEventListener('click', (event) => { updateStatusPanel(event.target.dataset.cube, grid.state.terrainData.get(event.target.dataset.cube)); });
-        hexGrid.appendChild(tile);
+        const tile = createHex(hex, terrain);
         grid.state.terrainData.set(cubeStr, {
             type: terrain.type,
             elevation: terrain.elevation || 0,
             unit: null,
             isPassable: terrain.isPassable ?? true
         });
+        fragment.appendChild(tile);
     });
-    document.querySelectorAll('.terrain-hill').forEach(hill => { hill.innerHTML = `<span class="elevation-marker">${grid.state.terrainData.get(hill.dataset.cube).elevation}</span>`; });
+    hexGrid.appendChild(fragment);
 }
 
 export { initHexGrid, generateStrategicMap, grid, Hex, Grid };
