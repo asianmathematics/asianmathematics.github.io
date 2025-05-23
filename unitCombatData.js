@@ -618,7 +618,7 @@ const mysticEnemyActionsInit = function() {
                 { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: [-0.15, -0.15] },
                 (vars) => {
                     vars.targets.forEach(unit => {
-                        if(resistDebuff(vars.caster, unit) > 50) {
+                        if(resistDebuff(vars.caster, [unit]) > 50) {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] += vars.values[i];
                                 resetStat(unit, [stat]);
@@ -630,7 +630,7 @@ const mysticEnemyActionsInit = function() {
                 },
                 (vars, unit) => {
                     if (vars.targets.includes(unit)) {
-                        if(resistDebuff(vars.caster, unit) > 30) {
+                        if(resistDebuff(vars.caster, [unit]) > 30) {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] -= vars.values[i];
                                 resetStat(unit, [stat]);
