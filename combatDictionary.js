@@ -33,8 +33,8 @@ function logAction(message, type = 'info') {
     logEntry.innerHTML = message;
     logContainer.appendChild(logEntry);
     const entries = logContainer.children;
-    const maxEntries = window.innerWidth < 800 ? 100 : 250;
-    while (entries.length > maxEntries) { logContainer.removeChild(entries[0]); }
+    /*const maxEntries = window.innerWidth < 800 ? 100 : 250;
+    while (entries.length > maxEntries) { logContainer.removeChild(entries[0]); }*/
     logContainer.scrollTop = logContainer.scrollHeight;
 }
 
@@ -303,12 +303,12 @@ function damage(attacker, defenders, critical) {
         }
         let result;
         if (critical[i] < 1) {
-            result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce));
+            result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack, 1));
             hit.push(`${defenders[i].name} (${result})`);
             total += result;
         }
         else {
-            result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), attacker.pierce * critical[i]) + attacker.lethality * critical[i]);
+            result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack * critical[i], 1) + attacker.lethality * critical[i]);
             crit.push(`${defenders[i].name} (${result})`);
             total += result;
         }

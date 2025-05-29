@@ -11,18 +11,18 @@ const protoField = {
     },
     threeStar: {
         rate: 0.015,
-        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dark", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
+        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dandelion", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
         rates: Array(15).fill(1)
     },
     fourStar: {
-        rate: 0.005,
-        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
+        rate: 0.0045,
+        units: ["Jack Spades", "Dark", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
         rates: Array(15).fill(1)
     },
     fiveStar: {
-        rate: 0,
-        units: [],
-        rates: []
+        rate: 0.0005,
+        units: ["Creator (Generic)", "Dark (Space)", "Fate", "R. Random", "Green Knight"],
+        rates: [1, 1, 1, 1, 1]
     }
 };
 
@@ -39,12 +39,12 @@ const protoSquad = {
     },
     threeStar: {
         rate: 0.72,
-        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dark", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
+        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dandelion", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
         rates: Array(15).fill(1)
     },
     fourStar: {
         rate: 0.25,
-        units: ["Jack Spades", "Dark (Matryoshka)", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
+        units: ["Jack Spades", "Dark", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
         rates: Array(15).fill(1)
     },
     fiveStar: {

@@ -2,7 +2,7 @@
 #battle-container,#selection{background-color:#0a0a0a;box-shadow:0 0 15px rgba(0,255,136,0.2);padding:20px;border:1px solid #00ff88}
 body{font-family:'Courier Prime',monospace;max-width:1200px;margin:0 auto;padding:20px;background:#0a0a0a;color:#00ff88;position:relative}
 body::after{content:"";position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 2px);pointer-events:none;opacity:0.1}
-.hit-entry,h1,h2,h3{color:#00ff88;font-family:Orbitron,sans-serif;text-shadow:0 0 8px rgba(0,255,136,0.3);border-bottom:2px solid #ff0055}
+.hit-entry,h1,h2,h3{color:#00ff88;font-family:'Courier Prime',monospace;text-shadow:0 0 8px rgba(0,255,136,0.3);border-bottom:2px solid #ff0055}
 .game-layout{flex-direction:row;margin-top:20px}
 .left-column{flex:1;max-width:350px;flex-direction:column}
 .right-column{flex:2}
@@ -18,7 +18,7 @@ body::after{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backgr
 .unit.back{border-left:4px solid #ff0055;background-color:#1a0a14}
 .unit.back .unit-name{color:#ff0055}
 .position-indicator{font-size:.6em;color:#ff0055;font-style:italic;margin-bottom:5px}
-.action-button,button#back{color:#fff;padding:10px 15px;cursor:pointer;font-family:Orbitron,sans-serif}
+.action-button,button#back{color:#fff;padding:10px 15px;cursor:pointer;font-family:'Courier Prime',monospace}
 #selection{border-radius:0;color:#00ff88;border:1px solid #00aaff}
 .action-button{background:#1a1a1a;border:2px solid #00aaff;margin:5px;border-radius:0;font-size:14px;position:relative;letter-spacing:1px;text-transform:uppercase}
 .action-button:hover{background:#002233;text-shadow:0 0 8px #00aaff}
