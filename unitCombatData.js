@@ -105,7 +105,7 @@ const darkActionsInit = function() {
         code: (target) => {
             this.previousAction = [false, true, false];
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action")
-            for (let i = 4; i > 0; i--) { attack(this, target); }
+            attack(this, target, 4);
             selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
         }
     };
@@ -126,9 +126,7 @@ const darkActionsInit = function() {
             this.attack *= 2;
             this.accuracy *= 1.5;
             logAction(`${this.name} focus fires on ${target[0].name}!`, "action")
-            attack(this, target);
-            attack(this, target);
-            attack(this, target);
+            attack(this, target, 3);
             resetStat(this, ["attack", "accuracy"]);
             const self = this;
             const modifier = createMod("Shoot 'em Up Evasion", "Temporary evasion boost",
@@ -172,7 +170,7 @@ const darkActionsInit = function() {
             logAction(`${this.name} shoots some damaku!`, "action")
             let target = unitFilter("enemy", "front", false);
             while (target.length > 6) { target = target.filter(unit => unit !== randTarget(target, true)) }
-            for (let i = 10; i > 0; i--) { attack(this, target); }
+            attack(this, target, 10);
             resetStat(this, ["attack", "accuracy"]);
             const self = this;
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
@@ -251,7 +249,7 @@ const electricActionsInit = function() {
             this.lethality *= 1.5;
             this.attack *= 1.3;
             logAction(`${this.name} channels a powerful electric discharge into ${target[0].name}!`, "action");
-            for (let i = 5; i > 0; i--) { attack(this, target); }
+            attack(this, target, 5);
             resetStat(this, ["lethality", "attack"]);
         }
     };
@@ -331,8 +329,7 @@ const servantActionsInit = function() {
         code: (target) => {
             this.attack *= 2;
             logAction(`${this.name} deals with ${target[0].name}`, "action")
-            attack(this, target);
-            attack(this, target);
+            attack(this, target, 2);
             resetStat(this, ["attack"]);
         }
     };
@@ -351,11 +348,11 @@ const servantActionsInit = function() {
             this.resource.stamina -= 60;
             this.previousAction = [true, false, false];
             logAction(`${this.name} takes out the trash!`, "action")
-            damage(this, target, [4]);
+            damage(this, target, [[4]]);
         }
     };
-    this.actions.sneakAttack = {
-        name: "Sneak Attack [stamina]",
+    this.actions.sneak = {
+        name: "Sneak [stamina]",
         cost: { stamina: 45 },
         description: "Costs 45 stamina\nLowers presence and increases accuracy and crit for 1 turn",
         code: () => {
@@ -366,7 +363,7 @@ const servantActionsInit = function() {
             this.resource.stamina -= 45;
             this.previousAction = [true, false, false];
             const self = this;
-            createMod("Sneak Attack Adjustment", "Combat focus modification",
+            createMod("Sneak Adjustment", "Combat focus modification",
                 { caster: self, targets: [self], duration: 1, stats: ["presence", "accuracy", "crit", "lethality"], values: [-0.5, 0.5, 0.9, 1] },
                 (vars) => {
                     vars.targets.forEach(unit => {
@@ -410,8 +407,7 @@ const classicJoyActionsInit = function() {
         },
         code: (targets) => {
             this.previousAction = [false, false, true];
-            attack(this, targets);
-            attack(this, targets);
+            attack(this, targets, 2);
             logAction(`${this.name} performs a Rapid Fire, boosting speed for 1 turn!`, "buff");
             const self = this;
             createMod("Rapid Fire Speed", "Temporary speed boost",
@@ -453,7 +449,7 @@ const classicJoyActionsInit = function() {
             this.accuracy *= 2;
             this.lethality *= 2.2;
             logAction(`${this.name} fires at ${target[0].name}!`, "action")
-            for (let i = 4; i > 0; i--) { attack(this, target); }
+            attack(this, target, 4);
             resetStat(this, ["accuracy", "lethality"]);
         }
     };
@@ -550,6 +546,120 @@ const classicJoyActionsInit = function() {
     };
 };
 
+const dexSoldierActionsInit = function() {
+    this.actions.hammer = {
+        name: "Hammer [physical]",
+        description: "Attacks a single target with increased damage and accuracy and increases speed for 1 turn.",
+        target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+        code: (target) => {
+            this.attack *= 3;
+            this.accuracy *= 2;
+            logAction(`${this.name} swings a hammer at ${target[0].name}`, "action")
+            attack(this, target);
+            const self = this.
+            createMod("Hammer Speed", "Temporary speed boost",
+                { caster: self, targets: [self], duration: 1, stat: "speed", value: .5 },
+                (vars) => {
+                        vars.caster.mult[vars.stat] += vars.value;
+                        resetStat(vars.caster, [vars.stat]);
+                },
+                (vars, unit) => {
+                    if (vars.caster === unit) {
+                        vars.targets.forEach(unit => {
+                            unit.mult[vars.stat] -= vars.value;
+                            resetStat(unit, [vars.stat]);
+                        });
+                        return true;
+                    }
+                }
+            );
+            resetStat(this, ["attack", "accuracy"]);
+        }
+    };
+    this.actions.quake = {
+        name: "Quake [stamina]",
+        cost: { stamina: 40 },
+        description: "Costs 40 stamina\nAttacks all frontline twice at reduced damage and acccuracy.",
+        target: () => {
+            if (this.resource.stamina < 40) {
+                showMessage("Not enough stamina!", "error", "selection");
+                return;
+            }
+            selectTarget(this.actions.takingOutTrash, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+        },
+        code: (target) => {
+            this.resource.stamina -= 40;
+            this.previousAction = [true, false, false];
+            this.attack *= .5;
+            this.accuracy *= .75;
+            logAction(`${this.name} hits the groud to create a tremor!`, "action")
+            attack(this, unitFilter("enemy", "front", false), 2);
+            resetStat(this, ["attack", "accuracy"]);
+        }
+    };
+    this.actions.determination = {
+        name: "Determination [stamina]",
+        cost: { stamina: 80 },
+        description: "Costs 80 stamina\nHeals 60hp this turn and the next 2 turns",
+        code: () => {
+            if (this.resource.stamina < 80) {
+                showMessage("Not enough stamina!", "error", "selection");
+                return;
+            }
+            this.resource.stamina -= 80;
+            this.previousAction = [true, false, false];
+            const self = this;
+            createMod("Determination", "Healing over time",
+                { caster: self, targets: [self], duration: 2, stats: ["hp"], values: [60] },
+                (vars) => {
+                    vars.targets.forEach(unit => { unit.hp += vars.values[0]; });
+                    logAction(`${vars.caster.name} slowly regains hp!`, "buff");
+                },
+                (vars, unit) => {
+                    if(vars.caster === unit) {
+                        vars.targets.forEach(unit => { unit.hp += vars.values[0]; });
+                        vars.duration--;
+                        if (vars.duration === 0) { return true; }
+                    }
+                }
+            );
+        }
+    };
+    this.actions.guard = {
+        name: "Guard [physical]",
+        description: "Increases defense and presence for 1 turn",
+        code: function() {
+            createMod("Guard", "Defense and presence increase",
+                { caster: this, targets: [this], duration: 1, stat: ["defense", "presence"], value: [1, 1] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if (vars.caster === unit) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                    }
+                }
+            );
+        }
+    };
+    this.actions.block = {
+        name: blockAction.name,
+        description: blockAction.description,
+        code: blockAction.code.bind(this)
+    };
+};
+
 const enemyActionsInit = function() {
     this.actions.basicAttack = {
         name: "Basic Attack",
@@ -557,9 +667,7 @@ const enemyActionsInit = function() {
         code: () => {
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} attacks ${target[0].name}`, "action");
-            attack(this, target);
-            attack(this, target);
-            attack(this, target);
+            attack(this, target, 3);
         }
     };
     this.actions.strongAttack = {
@@ -570,11 +678,11 @@ const enemyActionsInit = function() {
             this.resource.stamina -= 30;
             this.previousAction = [true, false, false];
             this.attack *= 2;
+            this.accuracy *= 1.5;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} unleashes two powerful strikes against ${target[0].name}!`, "action");
-            attack(this, target);
-            attack(this, target);
-            resetStat(this, ["attack"]);
+            attack(this, target, 2);
+            resetStat(this, ["attack", "accuracy"]);
         }
     };
     this.actions.dodge = {
@@ -600,8 +708,7 @@ const mysticEnemyActionsInit = function() {
             this.accuracy *= 1.5;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} fires mana bolts at ${target[0].name}!`, "action");
-            attack(this, target);
-            attack(this, target);
+            attack(this, target, 2);
             resetStat(this, ["accuracy"]);
         }
     };
@@ -859,8 +966,7 @@ const magitechEnemyActionsInit = function() {
             this.attack *= 1.5;
             const target = [randTarget(unitFilter("player", "", false))];
             logAction(`${this.name} fires an arcane cannon at ${target[0].name}!`, "action");
-            attack(this, target);
-            attack(this, target);
+            attack(this, target, 2);
             resetStat(this, ["attack"]);
         }
     };
@@ -998,6 +1104,7 @@ const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 25, 175, "fron
 const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 25, 150, "front", 100, 15, 75, 10, 200, 20], electricActionsInit);
 const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 15, 60, "front", 120, 14], servantActionsInit);
 const ClassicJoy = new Unit ("Classical (Joy)", [380, 75, 10, 75, 120, 15, 130, 30, 8, 110, "back", 120, 15, undefined, undefined, 90, 10], classicJoyActionsInit);
+const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95, 50, 6, 150, "front", 200, 25], dexSoldierActionsInit);
 const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 10, 100, "front", 100, 10], enemyActionsInit);
 const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 15, 100, "front", 80, 8, 180, 20], mysticEnemyActionsInit);
 const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 12, 110, "mid", 60, 6, undefined, undefined, 150, 15], technoEnemyActionsInit);

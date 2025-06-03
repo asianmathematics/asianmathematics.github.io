@@ -266,57 +266,62 @@ function cleanupGlobalHandlers() {
     window.handleActionClick = null;
 }
 
-function attack(attacker, defenders) {
-    const hit = [];
-    for (const unit of defenders) { 
-        const roll = Math.floor(Math.random() * 100 + 1);
-        if (roll === 1) {
-            hit.push(0);
-            return;
+function attack(attacker, defenders, num = 1) {
+    const array = [];
+    for (const unit of defenders) {
+        const hit = [];
+        for (let i = 0; i < num; i++) { 
+            const roll = Math.floor(Math.random() * 100 + 1);
+            if (roll === 1) { hit.push(0); continue; }
+            hit.push(10 * ((roll === 100 ? 2 * attacker.accuracy : attacker.accuracy) / unit.evasion ) + roll - 85);
         }
-        hit.push(10 * ((roll === 100 ? 2 * attacker.accuracy : attacker.accuracy) / unit.evasion ) + roll - 85);
+        array.push(hit);
     }
-    if (hit.some((num) => num > 0)){ crit(attacker, defenders, hit); }
-    else {logAction(`${attacker.name} misses ${defenders.length === 1 ? defenders[0].name : "all their attacks!"}`, "miss")}
+    crit(attacker, defenders, array);
 }
 
 function crit(attacker, defenders, hit) {
-    if (hit.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and hit (${hit}) array lengths are not equal`); }
-    const critical = [];
-    for (let i = 0; i < defenders.length; i++) { 
-        if (hit[i] < 0) { critical.push(0); continue; }
-        critical.push(hit[i] / (Math.max(5*defenders[i].resist - attacker.crit, 10)));
+    const array = [];
+    if (hit.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and hit (${hit}) array lengths are not equal`)}
+    for (let i = 0; i < defenders.length; i++) {
+        const critical = [];
+        for (let j = 0; j < hit[i].length; j++) { 
+            if (hit[i][j] <= 0) { critical.push(0); continue; }
+            critical.push(hit[i][j] / (Math.max(5*defenders[i].resist - attacker.crit, 10)));
+        }
+        array.push(critical);
     }
-    damage(attacker, defenders, critical);
+    damage(attacker, defenders, array);
 }
 
 function damage(attacker, defenders, critical) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
-    const hit = [];
-    const miss = [];
-    const crit = [];
-    let total = 0;
     for (let i = 0; i < defenders.length; i++) {
-        if (critical[i] === 0) {
-            miss.push(defenders[i].name);
-            continue;
+        const hit = [];
+        let total = 0;
+        for (let j = 0; j < critical[i].length; j++) {
+            if (critical[i][j] <= 0) {
+                hit.push('<i>0</i>');
+                continue;
+            } 
+            let result; 
+            if (critical[i][j] < 1) {
+                result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack, 1));
+                hit.push(`${result}`);
+                total += result;
+            } else {
+                result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack * critical[i][j], 1) + attacker.lethality * critical[i][j]);
+                hit.push(`<b>${result}</b>`);
+                total += result;
+            }
+            defenders[i].hp = Math.max(defenders[i].hp - result, 0);
         }
-        let result;
-        if (critical[i] < 1) {
-            result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack, 1));
-            hit.push(`${defenders[i].name} (${result})`);
-            total += result;
-        }
-        else {
-            result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack * critical[i], 1) + attacker.lethality * critical[i]);
-            crit.push(`${defenders[i].name} (${result})`);
-            total += result;
-        }
-        defenders[i].hp = Math.max(defenders[i].hp - result, 0);
+        if (total > 0) {
+            if (critical[i].length > 1) { logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} damage!`, "hit") }
+            else { logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit") }
+        } 
+        else { logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss") }
     }
-    if (miss.length > 0) { logAction(`${attacker.name} missed ${miss.join(", ")}!`, "miss"); }
-    if (hit.length > 0) { logAction(`${attacker.name} hits ${hit.join(", ")}${hit.length > 1 ? ` for a total of ${total} damage!` : '!'}`, "hit"); }
-    if (crit.length > 0) { logAction(`${attacker.name} critically hits ${crit.join(", ")}!`, "crit"); }
 }
 
 export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, };
