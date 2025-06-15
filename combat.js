@@ -7,6 +7,14 @@ let wave = 1;
 const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher];
 let selectedUnits = [];
 
+Dark.description = "4 star mystic unit with high evasion, speed, and offensive capabilities";
+Electric.description = "3 star magitech unit with high versitility";
+Servant.description = "3 star unit with stealth and critical hit capabilities";
+ClassicJoy.description = "4 star techno backline unit with high attack, low speed, and healing";
+DexSoldier.description = "3 star unit with strong offensive and tank abilities and low speed";
+Dandelion.description = "3 star mystic unit with decent evasion, speed, and offensive capabilities";
+FourArcher.description = "3 star mystic backline unit with high luck and low speed";
+
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
     const selectedContainer = document.getElementById('selected-units');
@@ -16,8 +24,8 @@ function initUnitSelection() {
     selectedUnits = [];
     availableUnits.forEach(unit => {
         const card = document.createElement('div');
-        const card = document.createElement('div');
         card.className = 'unit-card';
+        card.dataset.unit = unit.name;
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         const name = document.createElement('strong');
@@ -28,8 +36,6 @@ function initUnitSelection() {
         tooltip.appendChild(name);
         tooltip.appendChild(tooltipText);
         card.appendChild(tooltip);
-        card.innerHTML = `<strong>${unit.name}</strong>`;
-        card.dataset.unit = unit.name;
         card.addEventListener('click', () => {
             if (selectedUnits.length >= 4 && !card.classList.contains('selected')) {
                 showMessage('Maximum 4 units allowed!', 'warning', 'selection');
