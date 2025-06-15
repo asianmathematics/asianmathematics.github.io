@@ -14,6 +14,18 @@
         <button class="action-button" id="combatStart">Start Combat</button>
     </div>
     
+    <!-- Add unit selection panel -->
+    <div id="unit-selection-panel" style="display:none;">
+        <h3>Select Your Team (max 4 units)</h3>
+        <div id="unit-roster" class="unit-roster">
+            <!-- Units will be populated by JavaScript -->
+        </div>
+        <div id="selected-units" class="selected-units">
+            <h4>Selected Units (0/4)</h4>
+        </div>
+        <button id="start-with-selected" class="action-button">Start Combat</button>
+    </div>
+    
     <div class="game-layout">
         <div class="left-column">
             <div id="selection">
@@ -37,9 +49,20 @@
     <p style="color:white">Hover over (or hold on mobile) action buttons to see description</p>
 
     <script type="module">
-        import {startCombat} from './combat.js';
-        window.startCombat = startCombat;
-        document.getElementById('combatStart').addEventListener('click', function() {window.startCombat();});
+        // Initialize after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            import('./combat.js').then(module => {
+                window.startCombat = module.startCombat;
+                
+                // Add event listener to button
+                const startButton = document.getElementById('combatStart');
+                if (startButton) {
+                    startButton.addEventListener('click', function() {
+                        window.startCombat();
+                    });
+                }
+            });
+        });
     </script>
 </body>
 </html>

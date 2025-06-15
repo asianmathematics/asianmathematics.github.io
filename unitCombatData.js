@@ -507,7 +507,7 @@ const classicJoyActionsInit = function() {
             this.hp = Math.max(this.hp - 50, 0);
             const self = this;
             createMod("Joy", "Overall increase?",
-                { caster: self, targets: target, duration: 9, buffs: ["accuracy", "crit", "defense", "resist"], buffValues: [0.25, 0.4, 0.6, 0.4], debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: [-0.25, -0.4, -0.25, -0.1, -0.25], self: null },
+                { caster: self, targets: target, duration: 9, buffs: ["accuracy", "crit", "defense", "resist"], buffValues: [0.25, 0.4, 0.6, 0.4], debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: [-0.25, -0.4, -0.25, -0.1, -0.25] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.buffs.forEach((stat, i) => {
@@ -550,13 +550,13 @@ const dexSoldierActionsInit = function() {
     this.actions.hammer = {
         name: "Hammer [physical]",
         description: "Attacks a single target with increased damage and accuracy and increases speed for 1 turn.",
-        target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+        target: () => { selectTarget(this.actions.hammer, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.attack *= 3;
             this.accuracy *= 2;
             logAction(`${this.name} swings a hammer at ${target[0].name}`, "action")
             attack(this, target);
-            const self = this.
+            const self = this;
             createMod("Hammer Speed", "Temporary speed boost",
                 { caster: self, targets: [self], duration: 1, stat: "speed", value: .5 },
                 (vars) => {
@@ -580,14 +580,11 @@ const dexSoldierActionsInit = function() {
         name: "Quake [stamina]",
         cost: { stamina: 40 },
         description: "Costs 40 stamina\nAttacks all frontline twice at reduced damage and acccuracy.",
-        target: () => {
+        code: () => {
             if (this.resource.stamina < 40) {
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.takingOutTrash, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
-        },
-        code: (target) => {
             this.resource.stamina -= 40;
             this.previousAction = [true, false, false];
             this.attack *= .5;
@@ -657,6 +654,271 @@ const dexSoldierActionsInit = function() {
         name: blockAction.name,
         description: blockAction.description,
         code: blockAction.code.bind(this)
+    };
+};
+
+const dandelionActionsInit = function() {
+    this.actions.spellAttack = {
+        name: "Spell Attack [mystic]",
+        description: "Attacks a single target 4 times.",
+        target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+        code: (target) => {
+            this.previousAction = [false, true, false];
+            logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action")
+            attack(this, target, 4);
+            selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+        }
+    };
+    this.actions.focusFire = {
+        name: "Focus Fire [mana, physical]",
+        cost: { mana: 30 },
+        description: "Costs 30 mana\nHits a single target twice with increased accuracy and damage",
+        target: () => {
+            if (this.resource.mana < 30) {
+                showMessage("Not enough mana!", "error", "selection");
+                return;
+            }
+            selectTarget(this.actions.focusFire, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+        },
+        code: (target) => {
+            this.resource.mana -= 30;
+            this.previousAction = [true, true, false];
+            this.attack *= 1.5;
+            this.accuracy *= 1.25;
+            logAction(`${this.name} focus fires on ${target[0].name}!`, "action")
+            attack(this, target, 2);
+            resetStat(this, ["attack", "accuracy"]);
+            const self = this;
+        }
+    };
+    this.actions.danmaku = {
+        name: "Danmaku [mana]",
+        cost: { mana: 60 },
+        description: "Costs 60 mana\nDecreases evasion for 1 turn\nHits up to 4 random enemies 6 times with decreased accuracy and damage",
+        code: () => {
+            if (this.resource.mana < 60) {
+                showMessage("Not enough mana!", "error", "selection");
+                return;
+            }
+            this.resource.mana -= 60;
+            this.previousAction = [false, true, false];
+            this.attack *= .5;
+            this.accuracy *= .75;
+            logAction(`${this.name} shoots some damaku!`, "action")
+            let target = unitFilter("enemy", "front", false);
+            while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target, true)) }
+            attack(this, target, 6);
+            resetStat(this, ["attack", "accuracy"]);
+            const self = this;
+            createMod("Evasion Penalty", "Evasion reduced during danmaku",
+                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if(vars.caster === unit) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                    }
+                }
+            );
+        }
+    };
+    this.actions.feint = {
+        name: "Feint [stamina]",
+        cost: { stamina: 30 },
+        description: "Costs 30 stamina\nIncreases defense, evasion, and presense for 1 turn", 
+        code: () => {
+            if (this.resource.mana < 30) {
+                showMessage("Not enough mana!", "error", "selection");
+                return;
+            }
+            this.resource.mana -= 30;
+            this.previousAction = [true, false, false];
+            const will = resistDebuff(this, target)
+            createMod("Feint", "Defense, evasion, and presence increase",
+                { caster: this, targets: [this], duration: 1, stat: ["defense", "evasion", "presence"], value: [.25, 2.5, .75] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if (vars.caster === unit) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                    }
+                }
+            );
+        }
+    };
+    this.actions.dodge = {
+        name: dodgeAction.name,
+        description: dodgeAction.description,
+        code: dodgeAction.code.bind(this)
+    };
+};
+
+const fourArcherActionsInit = function() {
+    this.actions.perfectShot = {
+        name: "Perfect Shot [mystic]",
+        description: "Attacks a single target with increased accuracy and crit",
+        target: () => {
+            selectTarget(this.actions.perfectShot, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+        },
+        code: (target) => {
+            this.previousAction = [false, true, false];
+            this.accuracy *= 1.75;
+            this.crit *= 2.5;
+            logAction(`${this.name} shoots a mystic arrow!`, "action");
+            attack(this, target);
+            resetStat(this, ["accuracy", "crit"]);
+        }
+    };
+    this.actions.multishot = {
+        name: "Multi-shot [mana]",
+        cost: { mana: 20 },
+        description: "Costs 20 mana\nAttacks up to 3 targets with increased crit",
+        target: () => {
+            if (this.resource.mana < 20) {
+                showMessage("Not enough mana!", "error", "selection");
+                return;
+            }
+            selectTarget(this.actions.multishot, () => { playerTurn(this); }, [3, false, unitFilter("enemy", "front", false)]);
+        },
+        code: (targets) => {
+            this.resource.mana -= 20;
+            this.previousAction = [false, true, false];
+            this.crit *= 1.75;
+            logAction(`${this.name} fires multiple arrows!`, "action")
+            attack(this, targets);
+            resetStat(this, ["crit"]);
+        }
+    };
+    this.actions.luckyAura = {
+        name: "Lucky Aura [mana]",
+        cost: { mana: 40 },
+        description: "Costs 40 mana\nIncrease all luck based stats",
+        code: () => {
+            this.resource.mana -= 40;
+            this.previousAction = [false, true, false];
+            logAction(`${this.name} becomes luckier!`, "buff");
+            const self = this;
+            createMod("Lucky Aura", "Increased luck",
+                { caster: self, targets: [self], duration: 2, stats: ["accuracy", "crit", "evasion", "resist", "presence"], values: [0.75, 0.75, 0.25, 0.25, 0.25] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if(vars.targets.includes(unit)) {
+                        vars.duration--;
+                        if(vars.duration <= 0) {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        return true;
+                        }
+                    }
+                }
+            );
+        }
+            
+    };
+    this.actions.imposeLuck = {
+        name: "Impose Luck [mana]",
+        description: "Costs 20 mana\nIncreases ally accuracy and crit for 2 turns",
+        target: () => {
+            if (this.resource.mana < 20) {
+                showMessage("Not enough mana!", "error", "selection");
+                return;
+            }
+            selectTarget(this.actions.imposeLuck, () => { playerTurn(this); }, [3, false, unitFilter("player", "", false)]);
+        },
+        code: (target) => {
+        this.resource.mana -= 20;
+            this.previousAction = [false, true, false];
+            logAction(`${this.name} targets ${target[0].name} with a luck arrow!`, "buff");
+            const self = this;
+            createMod("Inpose Luck", "Increased accuracy and crit",
+                { caster: self, targets: [target], duration: 2, stats: ["accuracy", "crit"], values: [0.5, 0.5] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                },
+                (vars, unit) => {
+                    if(vars.targets.includes(unit)) {
+                        vars.duration--;
+                        if(vars.duration <= 0) {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        return true;
+                        }
+                    }
+                }
+            );
+        }
+    };
+    this.actions.rest = {
+        name: "Rest",
+        cost: { stamina: 40 },
+        description: "Regain 10 stamina and 12 mana and decreases evasion and speed for 1 turn",
+        code: () => {
+            this.resource.stamina += 10;
+            this.resource.mana += 12;
+            const self = this;
+            createMod("Resting", "decresed evasion and speed",
+                { caster: self, targets: [self], duration: 1, stats: ["evasion", "speed"], values: [-0.5, -0.25] },
+                (vars) => {
+                    vars.targets.forEach(unit => {
+                        vars.stats.forEach((stat, i) => {
+                            unit.mult[stat] += vars.values[i];
+                            resetStat(unit, [stat]);
+                        });
+                    });
+                    vars.self = modifier;
+                },
+                (vars, unit) => {
+                    if (vars.targets[0] === unit) {
+                        vars.targets.forEach(unit => {
+                            vars.stats.forEach((stat, i) => {
+                                unit.mult[stat] -= vars.values[i];
+                                resetStat(unit, [stat]);
+                            });
+                        });
+                        return true;
+                     }
+            });
+        }
     };
 };
 
@@ -1105,9 +1367,11 @@ const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 25, 150
 const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 15, 60, "front", 120, 14], servantActionsInit);
 const ClassicJoy = new Unit ("Classical (Joy)", [380, 75, 10, 75, 120, 15, 130, 30, 8, 110, "back", 120, 15, undefined, undefined, 90, 10], classicJoyActionsInit);
 const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95, 50, 6, 150, "front", 200, 25], dexSoldierActionsInit);
+const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 25, 16, 160, "front", 140, 15, 180, 20], dandelionActionsInit);
+const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 45, 7, 115, "back", 60, 4, 80, 6], fourArcherActionsInit);
 const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 10, 100, "front", 100, 10], enemyActionsInit);
 const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 15, 100, "front", 80, 8, 180, 20], mysticEnemyActionsInit);
 const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 12, 110, "mid", 60, 6, undefined, undefined, 150, 15], technoEnemyActionsInit);
 const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 15, 95, 45, 8, 140, "front", 90, 9, 120, 12, 120, 12], magitechEnemyActionsInit);
 
-export { Dark, Electric, Servant, ClassicJoy, enemy, mysticEnemy, technoEnemy, magitechEnemy };
+export { Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, enemy, mysticEnemy, technoEnemy, magitechEnemy };

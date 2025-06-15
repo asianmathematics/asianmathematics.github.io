@@ -1,19 +1,82 @@
-import {Dark, Electric, Servant, ClassicJoy, enemy, mysticEnemy, technoEnemy, magitechEnemy} from './unitCombatData.js';
+import {Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, enemy, mysticEnemy, technoEnemy, magitechEnemy} from './unitCombatData.js';
 import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
 
-export function startCombat() {
-    createUnit(Dark, 'player');
-    createUnit(Electric, 'player');
-    createUnit(Servant,  'player');
-    createUnit(ClassicJoy, 'player')
+const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher];
+let selectedUnits = [];
+
+function initUnitSelection() {
+    const roster = document.getElementById('unit-roster');
+    const selectedContainer = document.getElementById('selected-units');
+    const countDisplay = selectedContainer.querySelector('h4');
+    roster.innerHTML = '';
+    selectedContainer.innerHTML = '<h4>Selected Units (max of 4)</h4>';
+    selectedUnits = [];
+    availableUnits.forEach(unit => {
+        const card = document.createElement('div');
+        const card = document.createElement('div');
+        card.className = 'unit-card';
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        const name = document.createElement('strong');
+        name.textContent = unit.name;
+        const tooltipText = document.createElement('span');
+        tooltipText.className = 'tooltiptext';
+        tooltipText.textContent = unit.description;
+        tooltip.appendChild(name);
+        tooltip.appendChild(tooltipText);
+        card.appendChild(tooltip);
+        card.innerHTML = `<strong>${unit.name}</strong>`;
+        card.dataset.unit = unit.name;
+        card.addEventListener('click', () => {
+            if (selectedUnits.length >= 4 && !card.classList.contains('selected')) {
+                showMessage('Maximum 4 units allowed!', 'warning', 'selection');
+                return;
+            }
+            card.classList.toggle('selected');
+            if (card.classList.contains('selected')) { selectedUnits.push(unit); }
+            else { selectedUnits = selectedUnits.filter(u => u.name !== unit.name); }
+            countDisplay.textContent = `Selected Units (${selectedUnits.length}/4)`;
+            renderSelectedUnits();
+        });
+        roster.appendChild(card);
+    });
+    document.getElementById('start-with-selected').addEventListener('click', () => {
+        if (selectedUnits.length === 0) {
+            showMessage('Please select at least 1 unit!', 'error', 'selection');
+            return;
+        }
+        startCombatWithSelected();
+    });
+}
+
+function renderSelectedUnits() {
+    const container = document.getElementById('selected-units');
+    container.querySelectorAll('.unit-card').forEach(card => card.remove());
+    selectedUnits.forEach(unit => {
+        const card = document.createElement('div');
+        card.className = 'unit-card selected';
+        card.innerHTML = `<strong>${unit.name}</strong>`;
+        container.appendChild(card);
+    });
+}
+
+function startCombatWithSelected() {
+    document.getElementById('unit-selection-panel').style.display = 'none';
+    selectedUnits.forEach(unit => { createUnit(unit, 'player') });
     createUnit(enemy, 'enemy');
     createUnit(enemy, 'enemy');
     createUnit(magitechEnemy, 'enemy');
     updateBattleDisplay();
     combatTick();
+}
+
+export function startCombat() {
+    document.getElementById('unit-selection-panel').style.display = 'block';
+    document.getElementById('game-controls').style.display = 'none';
+    initUnitSelection();
 }
 
 function getModifiersDisplay() {

@@ -17,6 +17,11 @@ body::after{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backgr
 .unit-name{font-weight:700;font-size:.9em;margin-bottom:5px;color:#00ff88}
 .unit.back{border-left:4px solid #ff0055;background-color:#1a0a14}
 .unit.back .unit-name{color:#ff0055}
+.unit-roster, .selected-units{display:flex;flex-wrap:wrap;gap:10px;margin:15px 0}
+.unit-card{width:120px;padding:10px;border:1px solid #00ff88;cursor:pointer; transition:all 0.2s}
+.unit-card:hover{background-color: #002233}
+.unit-card.selected{border-color:#ff0055;box-shadow:0 0 10px rgba(255, 0, 85, 0.5)}
+.selected-units .unit-card{width:100px;opacity:0.9}
 .position-indicator{font-size:.6em;color:#ff0055;font-style:italic;margin-bottom:5px}
 .action-button,button#back{color:#fff;padding:10px 15px;cursor:pointer;font-family:'Courier Prime',monospace}
 #selection{border-radius:0;color:#00ff88;border:1px solid #00aaff}
