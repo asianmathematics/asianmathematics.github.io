@@ -11,9 +11,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             this.resource.energy -= 25;
             logAction(`${this.name} fires laser beams!`, "action");
             let target = unitFilter("player", "front", false);
-            while (target.length > 2) { 
-                target = target.filter(unit => unit !== randTarget(target)); 
-            }
+            while (target.length > 2) { target = target.filter(unit => unit !== randTarget(target)); }
             attack(this, target);
         }
     };
@@ -27,8 +25,9 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             this.resource.energy -= 35;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} disrupts ${target[0].name}'s defenses!`, "action");
+            const self = this;
             createMod("Shield Disruption", "Defense reduction",
-                { caster: this, targets: target, duration: 2, stats: ["defense", "resist"], values: [-0.3, -0.3] },
+                { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: [-0.3, -0.3] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -65,10 +64,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
                 const target = [randTarget(allies)];
                 target[0].hp = Math.min(target[0].base.hp, target[0].hp + 60);
                 logAction(`${this.name} repairs ${target[0].name}!`, "heal");
-            }
-            else { 
-                logAction(`${this.name} tries repairing an ally, but there's no allies to repair.`, "warning"); 
-            }
+            } else { logAction(`${this.name} tries repairing an ally, but there's no allies to repair.`, "warning"); }
         }
     };
 
@@ -80,8 +76,9 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             this.previousAction = [true, false, true];
             this.resource.stamina -= 10;
             this.resource.energy -= 30;
+            const self = this;
             createMod("Overcharge Boost", "Power surge",
-                { caster: this, targets: [this], duration: 2, stats: ["attack", "speed"], values: [0.4, 0.3] },
+                { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.4, 0.3] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -130,7 +127,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
                 this.base.defense = 10;
                 this.base.lethality = 26;
                 this.base.evasion = 16;
-                this.base.speed = 15;
+                this.base.speed = 115;
                 this.base.presence = 125;
                 this.actions.actionWeight = {
                     laserBlast: 0.2, 
@@ -147,7 +144,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
                 this.base.defense = 12;
                 this.base.lethality = 20;
                 this.base.evasion = 20;
-                this.base.speed = 12;
+                this.base.speed = 110;
                 this.base.presence = 110;
                 this.actions.actionWeight = {
                     laserBlast: 0.5, 
@@ -166,10 +163,11 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
     this.actions.dodge = {
         name: "Dodge [physical]",
         description: "Increases evasion for 1 turn",
-        code: function() {
+        code: () => {
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
+                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);

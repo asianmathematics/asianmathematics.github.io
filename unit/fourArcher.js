@@ -5,9 +5,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 
     this.actions.perfectShot = {
         name: "Perfect Shot [mystic]",
         description: "Attacks a single target with increased accuracy and crit",
-        target: () => {
-            selectTarget(this.actions.perfectShot, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
-        },
+        target: () => { selectTarget(this.actions.perfectShot, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.previousAction = [false, true, false];
             this.accuracy *= 1.75;
@@ -47,8 +45,9 @@ export const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 
             this.resource.mana -= 40;
             this.previousAction = [false, true, false];
             logAction(`${this.name} becomes luckier!`, "buff");
-            createMod("Lucky Aura", "Increased luck",
-                { caster: this, targets: [this], duration: 2, stats: ["accuracy", "crit", "evasion", "resist", "presence"], values: [0.75, 0.75, 0.25, 0.25, 0.25] },
+            const self = this;
+						createMod("Lucky Aura", "Increased luck",
+                { caster: self, targets: [self], duration: 2, stats: ["accuracy", "crit", "evasion", "resist", "presence"], values: [0.75, 0.75, 0.25, 0.25, 0.25] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -88,8 +87,9 @@ export const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 
             this.resource.mana -= 20;
             this.previousAction = [false, true, false];
             logAction(`${this.name} targets ${target[0].name} with a luck arrow!`, "buff");
-            createMod("Impose Luck", "Increased accuracy and crit",
-                { caster: this, targets: target, duration: 2, stats: ["accuracy", "crit"], values: [0.5, 0.5] },
+            const self = this;
+						createMod("Impose Luck", "Increased accuracy and crit",
+                { caster: self, targets: target, duration: 2, stats: ["accuracy", "crit"], values: [0.5, 0.5] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -120,8 +120,9 @@ export const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 
         code: () => {
             this.resource.stamina = Math.min(this.resource.stamina + 10, this.base.resource.stamina);
             this.resource.mana = Math.min(this.resource.mana + 12, this.base.resource.mana);
-            createMod("Resting", "decresed evasion and speed",
-                { caster: this, targets: [this], duration: 1, stats: ["evasion", "speed"], values: [-0.5, -0.25] },
+            const self = this;
+						createMod("Resting", "decresed evasion and speed",
+                { caster: self, targets: [self], duration: 1, stats: ["evasion", "speed"], values: [-0.5, -0.25] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {

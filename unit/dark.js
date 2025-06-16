@@ -5,9 +5,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
         description: "Attacks a single target 4 times.",
-        target: () => { 
-            selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); 
-        },
+        target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.previousAction = [false, true, false];
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
@@ -34,8 +32,9 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
             logAction(`${this.name} focus fires on ${target[0].name}!`, "action");
             attack(this, target, 3);
             resetStat(this, ["attack", "accuracy"]);
+            const self = this;
             createMod("Shoot 'em Up Evasion", "Temporary evasion boost",
-                { caster: this, targets: [this], duration: 1, stats: ["evasion"], values: [1.5] },
+                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [1.5] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -75,13 +74,12 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
             this.accuracy *= .75;
             logAction(`${this.name} shoots some damaku!`, "action");
             let target = unitFilter("enemy", "front", false);
-            while (target.length > 6) { 
-                target = target.filter(unit => unit !== target[Math.floor(Math.random() * target.length)]); 
-            }
+            while (target.length > 6) { target = target.filter(unit => unit !== target[Math.floor(Math.random() * target.length)]); }
             attack(this, target, 10);
             resetStat(this, ["attack", "accuracy"]);
+            const self = this;
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
-                { caster: this, targets: [this], duration: 1, stats: ["evasion"], values: [-0.5] },
+                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -125,24 +123,20 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                     target[0].resource.mana = 0;
                     target[0].previousAction[1] = true;
                     logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
-                }
-                else {
-                    logAction(`${target[0].name} resists dispel magic`, "miss");
-                }
+                } else { logAction(`${target[0].name} resists dispel magic`, "miss"); }
             }
-            else { 
-                logAction(`${target[0].name} has no magic to dispel!`, "warning"); 
-            }
+            else { logAction(`${target[0].name} has no magic to dispel!`, "warning"); }
         }
     };
 
     this.actions.dodge = {
         name: "Dodge [physical]",
         description: "Increases evasion for 1 turn",
-        code: function() {
+        code: () => {
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
+                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);

@@ -39,8 +39,9 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
             this.resource.energy -= 40;
             this.previousAction = [false, false, true];
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
+            const self = this;
             createMod("Sick Beats Buff", "Rhythmic performance enhancement",
-                { caster: this, targets: target, duration: 3, stats: ["speed", "presence"], values: [0.5, 0.7] },
+                { caster: self, targets: target, duration: 3, stats: ["speed", "presence"], values: [0.5, 0.7] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -50,7 +51,7 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
                     });
                 },
                 (vars, unit) => {
-                    if(vars.targets.includes(unit)) {
+                    if (vars.targets.includes(unit)) {
                         vars.duration--;
                         if(vars.duration <= 0) {
                             vars.stats.forEach((stat, i) => {
@@ -84,10 +85,11 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
     this.actions.dodge = {
         name: "Dodge [physical]",
         description: "Increases evasion for 1 turn",
-        code: function() {
+        code: () => {
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
+                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);
@@ -109,9 +111,10 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
     this.actions.block = {
         name: "Block",
         description: "Increases defense for 1 turn",
-        code: function() {
+        code: () => {
+            const self = this;
             createMod("Block", "Defense increased",
-                { caster: this, targets: [this], duration: 1, stat: "defense", value: 1 },
+                { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);

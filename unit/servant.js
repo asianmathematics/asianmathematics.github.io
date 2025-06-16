@@ -5,9 +5,7 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
     this.actions.meleeAttack = {
         name: "Melee Attack",
         description: "Attacks a single target twice with increased damage.",
-        target: () => { 
-            selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); 
-        },
+        target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.attack *= 2;
             logAction(`${this.name} deals with ${target[0].name}`, "action");
@@ -46,8 +44,9 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
             }
             this.resource.stamina -= 45;
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Sneak Adjustment", "Combat focus modification",
-                { caster: this, targets: [this], duration: 1, stats: ["presence", "accuracy", "crit", "lethality"], values: [-0.5, 0.5, 0.9, 1] },
+                { caster: self, targets: [self], duration: 1, stats: ["presence", "accuracy", "crit", "lethality"], values: [-0.5, 0.5, 0.9, 1] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -73,10 +72,11 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
     this.actions.dodge = {
         name: "Dodge [physical]",
         description: "Increases evasion for 1 turn",
-        code: function() {
+        code: () => {
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
+                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);
@@ -98,9 +98,10 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
     this.actions.block = {
         name: "Block",
         description: "Increases defense for 1 turn",
-        code: function() {
+        code: () => {
+            const self = this;
             createMod("Block", "Defense increased",
-                { caster: this, targets: [this], duration: 1, stat: "defense", value: 1 },
+                { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);

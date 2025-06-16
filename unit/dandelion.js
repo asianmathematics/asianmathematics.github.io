@@ -52,13 +52,12 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
             this.accuracy *= .75;
             logAction(`${this.name} shoots some damaku!`, "action");
             let target = unitFilter("enemy", "front", false);
-            while (target.length > 4) { 
-                target = target.filter(unit => unit !== randTarget(target, true)); 
-            }
+            while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target, true)); }
             attack(this, target, 6);
             resetStat(this, ["attack", "accuracy"]);
+            const self = this;
             createMod("Evasion Penalty", "Evasion reduced during danmaku",
-                { caster: this, targets: [this], duration: 1, stats: ["evasion"], values: [-0.5] },
+                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -93,8 +92,9 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
             }
             this.resource.stamina -= 30;
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Feint", "Defense, evasion, and presence increase",
-                { caster: this, targets: [this], duration: 1, stats: ["defense", "evasion", "presence"], values: [.25, 2.5, .75] },
+                { caster: self, targets: [self], duration: 1, stats: ["defense", "evasion", "presence"], values: [.25, 2.5, .75] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -121,10 +121,11 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
     this.actions.dodge = {
         name: "Dodge [physical]",
         description: "Increases evasion for 1 turn",
-        code: function() {
+        code: () => {
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
+                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);

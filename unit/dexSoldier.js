@@ -5,16 +5,15 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
     this.actions.hammer = {
         name: "Hammer [physical]",
         description: "Attacks a single target with increased damage and accuracy and increases speed for 1 turn.",
-        target: () => { 
-            selectTarget(this.actions.hammer, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); 
-        },
+        target: () => { selectTarget(this.actions.hammer, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.attack *= 3;
             this.accuracy *= 2;
             logAction(`${this.name} swings a hammer at ${target[0].name}`, "action");
             attack(this, target);
+            const self = this;
             createMod("Hammer Speed", "Temporary speed boost",
-                { caster: this, targets: [this], duration: 1, stat: "speed", value: .5 },
+                { caster: self, targets: [self], duration: 1, stat: "speed", value: .5 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);
@@ -64,20 +63,15 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
             this.resource.stamina -= 80;
             this.hp = Math.min(this.hp + 60, this.base.hp);
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Determination", "Healing over time",
-                { caster: this, targets: [this], duration: 2, stats: ["hp"], values: [60] },
-                (vars) => { 
-                    logAction(`${vars.caster.name} slowly regains hp!`, "buff"); 
-                },
+                { caster: self, targets: [self], duration: 2, stats: ["hp"], values: [60] },
+                (vars) => { logAction(`${vars.caster.name} slowly regains hp!`, "buff"); },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => { 
-                            unit.hp = Math.min(unit.hp + vars.values[0], unit.base.hp); 
-                        });
+                        caster.hp = Math.min(caster.hp + vars.values[0], caster.base.hp);
                         vars.duration--;
-                        if (vars.duration === 0) { 
-                            return true; 
-                        }
+                        if (vars.duration === 0) { return true; }
                     }
                 }
             );
@@ -87,10 +81,11 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
     this.actions.guard = {
         name: "Guard [physical]",
         description: "Increases defense and presence for 1 turn",
-        code: function() {
+        code: () => {
             this.previousAction = [true, false, false];
+            const self = this;
             createMod("Guard", "Defense and presence increase",
-                { caster: this, targets: [this], duration: 1, stats: ["defense", "presence"], values: [1, 1] },
+                { caster: self, targets: [self], duration: 1, stats: ["defense", "presence"], values: [1, 1] },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
@@ -117,9 +112,10 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
     this.actions.block = {
         name: "Block",
         description: "Increases defense for 1 turn",
-        code: function() {
+        code: () => {
+            const self = this;
             createMod("Block", "Defense increased",
-                { caster: this, targets: [this], duration: 1, stat: "defense", value: 1 },
+                { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },
                 (vars) => {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);
