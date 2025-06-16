@@ -92,6 +92,7 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
             }
             this.resource.stamina -= 30;
             this.previousAction = [true, false, false];
+            logAction(`${this.name} draws attention to himself!`, "action");
             const self = this;
             createMod("Feint", "Defense, evasion, and presence increase",
                 { caster: self, targets: [self], duration: 1, stats: ["defense", "evasion", "presence"], values: [.25, 2.5, .75] },

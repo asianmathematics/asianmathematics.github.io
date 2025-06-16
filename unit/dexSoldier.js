@@ -63,6 +63,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
             this.resource.stamina -= 80;
             this.hp = Math.min(this.hp + 60, this.base.hp);
             this.previousAction = [true, false, false];
+            logAction(`...but ${this.name} refused!`, "action");
             const self = this;
             createMod("Determination", "Healing over time",
                 { caster: self, targets: [self], duration: 2, stats: ["hp"], values: [60] },
@@ -83,6 +84,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
         description: "Increases defense and presence for 1 turn",
         code: () => {
             this.previousAction = [true, false, false];
+            logAction(`${this.name} protects the team!`, "action");
             const self = this;
             createMod("Guard", "Defense and presence increase",
                 { caster: self, targets: [self], duration: 1, stats: ["defense", "presence"], values: [1, 1] },

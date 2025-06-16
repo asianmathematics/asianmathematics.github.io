@@ -120,6 +120,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 
         code: () => {
             this.resource.stamina = Math.min(this.resource.stamina + 10, this.base.resource.stamina);
             this.resource.mana = Math.min(this.resource.mana + 12, this.base.resource.mana);
+            logAction(`${this.name} sat around lazily.`, "action");
             const self = this;
 						createMod("Resting", "decresed evasion and speed",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion", "speed"], values: [-0.5, -0.25] },
