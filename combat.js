@@ -1,4 +1,14 @@
-import {Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, enemy, mysticEnemy, technoEnemy, magitechEnemy} from './unitCombatData.js';
+import { Dark } from './unit/dark.js';
+import { Electric } from './unit/electric.js';
+import { Servant } from './unit/servant.js';
+import { ClassicJoy } from './unit/classicJoy.js';
+import { DexSoldier } from './unit/dexSoldier.js';
+import { Dandelion } from './unit/dandelion.js';
+import { FourArcher } from './unit/fourArcher.js';
+import { enemy } from './unit/enemy.js';
+import { mysticEnemy } from './unit/mysticEnemy.js';
+import { technoEnemy } from './unit/technoEnemy.js';
+import { magitechEnemy } from './unit/magitechEnemy.js';
 import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
