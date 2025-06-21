@@ -238,7 +238,7 @@ function createUnit(unit, team) {
     if (newUnit.position === "mid") { newUnit.position = "back"; }
     newUnit.team = team;
     allUnits.push(newUnit);
-    newUnit.actionInit();
+    newUnit.actionsInit();
     newUnit.timer = 300
 }
 
@@ -251,7 +251,7 @@ function cloneUnit(unit) {
         resource: { ...unit.base.resource },
         actions: {},
     };
-    newUnit.actionInit = unit.actionInit;
+    newUnit.actionsInit = unit.actionsInit;
     for (const stat in newUnit.base) {
         if (typeof newUnit.base[stat] === 'object') { continue; }
         if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat]; }

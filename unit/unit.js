@@ -47,6 +47,6 @@ export class Unit {
         this.actions = {};
         this.previousAction = [false, false, false];
         
-        if (actionsInit) actionsInit.call(this);
+        this.actionsInit = actionsInit;
     }
 }

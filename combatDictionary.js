@@ -65,14 +65,20 @@ function updateMod(unit) {
     }
 }
 
-function resetStat(unit, statList) {
-     for (const stat of statList) {
+function resetStat(unit, statList, values = null, add = true) {
+    if (values && values.length > 0) {
+        for (let i = 0; i < Math.min(statList.length, values.length); i++) {
+            if (statList[i].includes('.')) {
+                const [parent, child] = statList[i].split('.');
+                unit.mult[parent][child] += add ? values[i] : -values[i];
+            } else { unit.mult[statList[i]] += add ? values[i] : -values[i]; }
+        }
+    }
+    for (const stat of statList) {
         if (stat.includes('.')) {
             const [parent, child] = stat.split('.');
             unit[parent][child] = unit.base[parent][child] * Math.max(0.2, unit.mult[parent][child]);
-            continue;
-        }
-        unit[stat] = unit.base[stat] * Math.max(0.2, unit.mult[stat]);
+        } else { unit[stat] = unit.base[stat] * Math.max(0.2, unit.mult[stat]); }
     }
 }
 
