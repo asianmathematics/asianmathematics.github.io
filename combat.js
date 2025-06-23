@@ -127,7 +127,7 @@ function updateBattleDisplay() {
             <div class='unit-name'>${unit.name}</div>
             <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>`
             if (unit.hp > 0) {
-                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
+                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
                 const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
                 const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
                 battleDisplay += `
@@ -179,7 +179,7 @@ function updateBattleDisplay() {
             <div class='unit-name'>${unit.name}</div>
             <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>`
             if (unit.hp > 0) {
-                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 3)));
+                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
                 const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
                 const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
                 battleDisplay += `
@@ -239,7 +239,7 @@ function createUnit(unit, team) {
     newUnit.team = team;
     allUnits.push(newUnit);
     newUnit.actionsInit();
-    newUnit.timer = 300
+    newUnit.timer = 1000;
 }
 
 function cloneUnit(unit) {
@@ -342,7 +342,7 @@ async function combatTick() {
     regenerateResources(turn);
     updateMod(turn);
     updateBattleDisplay();
-    turn.timer = 300;
+    turn.timer = 1000;
     if (turn.team === "player") { playerTurn(turn); }
     if (turn.team === "enemy") { enemyTurn(turn); }
     turnCounter++
