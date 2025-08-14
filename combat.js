@@ -9,11 +9,15 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
-import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
+import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, eventState } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
-
+const gameState = {
+    isCombatActive: false,
+    isActionInProgress: false,
+};
+const uiElements = {};
 const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher];
 let selectedUnits = [];
 
@@ -85,147 +89,103 @@ function startCombatWithSelected() {
     createUnit(enemy, 'enemy');
     createUnit(enemy, 'enemy');
     createUnit(magitechEnemy, 'enemy');
-    updateBattleDisplay();
-    combatTick();
+    initBattleDisplay();
+    gameLoop();
 }
 
 export function startCombat() {
+    gameState.isCombatActive = true;
     document.getElementById('unit-selection-panel').style.display = 'block';
     document.getElementById('game-controls').style.display = 'none';
     initUnitSelection();
 }
 
-function getModifiersDisplay() {
-    let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
-    if (modifiers.length === 0) { 
-        modDisplay += "<p>No active modifiers</p>"; 
-    }
-    else {
-        modDisplay += "<ul class='modifier-list'>";
-        for (const modifier of modifiers) {
-            const caster = modifier.vars.caster?.name || "System";
-            const targets = modifier.vars.targets.map(u => u.name).join(", ");
-            modDisplay += `
-            <li class="modifier-item">
-                <span class="modifier-caster">${caster}'s</span>
-                <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
-                <div class="modifier-targets">Targets: ${targets}</div>
-                <div class="modifier-duration">${modifier.vars.duration} turn(s) left</div>
-            </li>`;
+function initBattleDisplay() {
+    const playerTeamContainer = document.querySelector('.player-team');
+    const enemyTeamContainer = document.querySelector('.enemy-team');
+    playerTeamContainer.innerHTML = '<h2 class="team-header">Player Team</h2><div class="unit-row"></div>';
+    enemyTeamContainer.innerHTML = '<h2 class="team-header">Enemy Team: Wave ' + wave + '</h2><div class="unit-row"></div>';
+    const playerUnitRow = playerTeamContainer.querySelector('.unit-row');
+    const enemyUnitRow = enemyTeamContainer.querySelector('.unit-row');
+    allUnits.forEach(unit => {
+        const unitContainer = document.createElement('div');
+        unitContainer.className = `unit ${unit.position === "back" ? "back" : ""}`;
+        unitContainer.id = `unit-container-${unit.name}`;
+        let innerHTML = `
+            <div class='unit-name'>${unit.name}</div>
+            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
+            <div class='stat-row'>
+                <div class='stat-label'>HP: <span id="hp-val-${unit.name}">${Math.max(0, unit.hp)}/${unit.base.hp}</span></div>
+                <div class='stat-bar-container'><div class='stat-bar hp-bar' id="hp-bar-${unit.name}"></div></div>
+            </div>
+            <div class='stat-row'>
+                <div class='stat-label'>Stamina: <span id="stamina-val-${unit.name}">${Math.floor(unit.resource.stamina)}/${unit.base.resource.stamina}</span></div>
+                <div class='stat-bar-container'><div class='stat-bar stamina-bar' id="stamina-bar-${unit.name}"></div></div>
+            </div>
+        `;
+        if (unit.base.resource.mana) {
+            innerHTML += `<div class='stat-row'>
+                <div class='stat-label'>Mana: <span id="mana-val-${unit.name}">${Math.floor(unit.resource.mana)}/${unit.base.resource.mana}</span></div>
+                <div class='stat-bar-container'><div class='stat-bar mana-bar' id="mana-bar-${unit.name}"></div></div>
+            </div>`;
         }
-        modDisplay += "</ul>";
-    }
-    return modDisplay + "</div>";
+        if (unit.base.resource.energy) {
+            innerHTML += `<div class='stat-row'>
+                <div class='stat-label'>Energy: <span id="energy-val-${unit.name}">${Math.floor(unit.resource.energy)}/${unit.base.resource.energy}</span></div>
+                <div class='stat-bar-container'><div class='stat-bar energy-bar' id="energy-bar-${unit.name}"></div></div>
+            </div>`;
+        }
+        innerHTML += `<div class='stat-row'>
+            <div class='stat-label'>Ready: <span id="ready-val-${unit.name}">Charging...</span></div>
+            <div class='stat-bar-container'><div class='stat-bar timer-bar' id="timer-bar-${unit.name}"></div></div>
+        </div>`;
+        unitContainer.innerHTML = innerHTML;
+        if (unit.team === 'player') { playerUnitRow.appendChild(unitContainer); }
+        else { enemyUnitRow.appendChild(unitContainer); }
+        uiElements[unit.name] = {
+            container: unitContainer,
+            hpVal: document.getElementById(`hp-val-${unit.name}`),
+            hpBar: document.getElementById(`hp-bar-${unit.name}`),
+            staminaVal: document.getElementById(`stamina-val-${unit.name}`),
+            staminaBar: document.getElementById(`stamina-bar-${unit.name}`),
+            manaVal: document.getElementById(`mana-val-${unit.name}`),
+            manaBar: document.getElementById(`mana-bar-${unit.name}`),
+            energyVal: document.getElementById(`energy-val-${unit.name}`),
+            energyBar: document.getElementById(`energy-bar-${unit.name}`),
+            readyVal: document.getElementById(`ready-val-${unit.name}`),
+            timerBar: document.getElementById(`timer-bar-${unit.name}`),
+        };
+        renderUnitStats(unit);
+    });
 }
 
-function updateBattleDisplay() {
-    let battleDisplay = getModifiersDisplay();
-    battleDisplay += "<div class='battle-display'>";
-    battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
-    for (const unit of unitFilter("player", '')) {
-        battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
-            <div class='unit-name'>${unit.name}</div>
-            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>`
-            if (unit.hp > 0) {
-                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
-                const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
-                const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
-                battleDisplay += `
-                <div class='stat-row'>
-                    <div class='stat-label'>HP: ${Math.max(0, unit.hp)}/${unit.base.hp}</div>
-                    <div class='stat-bar-container'>
-                        <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
-                    </div>
-                </div>
-                <div class='stat-row'>
-                    <div class='stat-label'>Stamina: ${Math.floor(unit.resource.stamina)}/${unit.base.resource.stamina}</div>
-                    <div class='stat-bar-container'>
-                        <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
-                    </div>
-                </div>`;
-                if (unit.base.resource.mana) {
-                    const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
-                    battleDisplay += `
-                    <div class='stat-row'>
-                        <div class='stat-label'>Mana: ${Math.floor(unit.resource.mana)}/${unit.base.resource.mana}</div>
-                        <div class='stat-bar-container'>
-                            <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
-                        </div>
-                    </div>`;
-                }
-                if (unit.base.resource.energy) {
-                    const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
-                    battleDisplay += `
-                    <div class='stat-row'>
-                        <div class='stat-label'>Energy: ${Math.floor(unit.resource.energy)}/${unit.base.resource.energy}</div>
-                        <div class='stat-bar-container'>
-                            <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
-                        </div>
-                    </div>`;
-                }
-                battleDisplay += `
-                <div class='stat-row'>
-                    <div class='stat-label'>Ready: ${unit.timer <= 0 ? 'Yes!' : 'Charging...'}</div>
-                    <div class='stat-bar-container'>
-                        <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
-                    </div>
-                </div>`;
-            }
-            battleDisplay += `</div>`;
+function renderUnitStats(unit) {
+    const elements = uiElements[unit.name];
+    if (!elements) { return }
+    elements.hpVal.textContent = `${Math.max(0, unit.hp)}/${unit.base.hp}`;
+    elements.hpBar.style.width = `${Math.max(0, (unit.hp / unit.base.hp) * 100)}%`;
+    elements.staminaVal.textContent = `${Math.floor(unit.resource.stamina)}/${unit.base.resource.stamina}`;
+    elements.staminaBar.style.width = `${(unit.resource.stamina / unit.base.resource.stamina) * 100}%`;
+    if (elements.manaBar) {
+        elements.manaVal.textContent = `${Math.floor(unit.resource.mana)}/${unit.base.resource.mana}`;
+        elements.manaBar.style.width = `${(unit.resource.mana / unit.base.resource.mana) * 100}%`;
     }
-    battleDisplay += `</div><div class='team enemy-team'><h2>Enemy Team: Wave ${wave}</h2>`;
-    for (const unit of unitFilter("enemy", '')) {
-        battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
-            <div class='unit-name'>${unit.name}</div>
-            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>`
-            if (unit.hp > 0) {
-                const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
-                const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
-                const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
-                battleDisplay += `
-                <div class='stat-row'>
-                    <div class='stat-label'>HP</div>
-                    <div class='stat-bar-container'>
-                        <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
-                    </div>
-                </div>
-                <div class='stat-row'>
-                    <div class='stat-label'>Stamina</div>
-                    <div class='stat-bar-container'>
-                        <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
-                    </div>
-                </div>`;
-                if (unit.base.resource.mana) {
-                    const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
-                    battleDisplay += `
-                    <div class='stat-row'>
-                        <div class='stat-label'>Mana</div>
-                        <div class='stat-bar-container'>
-                            <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
-                        </div>
-                    </div>`;
-                }
-                if (unit.base.resource.energy) {
-                    const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
-                    battleDisplay += `
-                    <div class='stat-row'>
-                        <div class='stat-label'>Energy</div>
-                        <div class='stat-bar-container'>
-                            <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
-                        </div>
-                    </div>`;
-                }
-                battleDisplay += `
-                <div class='stat-row'>
-                    <div class='stat-label'>Ready: ${unit.timer <= 0 ? 'Yes!' : 'Charging...'}</div>
-                    <div class='stat-bar-container'>
-                        <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
-                    </div>
-                </div>`;
-            }
-            battleDisplay += `</div>`;
+    if (elements.energyBar) {
+        elements.energyVal.textContent = `${Math.floor(unit.resource.energy)}/${unit.base.resource.energy}`;
+        elements.energyBar.style.width = `${(unit.resource.energy / unit.base.resource.energy) * 100}%`;
     }
-    document.getElementById("battle-container").innerHTML = battleDisplay + "</div></div>";
+    if (unit.hp <= 0) { elements.container.classList.add('defeated') }
+    else { elements.container.classList.remove('defeated') }
+}
+
+function renderAllTimers() {
+    for (const unit of allUnits) {
+        if (unit.hp > 0) {
+            const timerProgress = Math.max(0, Math.min(100, 100 - (unit.timer / 10)));
+            uiElements[unit.name].timerBar.style.width = `${timerProgress}%`;
+            uiElements[unit.name].readyVal.textContent = unit.timer <= 0 ? 'Yes!' : 'Charging...';
+        }
+    }
 }
 
 function createUnit(unit, team) {
@@ -240,6 +200,7 @@ function createUnit(unit, team) {
     allUnits.push(newUnit);
     newUnit.actionsInit();
     newUnit.timer = 1000;
+    newUnit.stun = false;
 }
 
 function cloneUnit(unit) {
@@ -283,6 +244,8 @@ function advanceWave() {
             createUnit(technoEnemy, 'enemy');
             currentTurn = allUnits.findIndex(unit => unit.name === turnId);
             wave += 1;
+            if (eventState.waveChange.flag) { handleEvent('waveChange', {wave}) }
+            initBattleDisplay();
             break;
         default:
             return true;
@@ -318,34 +281,48 @@ function frontTest() {
     }
 }
 
-async function combatTick() {
-    updateBattleDisplay();
-    await sleep(500);
-    if (frontTest()) { return; }
-    if (currentTurn === -1) { currentTurn = 0; }
-    let turn;
-    while (turn == undefined) {
-        for (let i = 0; i < allUnits.length; i++) {
-            const unit = allUnits[(currentTurn + i) % allUnits.length];
-            if (unit.hp <= 0) { continue; }
-            unit.timer -= unit.speed;
-            if (unit.timer <= 0) {
-                turn = unit;
-                currentTurn = (currentTurn + i) % allUnits.length;
-                break;
-            }
-            updateBattleDisplay();
-            await sleep(0);
-        }
-    }
-    logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
-    regenerateResources(turn);
-    updateMod(turn);
-    updateBattleDisplay();
-    turn.timer = 1000;
-    if (turn.team === "player") { playerTurn(turn); }
-    if (turn.team === "enemy") { enemyTurn(turn); }
-    turnCounter++
+function gameLoop() {
+    if (!gameState.isCombatActive) { return }
+    for (const unit of allUnits) { renderUnitStats(unit) }
+    findNextTurn()
 }
 
-window.combatTick = combatTick;
+async function findNextTurn() {
+    let readyUnits = [];
+    while (readyUnits.length === 0) {
+        for (const unit of allUnits) {
+            if (unit.hp > 0) {
+                unit.timer -= unit.speed;
+                if (unit.timer <= 0) { readyUnits.push(unit) }
+            }
+        }
+        requestAnimationFrame(renderAllTimers);
+        await sleep(10);
+    }
+    if (readyUnits.length !== 1) { readyUnits.sort((a, b) => a.timer - b.timer) }
+    takeTurn(readyUnits[0]);
+}
+
+async function takeTurn(turnUnit) {
+    if (frontTest()) {
+        gameState.isCombatActive = false;
+        return;
+    }
+    logAction(`<strong>Turn ${turnCounter}: ${turnUnit.name}'s turn</strong>`, "turn");
+    regenerateResources(turnUnit);
+    renderUnitStats(turnUnit);
+    if (eventState.turnStart.flag) { handleEvent('turnStart', { unit: turnUnit }) }
+    turnUnit.timer += 1000;
+    if (turnUnit.stun) {
+        logAction(`${turnUnit.name}'s turn was skipped due to being stunned!`, "skip");
+        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turnUnit }) }
+        turnCounter++;
+        gameState.isActionInProgress = false;
+        return;
+    }
+    if (turnUnit.team === "player") { playerTurn(turnUnit) }
+    else { enemyTurn(turnUnit) }
+    if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turnUnit }) }
+    turnCounter++;
+}
+window.combatTick = function() { gameLoop() }

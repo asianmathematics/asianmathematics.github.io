@@ -1,5 +1,5 @@
 export class Unit {
-    constructor(name, stat, grow, actionsInit, level, power) {
+    constructor(name, stat, grow, actionsInit, passivesInit, level, power) {
         this.name = name;
         this.base = { position: stat[10] }
         this.prime = {
@@ -64,15 +64,16 @@ export class Unit {
             this.grow.resource.energyRegen = grow[15];
             this.mult.resource.energyRegen = 1;
         }
-        for (const stat in newUnit.grow) {
-            if (typeof newUnit.prime[stat] === 'object') { continue; }
-                  newUnit.base[stat] = newUnit.prime[stat] * ( 1 + unit.prime.power * unit.grow[stat];
+        for (const stat in this.grow) {
+            if (typeof this.prime[stat] === 'object') { continue; }
+                  this.base[stat] = this.prime[stat] * ( 1 + this.prime.power * this.grow[stat] );
             }
-        for (const stat in newUnit.prime.resource) {
-                  newUnit.base.resource[stat] = newUnit.prime.resource[stat] * ( 1 + unit.prime.power * unit.grow.resource[stat];
+        for (const stat in this.prime.resource) {
+                  this.base.resource[stat] = this.prime.resource[stat] * ( 1 + this.prime.power * this.grow.resource[stat] );
             }
         this.actions = {};
         this.previousAction = [false, false, false];
         this.actionsInit = actionsInit;
+        this.stun = false;
     }
 }
