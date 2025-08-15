@@ -1,5 +1,5 @@
 export class Unit {
-    constructor(name, stat, grow, actionsInit, passivesInit, level, power) {
+    constructor(name, stat, grow, actionsInit, passivesInit, elements, level, power) {
         this.name = name;
         this.base = { position: stat[10] }
         this.prime = {

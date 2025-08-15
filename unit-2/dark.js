@@ -5,7 +5,7 @@ import { modifiers, logAction, selectTarget, playerTurn, unitFilter, showMessage
 const Dark = new Unit("Dark",
     [550, 75, 18, 50, 115, 45, 120, 35, 125, 175, "front", 150, 18, 250, 30],
     [.013, .015, .01, .012, .007, .018, .01, .011, .008, .012, .011, .006, .013, .007],
-    darkActionsInit, darkPassivesInit, unitCombatData.Dark.level, unitCombatData.Dark.power);
+    darkActionsInit, darkPassivesInit, ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], unitCombatData.Dark.level, unitCombatData.Dark.power);
 
 const darkActionsInit = function() { 
     this.actions.iceshock = {
@@ -54,7 +54,7 @@ const darkActionsInit = function() {
             if (will[0] < willCheck) {
                 logAction(`${target[0].name} is frozen!`, "action");
                 createMod("Absolute Zero", "evasion and speed reduced",
-                    { caster: this, targets: target, duration: 1, attribute: ["mystic"], element: ["inertia/cold", "goner/entropy"], stats: ["evasion", "speed"], values: debuffValue, listeners: { turnStart: true }, suppressed: false, applied: true },
+                    { caster: this, targets: target, duration: 1, attribute: ["mystic"], element: ["inertia/cold", "goner/entropy"], stats: ["evasion", "speed"], values: debuffValue, listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
                     (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                     (vars, context) => {
                         if (vars.suppressed && vars.applied) {
@@ -144,9 +144,25 @@ const darkActionsInit = function() {
             const will = resistDebuff(this, target);
             for (let i = 0; i < target.length; i++) { if (will[i] > willCheck) { target.splice(i, 1); } }
             createMod("Icy Hell", "evasion and speed reduced",
-                { caster: this, targets: target, duration: 1, attribute: ["mystic"], element: ["inertia/cold", "death/darkness"], stats: ["evasion", "speed"], values: debuffValue, listeners: { turnStart: true }, suppressed: false, applied: true, suppressedTargets: [], appliedTargets: target },
+                { caster: this, targets: target, duration: 1, attribute: ["mystic"], element: ["inertia/cold", "death/darkness"], stats: ["evasion", "speed"], values: debuffValue, listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
                 (vars) => { for (const unit of vars.targets) { resetStat(unit, vars.stats, vars.values) } },
                 (vars, context) => {
+                    if (vars.suppressed && vars.applied) {
+                        for (const unit of vars.targets) {
+                            if (unit === context.turn) {
+                                resetStat(unit, vars.stats, vars.values, false);
+                            }
+                        }
+                        vars.applied = false;
+                    }
+                    else if (!vars.suppressed && !vars.applied) {
+                        for (const unit of vars.targets) {
+                            if (unit === context.turn) {
+                                resetStat(unit, vars.stats, vars.values);
+                            }
+                        }
+                        vars.applied = true;
+                    }
                     if (vars.targets.includes(context.turn)) {
                         resetStat(context.turn, vars.stats, vars.values, false);
                         target.splice(target.indexOf(context.turn), 1);
@@ -174,9 +190,25 @@ const darkActionsInit = function() {
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, attribute: ["physical"], stats: ["evasion"], values: buffValue, listeners: { turnStart: true } },
+                { caster: self, targets: [self], duration: 1, attribute: ["physical"], stats: ["evasion"], values: buffValue, listeners: { turnStart: true }, focus: true },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, context) => {
+                    if (vars.suppressed && vars.applied) {
+                        for (const unit of vars.targets) {
+                            if (unit === context.turn) {
+                                resetStat(unit, vars.stats, vars.values, false);
+                            }
+                        }
+                        vars.applied = false;
+                    }
+                    else if (!vars.suppressed && !vars.applied) {
+                        for (const unit of vars.targets) {
+                            if (unit === context.turn) {
+                                resetStat(unit, vars.stats, vars.values);
+                            }
+                        }
+                        vars.applied = true;
+                    }
                     if (vars.caster === context.turn) {
                         resetStat(vars.caster, vars.stats, vars.values, false);
                         return true;
@@ -204,9 +236,25 @@ const darkActionsInit = function() {
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Quick Feet", "Evasion and speed increased",
-                { caster: self, targets: [self], duration: duration, attribute: ["physical"], element: ["harmonic/change"], stats: ["evasion", "speed"], values: buffValue, listeners: { turnStart: true } },
+                { caster: self, targets: [self], duration: duration, attribute: ["physical"], element: ["harmonic/change"], stats: ["evasion", "speed"], values: buffValue, listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, context) => {
+                    if (vars.suppressed && vars.applied) {
+                        for (const unit of vars.targets) {
+                            if (unit === context.turn) {
+                                resetStat(unit, vars.stats, vars.values, false);
+                            }
+                        }
+                        vars.applied = false;
+                    }
+                    else if (!vars.suppressed && !vars.applied) {
+                        for (const unit of vars.targets) {
+                            if (unit === context.turn) {
+                                resetStat(unit, vars.stats, vars.values);
+                            }
+                        }
+                        vars.applied = true;
+                    }
                     if (vars.caster === context.turn) {
                         resetStat(vars.caster, vars.stats, vars.values, false);
                         return true;
@@ -274,7 +322,7 @@ const darkActionsInit = function() {
                     target[0].previousAction[1] = true;
                     logAction(`${this.name} creates an antimagic field around ${target[0].name}!`, "action");
                     createMod("Antimagic Field", "Suppresses mystic abilities and modifiers",
-                        { caster: this, targets: target, duration: 1, attribute: ["mystic"], element: ["inertia/cold"], suppressedModifiers: [], listeners: { actionStart: true, modifierStart: true } },
+                        { caster: this, targets: target, duration: 1, attribute: ["mystic"], element: ["inertia/cold"], suppressedModifiers: [], listeners: { actionStart: true, modifierStart: true }, suppressed: false, applied: true, focus: true },
                         (vars) => {
                             logAction(`${vars.targets[0].name} is surrounded by an antimagic field!`, "debuff");
                             for (let i = modifiers.length - 1; i >= 0; i--) {
@@ -338,7 +386,7 @@ const darkActionsInit = function() {
             if (will[0] > 50) {
                 logAction(`${this.name} freezes time for ${target[0].name}!`, "action");
                 createMod("Stun", "Stunned and cannot act",
-                    { caster: this, targets: target, duration: 1, attribute: ["inertia/cold"], element: ["mystic"], listeners: { turnStart: true } },
+                    { caster: this, targets: target, duration: 1, attribute: ["inertia/cold"], element: ["mystic"], listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
                     (vars) => { vars.targets[0].stun = true; },
                     (vars, context) => {
                         if (vars.targets[0] === context.turn) {
@@ -367,7 +415,7 @@ const darkActionsInit = function() {
             logAction(`${this.name} stops time!`, "buff");
             const self = this;
             createMod("Time Stop", "Immune to all modifiers not from caster and takes extra turns",
-                { caster: self, targets: [self], duration: 3, attribute: ["mystic"], element: ["goner/entropy"], listeners: { modifierActivate: true, turnEnd: true } },
+                { caster: self, targets: [self], duration: 3, attribute: ["mystic"], element: ["goner/entropy"], listeners: { modifierActivate: true, turnEnd: true }, suppressed: false, applied: true, focus: true },
                 (vars) => { },
                 (vars, context) => {
                     if (context.eventType === "modifierActivate" && context.modifier.vars.caster !== vars.caster) {
