@@ -99,7 +99,7 @@ const darkActionsInit = function() {
             resetStat(this, ["attack", "accuracy"]);
             const self = this;
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
-                { caster: self, targets: [self], duration: debuffDuration, stats: ["evasion"], values: debuffValue, listeners: { turnStart: true }, suppressed: false, applied: true },
+                { caster: self, targets: [self], duration: debuffDuration, stats: ["evasion"], values: debuffValue, listeners: { turnStart: true }, suppressed: false, applied: true, focus: false },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, context) => {
                     if (vars.suppressed && vars.applied) {
@@ -129,7 +129,7 @@ const darkActionsInit = function() {
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-             const actionLevel = Math.max(-127, Math.min(128, this.level + (this.mysticLevelMod || 0)));
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.mysticLevelMod || 0)));
             const numTargets = Math.max(2, 4 + Math.floor((actionLevel - 24) / 32));
             const numAttacks = Math.max(2, 4 + Math.floor((actionLevel - 48) / 16));
             const statIncrease = 0.6 + Math.floor((actionLevel - 32) / 64) * 0.2;
@@ -190,7 +190,7 @@ const darkActionsInit = function() {
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, attribute: ["physical"], stats: ["evasion"], values: buffValue, listeners: { turnStart: true }, focus: true },
+                { caster: self, targets: [self], duration: 1, attribute: ["physical"], stats: ["evasion"], values: buffValue, listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, context) => {
                     if (vars.suppressed && vars.applied) {
@@ -228,7 +228,7 @@ const darkActionsInit = function() {
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-             const actionLevel = Math.max(-127, Math.min(128, this.level + (this.physicalLevelMod || 0)));
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.physicalLevelMod || 0)));
             const buffValue = [3 + Math.floor(actionLevel / 32), 0.5 + Math.floor(actionLevel / 64) * 0.1];
             const duration = 3 + Math.floor(actionLevel / 64);
             this.resource.stamina -= 60;
@@ -371,7 +371,7 @@ const darkActionsInit = function() {
         name: "Perfect Freeze [mana]",
         properties: ["mystic", "mana", "inertia/cold", "debuff", "stun"],
         cost: { mana: 90 },
-        description: "Costs 90 mana\nStuns a single target for 1 turn.",
+        description: "Costs 90 mana\nStuns a single target for a few turn.",
         target: () => {
             if (this.resource.mana < 90) {
                 showMessage("Not enough mana!", "error", "selection");
@@ -380,13 +380,16 @@ const darkActionsInit = function() {
             selectTarget(this.actions.perfectFreeze, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)], this);
         },
         code: (target) => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.mysticLevelMod || 0)));
+            const willCheck = 46 + Math.floor(actionLevel / 8);
+            const duration = Math.max(1, Math.floor((actionLevel - 80) / 32));
             this.resource.mana -= 90;
             this.previousAction[1] = true;
             const will = resistDebuff(this, target);
-            if (will[0] > 50) {
-                logAction(`${this.name} freezes time for ${target[0].name}!`, "action");
+            if (will[0] > willCheck) {
+                logAction(`${this.name} freezes time for ${target[0].name}! (Stun ${duration} turn${duration > 1 ? 's' : ''}, Action Level: ${actionLevel})`, "action");
                 createMod("Stun", "Stunned and cannot act",
-                    { caster: this, targets: target, duration: 1, attribute: ["inertia/cold"], element: ["mystic"], listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
+                    { caster: this, targets: target, duration: duration, attribute: ["inertia/cold"], element: ["mystic"], listeners: { turnStart: true }, suppressed: false, applied: true, focus: true },
                     (vars) => { vars.targets[0].stun = true; },
                     (vars, context) => {
                         if (vars.targets[0] === context.turn) {
@@ -410,23 +413,23 @@ const darkActionsInit = function() {
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.mysticLevelMod || 0)));
+            const duration = 3 + Math.floor((actionLevel - 32) / 64);
             this.resource.mana -= 200;
             this.previousAction[1] = true;
             logAction(`${this.name} stops time!`, "buff");
             const self = this;
             createMod("Time Stop", "Immune to all modifiers not from caster and takes extra turns",
-                { caster: self, targets: [self], duration: 3, attribute: ["mystic"], element: ["goner/entropy"], listeners: { modifierActivate: true, turnEnd: true }, suppressed: false, applied: true, focus: true },
+                { caster: self, targets: [self], duration: duration, attribute: ["mystic"], element: ["goner/entropy"], listeners: { modifierActivate: true, turnEnd: true }, suppressed: false, applied: true, focus: true, extraTurns: extraTurns },
                 (vars) => { },
                 (vars, context) => {
-                    if (context.eventType === "modifierActivate" && context.modifier.vars.caster !== vars.caster) {
-                        if (vars.caster.timeStop) {
-                            logAction(`${vars.caster.name} is immune to modifiers due to Time Stop!`, "buff");
-                        }
-                    }
+                    if (context.eventType === "modifierActivate" && context.modifier.vars.caster !== vars.caster) { logAction(`${vars.caster.name} is immune to modifiers due to Time Stop!`, "buff") }
                     if (context.turn) {
                         vars.duration--;
-                        playerTurn(vars.caster);
-                        logAction(`${vars.caster.name} takes an extra turn due to Time Stop!`, "buff");
+                        for (let i = 0; i < vars.extraTurns; i++) {
+                            logAction(`${vars.caster.name} takes an extra turn due to Time Stop!`, "buff");
+                            playerTurn(vars.caster);
+                        }
                         if (vars.duration <= 0) {
                             vars.caster.timeStop = false;
                             delete vars.caster.timeStopTurns;
@@ -445,8 +448,11 @@ const darkPassivesInit = function() {
         properties: ["passive", "physical", "light/illusion", "buff", "resource"],
         description: "Increases evasion and presence when stamina at least 50",
         code: () => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.physicalLevelMod || 0)));
+            const evasionBoost = 0.3 + Math.floor((actionLevel - 8) / 40) * 0.05;
+            const presenceBoost = 0.2 + Math.floor((actionLevel - 24) / 32) * 0.05;
             createMod("Distract", "Increases evasion and presence when stamina at least 50",
-                { caster: this, targets: [this], duration: Infinity, attribute: ["physical"], element: ["light/illusion"], listeners: { turnEnd: true, resourceChange: true }, passiveType: "conditional", active: true, statBoosts: { evasion: 0.3, presence: 0.2 } },
+                { caster: this, targets: [this], duration: Infinity, attribute: ["physical"], element: ["light/illusion"], listeners: { turnEnd: true, resourceChange: true }, passiveType: "conditional", statBoosts: { evasion: evasionBoost, presence: presenceBoost }, suppressed: false, applied: true, focus: true },
                 (vars) => { resetStat(vars.caster, Object.keys(vars.statBoosts), Object.values(vars.statBoosts)) },
                 (vars, context) => {
                     if (vars.caster === context.turn) {
@@ -484,8 +490,14 @@ const darkPassivesInit = function() {
         properties: ["passive", "physical", "light/illusion", "buff", "debuff"],
         description: "Reduces max stamina by 100, increases defense, evasion, crit, resist, and presence",
         code: () => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.physicalLevelMod || 0)));
+            const defenseBoost = 0.4 + Math.floor((actionLevel - 64) / 32) * 0.05;
+            const evasionBoost = 0.2 + Math.floor((actionLevel - 48) / 32) * 0.05;
+            const critBoost = 0.3 + Math.floor((actionLevel - 80) / 32) * 0.05;
+            const resistBoost = 0.2 + Math.floor((actionLevel - 56) / 64) * 0.05;
+            const presenceBoost = 0.5 + Math.floor((actionLevel - 72) / 16) * 0.05;
             createMod("Center Stage", "Reduces max stamina by 100, increases defense, evasion, crit, resist, and presence",
-                { caster: this, targets: [this], duration: Infinity, attribute: ["physical"], element: ["light/illusion"], statBoosts: { defense: 0.4, evasion: 0.2, crit: 0.3, resist: 0.2, presence: 0.5 } },
+                { caster: this, targets: [this], duration: Infinity, attribute: ["physical"], element: ["light/illusion"], statBoosts: { defense: defenseBoost, evasion: evasionBoost, crit: critBoost, resist: resistBoost, presence: presenceBoost }, suppressed: false, applied: true, focus: true },
                 (vars) => {
                     vars.caster.base.resource.stamina -= 100;
                     vars.caster.resource.stamina = Math.min(vars.caster.resource.stamina, vars.caster.base.resource.stamina);
@@ -501,18 +513,23 @@ const darkPassivesInit = function() {
         properties: ["passive", "mystic", "inertia/cold", "debuff", "resource"],
         description: "Nullifies enemy mystic actions after Dark's turn and costs mana equal to action cost (min 10)",
         code: () => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.mysticLevelMod || 0)));
+            const willCheck = 40 + Math.floor(actionLevel / 16);
             createMod("Counterspell", "Nullifies enemy mystic actions after Dark's turn, costs mana equal to action cost (min 10)",
-                { caster: this, targets: [this], duration: Infinity, attribute: ["mystic"], element: ["inertia/cold"], listeners: { actionStart: true }, canCounterspell: false },
+                { caster: this, targets: [this], duration: Infinity, attribute: ["mystic"], element: ["inertia/cold"], listeners: { actionStart: true }, willCheck: willCheck, canCounterspell: false, suppressed: false, applied: false, focus: true },
                 (vars) => { },
                 (vars, context) => {
                     if (vars.caster === context.unit) { vars.canCounterspell = true }
                     if (vars.canCounterspell && context.unit.team === "enemy" && context.unit.actions[context.action].properties.includes("mystic")) {
-                        const manaCost = Math.max(10, context.unit.actions[context.action].cost?.mana || 0);
-                        if (vars.caster.resource.mana >= manaCost) {
-                            handleEvent('resourceChange', { unit: vars.caster, resource: 'mana', value: -manaCost });
-                            vars.caster.resource.mana -= manaCost;
-                            logAction(`${vars.caster.name} counterspells ${context.unit.name}'s ${context.unit.actions[context.action].name}! (Cost: ${manaCost} mana)`, "action");
-                        } else { logAction(`${vars.caster.name} lacks mana to counterspell!`, "warning") }
+                        const will = resistDebuff(this, [context.unit]);
+                        if (will[0] > willCheck) {
+                            const manaCost = Math.max(10, context.unit.actions[context.action].cost?.mana || 0);
+                            if (vars.caster.resource.mana >= manaCost) {
+                                handleEvent('resourceChange', { unit: vars.caster, resource: 'mana', value: -manaCost });
+                                vars.caster.resource.mana -= manaCost;
+                                logAction(`${vars.caster.name} counterspells ${context.unit.name}'s ${context.unit.actions[context.action].name}! (Cost: ${manaCost} mana)`, "action");
+                            } else { logAction(`${vars.caster.name} lacks mana to counterspell!`, "warning") }
+                        } else { logAction(`${context.unit.name} resisted ${vars.caster.name}'s Counterspell!`, "warning") }
                     }
                 }
             );
@@ -524,8 +541,10 @@ const darkPassivesInit = function() {
         properties: ["passive", "mystic", "inertia/cold", "debuff"],
         description: "Reduces enemy mystic action levels progressively, costs 160 mana",
         code: () => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.mysticLevelMod || 0)));
+            const willCheck = 45 + Math.floor(actionLevel / 12);
             createMod("Continuous Counterspell", "Reduces enemy mystic action levels progressively, costs 160 mana",
-                { caster: this, targets: [this], duration: Infinity, attribute: ["mystic"], element: ["inertia/cold"], listeners: { actionStart: true }, actionCount: 0 },
+                { caster: this, targets: [this], duration: Infinity, attribute: ["mystic"], element: ["inertia/cold"], listeners: { actionStart: true }, actionCount: 0, suppressed: false, applied: false, focus: true },
                 (vars) => {
                     vars.caster.base.resource.mana -= 160;
                     vars.caster.resource.mana = Math.min(vars.caster.resource.mana, vars.caster.base.resource.mana);
@@ -533,8 +552,11 @@ const darkPassivesInit = function() {
                 (vars, context) => {
                     if (vars.caster === context.unit) { vars.actionCount = 0 }
                     if (vars.canCounterspell && context.unit.team === "enemy" && context.unit.actions[context.action].properties.includes("mystic")) {
-                        context.unit.mysticLevelMod -= vars.caster * (.5 ** (vars.actionCount - 1));
-                        vars.actionCount++;
+                        const will = resistDebuff(this, [context.unit]);
+                        if (will[0] > willCheck) {
+                            context.unit.mysticLevelMod -= vars.caster * (.5 ** (vars.actionCount - 1));
+                            vars.actionCount++;
+                        } else { logAction(`${context.unit.name} resisted ${vars.caster.name}'s Continuous Counterspell!`, "warning") }
                     }
                 }
             );
@@ -546,23 +568,39 @@ const darkPassivesInit = function() {
         properties: ["passive", "independence/loneliness", "buff"],
         description: "Boosts Independence/Loneliness units, or self if none available",
         code: () => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.independenceLevelMod || 0)));
+            const darkBoost = {
+                attack: 0.18 + Math.floor((actionLevel - 8) / 32) * 0.04,
+                crit: 0.25 + Math.floor((actionLevel - 24) / 32) * 0.05,
+                speed: 0.12 + Math.floor((actionLevel - 40) / 64) * 0.03,
+                presence: 0.18 + Math.floor((actionLevel - 48) / 32) * 0.04
+            };
+            const otherBoost = {
+                defense: 0.22 + Math.floor((actionLevel - 16) / 32) * 0.04,
+                resist: 0.16 + Math.floor((actionLevel - 32) / 64) * 0.04,
+                speed: 0.12 + Math.floor((actionLevel - 40) / 64) * 0.03,
+                presence: 0.18 + Math.floor((actionLevel - 48) / 32) * 0.04
+            };
+            const selfBoost = {
+                attack: 0.32 + Math.floor((actionLevel - 8) / 32) * 0.07,
+                defense: 0.32 + Math.floor((actionLevel - 16) / 32) * 0.06,
+                crit: 0.32 + Math.floor((actionLevel - 24) / 32) * 0.07,
+                resist: 0.32 + Math.floor((actionLevel - 32) / 64) * 0.06,
+                speed: 0.14 + Math.floor((actionLevel - 40) / 64) * 0.04,
+                presence: 0.22 + Math.floor((actionLevel - 48) / 32) * 0.05
+            };
             createMod("Independence", "Boosts Independence/Loneliness units, or self if none available",
-                { caster: this, targets: unitFilter(vars.caster.team, "", false).filter(target => target.element.includes("independence/loneliness") && !this), duration: Infinity, element: ["independence/loneliness"], listeners: { unitChange: true }, self: false },
+                { caster: this, targets: unitFilter(vars.caster.team, "", false).filter(target => target.element.includes("independence/loneliness") && !this), duration: Infinity, element: ["independence/loneliness"], boost: { darkBoost, otherBoost, selfBoost }, listeners: { unitChange: true }, self: false, suppressed: false, applied: false, focus: true },
                 (vars) => {
                     if (vars.targets.length > 0) {
                     vars.targets.forEach(target => {
                         if (target.name === "Dandelion") {
-                            const boost = { attack: 0.2, crit: 0.3, speed: 0.1, presence: 0.2 };
-                            resetStat(target, Object.keys(boost), Object.values(boost));
+                            resetStat(target, Object.keys(vars.boost.darkBoost), Object.values(vars.boost.darkBoost));
                         } else {
-                            const boost = { defense: 0.3, resist: 0.2, speed: 0.1, presence: 0.2 };
-                            resetStat(target, Object.keys(boost), Object.values(boost));
+                            resetStat(target, Object.keys(vars.boost.otherBoost), Object.values(vars.boost.otherBoost));
                         }
                     });
-                } else {
-                    const selfBoost = { attack: 0.4, defense: 0.4, crit: 0.4, resist: 0.4, speed: 0.2, presence: 0.3 };
-                    resetStat(vars.caster, Object.keys(selfBoost), Object.values(selfBoost));
-                }
+                } else { resetStat(vars.caster, Object.keys(vars.boost.selfBoost), Object.values(vars.boost.selfBoost)) }
                 },
                 (vars, context) => { 
                     if (vars.targets.includes(context.unit)) {
@@ -570,14 +608,12 @@ const darkPassivesInit = function() {
                             case "downed":
                                 if (unitFilter(vars.caster.team, "", false).filter(target => target.element.includes("independence/loneliness") && !vars.caster).length === 0) {
                                     vars.self = true;
-                                    const selfBoost = { attack: 0.4, defense: 0.4, crit: 0.4, resist: 0.4, speed: 0.2, presence: 0.3 };
-                                    resetStat(vars.caster, Object.keys(selfBoost), Object.values(selfBoost));
+                                    resetStat(vars.caster, Object.keys(vars.boost.selfBoost), Object.values(vars.boost.selfBoost));
                                 }
                                 break;
                             case "revive":
                                 if (vars.self) {
-                                    const selfBoost = { attack: 0.4, defense: 0.4, crit: 0.4, resist: 0.4, speed: 0.2, presence: 0.3 };
-                                    resetStat(vars.caster, Object.keys(selfBoost), Object.values(selfBoost), false);
+                                    resetStat(vars.caster, Object.keys(vars.boost.selfBoost), Object.values(vars.boost.selfBoost), false);
                                     vars.self = false;
                                 }
                                 break;
@@ -594,25 +630,53 @@ const darkPassivesInit = function() {
         properties: ["passive", "independence/loneliness", "buff", "debuff"],
         description: "Stronger Independence/Loneliness boosts, self penalty when others present",
         code: () => {
+            const actionLevel = Math.max(-127, Math.min(128, this.level + (this.independenceLevelMod || 0)));
+            const darkBoost = {
+                attack: 0.32 + Math.floor((actionLevel - 16) / 32) * 0.07,
+                crit: 0.38 + Math.floor((actionLevel - 32) / 32) * 0.08,
+                speed: 0.18 + Math.floor((actionLevel - 48) / 64) * 0.04,
+                presence: 0.24 + Math.floor((actionLevel - 56) / 32) * 0.05,
+                defense: 0.12 + Math.floor((actionLevel - 24) / 32) * 0.03
+            };
+            const otherBoost = {
+                defense: 0.36 + Math.floor((actionLevel - 24) / 32) * 0.06,
+                resist: 0.28 + Math.floor((actionLevel - 40) / 64) * 0.06,
+                speed: 0.18 + Math.floor((actionLevel - 48) / 64) * 0.04,
+                presence: 0.24 + Math.floor((actionLevel - 56) / 32) * 0.05,
+                attack: 0.12 + Math.floor((actionLevel - 16) / 32) * 0.03
+            };
+            const selfBoost = {
+                hp: 0.22 + Math.floor((actionLevel - 8) / 32) * 0.05,
+                attack: 0.48 + Math.floor((actionLevel - 16) / 32) * 0.09,
+                defense: 0.48 + Math.floor((actionLevel - 24) / 32) * 0.08,
+                crit: 0.48 + Math.floor((actionLevel - 32) / 32) * 0.09,
+                resist: 0.48 + Math.floor((actionLevel - 40) / 64) * 0.08,
+                speed: 0.22 + Math.floor((actionLevel - 48) / 64) * 0.05,
+                presence: 0.36 + Math.floor((actionLevel - 56) / 32) * 0.07
+            };
+            const selfPenalty = {
+                hp: -0.14 + Math.floor((actionLevel - 8) / 32) * 0.03,
+                attack: -0.14 + Math.floor((actionLevel - 16) / 32) * 0.04,
+                defense: -0.14 + Math.floor((actionLevel - 24) / 32) * 0.03,
+                crit: -0.14 + Math.floor((actionLevel - 32) / 32) * 0.04,
+                resist: -0.14 + Math.floor((actionLevel - 40) / 64) * 0.03,
+                speed: -0.07 + Math.floor((actionLevel - 48) / 64) * 0.02,
+                presence: -0.14 + Math.floor((actionLevel - 56) / 32) * 0.03
+            };
+            const merged = {};
+            for (const key of Object.keys(vars.boost.selfBoost)) { merged[key] = (vars.boost.selfBoost[key] || 0) - (vars.boost.selfPenalty[key] || 0) }
             createMod("Avatar of Loneliness [Passive]", "Stronger Independence/Loneliness boosts, self penalty when others present",
-                { caster: this, targets: unitFilter(vars.caster.team, "", false).filter(target => target.element.includes("independence/loneliness") && !this), duration: Infinity, element: ["independence/loneliness"], listeners: { unitChange: true }, self: false },
-                (vars) => { 
+                { caster: this, targets: unitFilter(vars.caster.team, "", false).filter(target => target.element.includes("independence/loneliness") && !this), duration: Infinity, element: ["independence/loneliness"], boost: { darkBoost, otherBoost, selfBoost, selfPenalty, merged }, listeners: { unitChange: true }, self: false, suppressed: false, applied: false, focus: true },
+                (vars) => {
                     if (vars.targets.length > 0) {
-                    const selfPenalty = { hp: -0.2, attack: -0.2, defense: -0.2, crit: -0.2, resist: -0.2, speed: -0.1, presence: -0.2 };
-                    resetStat(vars.caster, Object.keys(selfPenalty), Object.values(selfPenalty));
+                    resetStat(vars.caster, Object.keys(vars.boost.selfPenalty), Object.values(vars.boost.selfPenalty));
                     vars.targets.forEach(target => {
-                        if (target.name === "Dandelion") {
-                            const boost = { attack: 0.4, crit: 0.5, speed: 0.2, presence: 0.3, defense: 0.1 };
-                            resetStat(target, Object.keys(boost), Object.values(boost));
-                        } else {
-                            const boost = { defense: 0.5, resist: 0.4, speed: 0.2, presence: 0.3, attack: 0.1 };
-                            resetStat(target, Object.keys(boost), Object.values(boost));
-                        }
+                        if (target.name === "Dandelion") { resetStat(target, Object.keys(vars.boost.darkBoost), Object.values(vars.boost.darkBoost)) }
+                        else { resetStat(target, Object.keys(vars.boost.otherBoost), Object.values(vars.boost.otherBoost)) }
                     });
                 } else {
                     vars.self = true;
-                    const selfBoost = { hp: 0.3, attack: 0.6, defense: 0.6, crit: 0.6, resist: 0.6, speed: 0.3, presence: 0.5 };
-                    resetStat(vars.caster, Object.keys(selfBoost), Object.values(selfBoost));
+                    resetStat(vars.caster, Object.keys(vars.boost.selfBoost), Object.values(vars.boost.selfBoost));
                 }
                 },
                 (vars, context) => { 
@@ -620,20 +684,14 @@ const darkPassivesInit = function() {
                         switch (context.type) {
                             case "downed":
                                 if (unitFilter(vars.caster.team, "", false).filter(target => target.element.includes("independence/loneliness") && !vars.caster).length === 0) {
-                                    const selfPenalty = { hp: -0.2, attack: -0.2, defense: -0.2, crit: -0.2, resist: -0.2, speed: -0.1, presence: -0.2 };
-                                    resetStat(vars.caster, Object.keys(selfPenalty), Object.values(selfPenalty), false);
                                     vars.self = true;
-                                    const selfBoost = { attack: 0.4, defense: 0.4, crit: 0.4, resist: 0.4, speed: 0.2, presence: 0.3 };
-                                    resetStat(vars.caster, Object.keys(selfBoost), Object.values(selfBoost));
+                                    resetStat(vars.caster, Object.keys(vars.boost.merged), Object.values(vars.boost.merged));
                                 }
                                 break;
                             case "revive":
                                 if (vars.self) {
-                                    const selfBoost = { attack: 0.4, defense: 0.4, crit: 0.4, resist: 0.4, speed: 0.2, presence: 0.3 };
-                                    resetStat(vars.caster, Object.keys(selfBoost), Object.values(selfBoost), false);
                                     vars.self = false;
-                                    const selfPenalty = { hp: -0.2, attack: -0.2, defense: -0.2, crit: -0.2, resist: -0.2, speed: -0.1, presence: -0.2 };
-                                    resetStat(vars.caster, Object.keys(selfPenalty), Object.values(selfPenalty));
+                                    resetStat(vars.caster, Object.keys(vars.boost.merged), Object.values(vars.boost.merged), false);
                                 }
                                 break;
 
