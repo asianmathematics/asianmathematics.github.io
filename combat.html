@@ -14,11 +14,9 @@
         <button class="action-button" id="combatStart">Start Combat</button>
     </div>
     
-    <!-- Add unit selection panel -->
     <div id="unit-selection-panel" style="display:none;">
         <h3>Select Your Team (max 4 units)</h3>
         <div id="unit-roster" class="unit-roster">
-            <!-- Units will be populated by JavaScript -->
         </div>
         <div id="selected-units" class="selected-units">
             <h4>Selected Units (0/4)</h4>
@@ -42,6 +40,19 @@
         
         <div class="right-column">
             <div id="battle-container">
+                <div class='modifiers-container'>
+                    <h3>Active Modifiers</h3>
+                </div>
+                <div class='battle-display'>
+                    <div class='team player-team'>
+                        <h2 class="team-header">Player Team</h2>
+                        <div class="unit-row"></div>
+                    </div>
+                    <div class='team enemy-team'>
+                        <h2 class="team-header">Enemy Team</h2>
+                        <div class="unit-row"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -49,18 +60,11 @@
     <p style="color:white">Hover over (or hold on mobile) action buttons to see description</p>
 
     <script type="module">
-        // Initialize after DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             import('./combat.js').then(module => {
                 window.startCombat = module.startCombat;
-                
-                // Add event listener to button
                 const startButton = document.getElementById('combatStart');
-                if (startButton) {
-                    startButton.addEventListener('click', function() {
-                        window.startCombat();
-                    });
-                }
+                if (startButton) { startButton.addEventListener('click', function() { window.startCombat() }) }
             });
         });
     </script>
