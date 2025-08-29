@@ -228,7 +228,7 @@ function updateBattleDisplay() {
     document.getElementById("battle-container").innerHTML = battleDisplay + "</div></div>";
 }
 
-function createUnit(unit, team) {
+export function createUnit(unit, team) {
     const newUnit = cloneUnit(unit);
     let name = unit.name;
     let dupe = 1;
@@ -267,7 +267,8 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
-function advanceWave() {
+export function advanceWave(x = 0) {
+    if (x) { wave = x; }
     let turnId = allUnits[currentTurn].name;
     if (wave < 3) { allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))) }
     switch (wave) {
@@ -318,7 +319,7 @@ function frontTest() {
     }
 }
 
-async function combatTick() {
+export async function combatTick() {
     updateBattleDisplay();
     await sleep(500);
     if (frontTest()) { return; }

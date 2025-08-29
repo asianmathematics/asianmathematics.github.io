@@ -41,7 +41,7 @@ function logAction(message, type = 'info') {
 function resistDebuff(attacker, defenders) {
     const will= []
     for (const unit of defenders) {
-        const roll = Math.floor(Math.random() * 100);
+        const roll = Math.floor(Math.random() * 100 + 1);
         if (roll === 1 || roll === 100) {
             will.push(roll);
             continue;
@@ -172,15 +172,16 @@ function selectTarget(action, back, target, targetType = 'unit') {
     let selectionForm = `<form id='targetSelection' onsubmit='submitTargetSelection(event)'>`;
     if (targetType === 'hex') { selectionForm += `<div class="hex-selection-container">`; }
     for (const obj of target[2]) {
-        let objId, objLabel, objValue;
+        let objId, objLabel, objValue, inputType;
         if (targetType === 'hex') {
             const coords = `${obj.coord.q},${obj.coord.r},${obj.coord.s}`;
             objId = `hex-${obj.coord.q}-${obj.coord.r}-${obj.coord.s}`;
             objLabel = obj.name || `Hex (${coords})`;
             objValue = coords;
+            inputType = (maxSelections === 1) ? 'radio' : 'checkbox';
             selectionForm += `
             <div class="hex-option">
-                <input type='checkbox' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
+                <input type='${inputType}' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
                 <label for='${objId}' class="hex-label ${obj.terrain ? `terrain-${obj.terrain}` : ''}">
                     ${objLabel}
                 </label>
@@ -190,9 +191,10 @@ function selectTarget(action, back, target, targetType = 'unit') {
             objId = obj.name;
             objLabel = obj.name;
             objValue = obj.name;
+            inputType = (maxSelections === 1) ? 'radio' : 'checkbox';
             selectionForm += `
             <div>
-                <input type='checkbox' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
+                <input type='${inputType}' id='${objId}' name='targetSelection' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
                 <label for='${objId}'>${objLabel}</label>
             </div>`;
         }
@@ -201,40 +203,41 @@ function selectTarget(action, back, target, targetType = 'unit') {
     document.getElementById("selection").innerHTML = `${selectionTitle}
         ${selectionForm}
         <div id='validation-message' style='color: red;'></div>
-        <button type='submit'>Submit</button>
+        <button type='submit' id='submit'>Submit</button>
     </form>
     <button id='back' onclick='exitTargetSelection()'>Back</button>`;
-    function checkTargetSelection(checkbox, maxSelections) {
-        const selectedTargets = document.querySelectorAll('#targetSelection input[type="checkbox"]:checked');
-        if (selectedTargets.length > maxSelections && checkbox.checked) {
-          checkbox.checked = false;
-          showMessage(`You can only select up to ${maxSelections} target${maxSelections !== 1 ? 's' : ''}.`, "error", "validation-message", 0);
-        }
-        else { 
+
+    function checkTargetSelection(input, maxSelections) {
+        const selectedTargets = document.querySelectorAll('#targetSelection input[type="checkbox"]:checked, #targetSelection input[type="radio"]:checked');
+        if (input.type === 'checkbox' && selectedTargets.length > maxSelections && input.checked) {
+            input.checked = false;
+            showMessage(`You can only select up to ${maxSelections} target${maxSelections !== 1 ? 's' : ''}.`, "error", "validation-message", 0);
+        } else {
             const validationMsg = document.getElementById('validation-message');
             if (validationMsg) { validationMsg.innerHTML = ''; }
         }
     };
+
     function submitTargetSelection(event) {
         event.preventDefault();
-        const checkboxes = document.querySelectorAll('#targetSelection input[type="checkbox"]:checked');
-        if (target[1] && checkboxes.length !== maxSelections) {
+        const selectedInputs = document.querySelectorAll('#targetSelection input[type="checkbox"]:checked, #targetSelection input[type="radio"]:checked');
+        if (target[1] && selectedInputs.length !== maxSelections) {
             showMessage(`Please select exactly ${maxSelections} target${maxSelections !== 1 ? 's' : ''}.`, "error", "validation-message", 0);
             return;
         }
-        if (checkboxes.length === 0) {
+        if (selectedInputs.length === 0) {
             showMessage('Please select at least one target.', "error", "validation-message", 0);
             return;
         }
         const selectedTargets = [];
-        for (const checkbox of checkboxes) {
+        for (const input of selectedInputs) {
             if (targetType === 'hex') {
-                const coords = checkbox.value.split(',').map(Number);
+                const coords = input.value.split(',').map(Number);
                 const targetHex = target[2].find(hex => hex.coord.q === coords[0] && hex.coord.r === coords[1] && hex.coord.s === coords[2]);
                 if (targetHex) { selectedTargets.push(targetHex); }
             }
             else {
-                const targetUnit = allUnits.find(unit => unit.name === checkbox.value);
+                const targetUnit = allUnits.find(unit => unit.name === input.value);
                 if (targetUnit) { selectedTargets.push(targetUnit); }
             }
         }
@@ -243,6 +246,7 @@ function selectTarget(action, back, target, targetType = 'unit') {
         cleanupGlobalHandlers();
         setTimeout(window.combatTick, 500);
     }
+
     function exitTargetSelection () { back(); }
     window.checkTargetSelection = checkTargetSelection;
     window.submitTargetSelection = submitTargetSelection;
