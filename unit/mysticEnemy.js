@@ -1,9 +1,10 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget, resistDebuff } from '../combatDictionary.js';
 
-export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 115, 100, "front", 80, 8, 180, 20], function() {
+export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 115, 100, "front", 80, 8, 180, 20], ["Death/Darkness", "Anomaly/Synthetic"], function() {
     this.actions.manaBolt = {
         name: "Mana Bolt [mystic]",
+        properties: ["mystic", "attack"],
         cost: { mana: 20 },
         description: "Costs 20 mana\nAttacks a single target twice with increased accuracy",
         code: () => {
@@ -19,6 +20,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
 
     this.actions.curseField = {
         name: "Curse Field [mana]",
+        properties: ["mystic", "mana", "anomaly/synthetic", "debuff", "multitarget"],
         cost: { mana: 40 },
         description: "Costs 40 mana\nReduces accuracy and evasion of all front-line enemies",
         code: () => {
@@ -27,21 +29,18 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
                 { caster: this, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: [-0.15, -0.15] },
                 (vars) => {
                     vars.targets.forEach(unit => {
-                        if(resistDebuff(vars.caster, [unit]) > 50) {
+                        if (resistDebuff(vars.caster, [unit]) > 50) {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] += vars.values[i];
                                 resetStat(unit, [stat]);
                             });
-                        }
-                        else { 
-                            vars.targets.splice(vars.targets.indexOf(unit), 1); 
-                        }
+                        } else { vars.targets.splice(vars.targets.indexOf(unit), 1) }
                     });
                     logAction(`${vars.caster.name} casts Curse Field!`, "action");
                 },
                 (vars, unit) => {
                     if (vars.targets.includes(unit)) {
-                        if(resistDebuff(vars.caster, [unit]) > 30) {
+                        if (resistDebuff(vars.caster, [unit]) > 30) {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] -= vars.values[i];
                                 resetStat(unit, [stat]);
@@ -49,16 +48,15 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
                             vars.targets.splice(vars.targets.indexOf(unit), 1);
                         }
                     }
-                    if(vars.targets.length === 0) { 
-                        return true; 
-                    }
+                    if (vars.targets.length === 0) { return true }
                 }
             );
         }
     };
 
     this.actions.drainLife = {
-        name: "Drain Life [mystic]",
+        name: "Drain Life [mana]",
+        properties: ["mystic", "mana", "death/darkness", "attack", "heal"],
         cost: { mana: 30 },
         description: "Costs 30 mana\nAttacks a single target and heals the caster",
         code: () => {
@@ -77,6 +75,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
 
     this.actions.arcaneShield = {
         name: "Arcane Shield [physical, mana]",
+        properties: ["physical", "mystic", "mana", "inertia/cold", "buff"],
         cost: { mana: 25 },
         description: "Costs 25 mana\nIncreases defense and crit resist for 2 turns",
         code: () => {
@@ -86,23 +85,21 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
             createMod("Arcane Shield", "Enhanced defenses",
                 { caster: this, targets: [this], duration: 2, stats: ["defense", "resist"], values: [0.5, 0.3] },
                 (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
+                    vars.stats.forEach((stat, i) => {
+                        vars.targets[0].mult[stat] += vars.values[i];
+                        resetStat(vars.targets[0], [stat]);
                     });
                 },
-                (vars) => {
-                    vars.duration--;
-                    if(vars.duration <= 0) {
-                        vars.targets.forEach(unit => {
+                (vars, unit) => {
+                    if (vars.targets.includes(unit)) {
+                        vars.duration--;
+                        if (vars.duration <= 0) {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] -= vars.values[i];
                                 resetStat(unit, [stat]);
                             });
-                        });
-                        return true;
+                            return true;
+                        }
                     }
                 }
             );
@@ -111,6 +108,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
 
     this.actions.meditate = {
         name: "Meditate [physical]",
+        properties: ["physical", "harmonic/change", "resource"],
         description: "Recovers 50 mana",
         code: () => {
             this.previousAction = [true, false, false];

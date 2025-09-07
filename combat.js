@@ -17,12 +17,12 @@ let wave = 1;
 const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher];
 let selectedUnits = [];
 
-Dark.description = "4 star mystic unit with high evasion, speed, and offensive capabilities";
-Electric.description = "3 star magitech unit with high versitility";
-Servant.description = "3 star unit with stealth and critical hit capabilities";
-ClassicJoy.description = "4 star techno backline unit with high attack, low speed, and healing";
+Dark.description = "5 star mystic unit with high evasion, speed, and offensive capabilities";
+Electric.description = "3 star magitech unit with high versatility";
+Servant.description = "4 star unit with stealth and critical hit capabilities";
+ClassicJoy.description = "3 star techno backline unit with high attack, low speed, and healing";
 DexSoldier.description = "3 star unit with strong offensive and tank abilities and low speed";
-Dandelion.description = "3 star mystic unit with decent evasion, speed, and offensive capabilities";
+Dandelion.description = "4 star mystic unit with decent evasion, speed, and offensive capabilities";
 FourArcher.description = "3 star mystic backline unit with high luck and low speed";
 
 function initUnitSelection() {
@@ -340,13 +340,16 @@ export async function combatTick() {
         }
     }
     logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
-    regenerateResources(turn);
     updateMod(turn);
     updateBattleDisplay();
     turn.timer = 1000;
-    if (turn.team === "player") { playerTurn(turn); }
-    if (turn.team === "enemy") { enemyTurn(turn); }
-    turnCounter++
+    if (!turn.stun) {
+        regenerateResources(turn);
+        if (turn.team === "player") { playerTurn(turn); }
+        if (turn.team === "enemy") { enemyTurn(turn); }
+        turnCounter++;
+    }
+    else { combatTick() }
 }
 
 window.combatTick = combatTick;

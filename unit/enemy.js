@@ -1,9 +1,10 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
 
-export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 100, 100, "front", 100, 10], function() {
+export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 100, 100, "front", 100, 10], [], function() {
     this.actions.basicAttack = {
         name: "Basic Attack",
+        properties: ["attack"],
         description: "Attacks a single target three times.",
         code: () => {
             const target = [randTarget(unitFilter("player", "front", false))];
@@ -14,6 +15,7 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
 
     this.actions.strongAttack = {
         name: "Strong Attack [stamina]",
+        properties: ["physical", "stamina", "attack"],
         cost: { stamina: 30 },
         description: "Costs 30 stamina\nAttacks a single target twice with increased damage",
         code: () => {
@@ -29,9 +31,16 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
     };
 
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
+        name: "Dodge [stamina]",
+        properties: ["physical", "stamina", "buff"],
+        cost: { stamina: 20 },
+        description: "Costs 20 stamina\nIncreases evasion for 1 turn",
         code: () => {
+            if (this.resource.stamina < 20) {
+                showMessage("Not enough stamina!", "error", "selection");
+                return;
+            }
+            this.resource.stamina -= 20;
             this.previousAction = [true, false, false];
             const self = this;
             createMod("Dodge", "Evasion increased",
@@ -43,10 +52,8 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
                 },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
                         return true;
                     }
                 }
@@ -55,9 +62,11 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
     };
 
     this.actions.block = {
-        name: "Block",
+        name: "Block [physical]",
+        properties: ["physical", "buff"],
         description: "Increases defense for 1 turn",
         code: () => {
+            this.previousAction = [true, false, false];
             const self = this;
             createMod("Block", "Defense increased",
                 { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },

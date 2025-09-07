@@ -1,9 +1,10 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
 
-export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 60, 6, undefined, undefined, 150, 15], function() {
+export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 60, 6, undefined, undefined, 150, 15], ["Harmonic/Change", "Anomaly/Synthetic"], function() {
     this.actions.laserBlast = {
         name: "Laser Blast [energy]",
+        properties: ["techno", "energy", "light/illusion", "radiance/purity", "attack"],
         cost: { energy: 25 },
         description: "Costs 25 energy\nAttacks up to 2 targets",
         code: () => {
@@ -18,6 +19,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
 
     this.actions.shieldDisruptor = {
         name: "Shield Disruptor [energy]",
+        properties: ["techno", "energy", "harmonic/change", "anomaly/synthetic", "debuff"],
         cost: { energy: 35 },
         description: "Costs 35 energy\nReduces defense and resist of target for 2 turns",
         code: () => {
@@ -29,21 +31,17 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             createMod("Shield Disruption", "Defense reduction",
                 { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: [-0.3, -0.3] },
                 (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
+                    vars.stats.forEach((stat, i) => {
+                        vars.targets[0].mult[stat] += vars.values[i];
+                        resetStat(vars.targets[0], [stat]);
                     });
                 },
                 (vars) => {
                     vars.duration--;
-                    if(vars.duration <= 0) {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
+                    if (vars.duration <= 0) {
+                        vars.stats.forEach((stat, i) => {
+                            vars.targets[0].mult[stat] -= vars.values[i];
+                            resetStat(vars.targets[0], [stat]);
                         });
                         return true;
                     }
@@ -54,6 +52,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
 
     this.actions.naniteRepair = {
         name: "Nanite Repair [energy]",
+        properties: ["techno", "energy", "harmonic/change", "anomaly/synthetic", "heal"],
         cost: { energy: 40 },
         description: "Costs 40 energy\nHeals an ally for 60 HP",
         code: () => {
@@ -70,6 +69,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
 
     this.actions.overcharge = {
         name: "Overcharge [stamina, energy]",
+        properties: ["stamina", "techno", "energy", "harmonic/change", "anomaly/synthetic", "buff"],
         cost: { stamina: 10, energy: 30 },
         description: "Costs 10 stamina & 30 energy\nIncreases attack and speed for 2 turns",
         code: () => {
@@ -80,24 +80,22 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             createMod("Overcharge Boost", "Power surge",
                 { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.4, 0.3] },
                 (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
+                    vars.stats.forEach((stat, i) => {
+                        vars.targets[0].mult[stat] += vars.values[i];
+                        resetStat(vars.targets[0], [stat]);
                     });
                     logAction(`${vars.caster.name}'s systems overcharge!`, "buff");
                 },
-                (vars) => {
-                    vars.duration--;
-                    if(vars.duration <= 0) {
-                        vars.targets.forEach(unit => {
+                (vars, unit) => {
+                    if (vars.targets.includes(unit)) {
+                        vars.duration--;
+                        if (vars.duration <= 0) {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] -= vars.values[i];
                                 resetStat(unit, [stat]);
                             });
-                        });
-                        return true;
+                            return true;
+                        }
                     }
                 }
             );
@@ -106,6 +104,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
 
     this.actions.backupPower = {
         name: "Backup Power [stamina]",
+        properties: ["physical", "stamina", "harmonic/change", "anomaly/synthetic", "resource"],
         cost: { stamina: 20 },
         description: "Costs 20 stamina\nRecovers 60 energy",
         code: () => {
@@ -118,6 +117,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
 
     this.actions.switchPosition = {
         name: "Switch Position [physical]",
+        properties: ["physical", "position"],
         description: "Switch between front and back line positions",
         code: () => {
             this.previousAction = [true, false, false];
@@ -161,9 +161,16 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
     };
 
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
+        name: "Dodge [stamina]",
+        properties: ["physical", "stamina", "buff"],
+        cost: { stamina: 20 },
+        description: "Costs 20 stamina\nIncreases evasion for 1 turn",
         code: () => {
+            if (this.resource.stamina < 20) {
+                logAction(`${this.name} is too fatigued to dodge!`, "info");
+                return;
+            }
+            this.resource.stamina -= 20;
             this.previousAction = [true, false, false];
             const self = this;
             createMod("Dodge", "Evasion increased",
@@ -175,10 +182,8 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
                 },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
                         return true;
                     }
                 }

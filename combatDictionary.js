@@ -1,5 +1,7 @@
 let allUnits = [];
 const modifiers = [];
+let currentUnit = null;
+let currentAction = null;
 
 class Modifier {
     constructor(name, description, vars, initFunc, onTurnFunc) {
@@ -46,7 +48,7 @@ function resistDebuff(attacker, defenders) {
             will.push(roll);
             continue;
         }
-        will.push(((attacker.presence + attacker.crit) / Math.max(200 - (attacker.presence + attacker.crit) + (unit.presence + unit.resist), 20) ) + roll);
+        will.push(((attacker.presence + attacker.focus) / Math.max(200 - (attacker.presence + attacker.focus) + (unit.presence + unit.resist), 20) ) + roll);
     }
     return will;
 }
@@ -83,6 +85,7 @@ function resetStat(unit, statList, values = null, add = true) {
 }
 
 function enemyTurn(unit) {
+    currentUnit = unit;
     const availableActions = {};
     let totalWeight = 0;
     for (const action in unit.actions.actionWeight) {
@@ -111,10 +114,13 @@ function enemyTurn(unit) {
     for (const action in availableActions) {
         cumulativeWeight += unit.actions.actionWeight[action];
         if (randChoice <= cumulativeWeight) {
+            currentAction = action;
             unit.actions[action].code();
             break;
         }
     }
+    currentAction = null;
+    currentUnit = null;
     setTimeout(window.combatTick, 1000);
 }
 
@@ -130,6 +136,7 @@ function randTarget(unitList = allUnits, trueRand = false) {
 }
 
 function playerTurn(unit) {
+    currentUnit = unit;
     let actionButton = "<div>";
     for (const actionKey in unit.actions) { 
         const action = unit.actions[actionKey];
@@ -156,9 +163,12 @@ function playerTurn(unit) {
             const unit = allUnits.find(u => u.name === name);
             if (unit.actions[action].target !== undefined) { unit.actions[action].target(); }
             else {
+                currentAction = action;
                 unit.actions[action].code();
                 document.getElementById("selection").innerHTML = "";
                 cleanupGlobalHandlers();
+                currentAction = null;
+                currentUnit = null;
                 setTimeout(window.combatTick, 500);
             }
         }
@@ -297,7 +307,7 @@ function crit(attacker, defenders, hit) {
         const critical = [];
         for (let j = 0; j < hit[i].length; j++) { 
             if (hit[i][j] <= 0) { critical.push(0); continue; }
-            critical.push(hit[i][j] / (Math.max(5*defenders[i].resist - attacker.crit, 10)));
+            critical.push(hit[i][j] / (Math.max(5*defenders[i].resist - attacker.focus, 10)));
         }
         array.push(critical);
     }

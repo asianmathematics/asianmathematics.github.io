@@ -1,5 +1,5 @@
 export class Unit {
-    constructor(name, stat, actionsInit) {
+    constructor(name, stat, elements, actionsInit) {
         this.name = name;
         this.base = {
             hp: stat[0],
@@ -8,11 +8,12 @@ export class Unit {
             lethality: stat[3],
             accuracy: stat[4],
             evasion: stat[5],
-            crit: stat[6],
+            focus: stat[6],
             resist: stat[7],
             speed: stat[8],
             presence: stat[9],
             position: stat[10],
+            elements: elements,
             resource: {
                 stamina: stat[11],
                 staminaRegen: stat[12],
@@ -24,7 +25,7 @@ export class Unit {
             lethality: 1,
             accuracy: 1,
             evasion: 1,
-            crit: 1,
+            focus: 1,
             resist: 1,
             speed: 1,
             presence: 1,
@@ -42,11 +43,12 @@ export class Unit {
             this.base.resource.energyRegen = stat[16];
             this.mult.resource.energyRegen = 1;
         }
+        this.elements = this.base.elements;
         this.hp = this.base.hp;
         this.resource = {...this.base.resource};
         this.actions = {};
         this.previousAction = [false, false, false];
-        
+        this.stun = false;
         this.actionsInit = actionsInit;
     }
 }

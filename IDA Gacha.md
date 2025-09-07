@@ -14,14 +14,14 @@
 
 1. ### Battlefield Mode
 
-* **Units**: Battalions of 1★/2★ duplicate units \+ a compatible commander of a higher star (2★/3★) for each.  
+* **Units**: Battalions of 1★/2★ duplicate units \+ a compatible commander of a higher star (2★/3★) for each. At late game, battlefield mode variants of 3★ duplicates and 4★ commanders are available.  
 * **Objective**: Large-scale grid battles (e.g. capture points, destroy enemy army).  
 * **Risk**: permadeath chance for defeated units that loses their duplicates (gives back some materials for gacha), increased chance after battalion wipeout  
 * **Map**: Hex grid map with emphasis on Battalion positioning. Can have different terrain for each tile.
 
 2. ### Squad Mode
 
-* **Units**: A few 3★/4★ units  
+* **Units**: A few 3★/4★/5★ units  
 * **Objective**: Tactical missions (e.g. survive waves).  
 * **Risk**: Lower permadeath chance but almost guaranteed after squad wipe.  
 * **Automation**: Choice to have actions determined from a pre-made or customizable algorithm. Certain variants require automatic mode.
@@ -30,7 +30,7 @@
 
 * **Rewards**: Materials for gacha, level XP for units.  
 * **Special Mechanics**:    
-  * 5★ units act as "Planeswalkers" (game-changing abilities) and locked to certain game mode variants. Can not Perma-die.  
+  * 6★ units act as "Planeswalkers" (game-changing abilities) and locked to certain game mode variants. Can not Perma-die.  
   * Dynamic difficulty on certain battles dependent on recent wins and losses  
   * Retreat option to minimize perma-death (counts as loss).  
   * Environmental Effects.(e.g. Wild Magic Field randomizes magic skill effects, Solar Flare disables techno skills)  
@@ -90,9 +90,9 @@
 5. ### Synergies
 
 * **Power Up**: Depending on the synergy, it will increase certain stats, skills, and behaviors of the units involved. Mixed rarity synergies are less common.  
-* **Squad**: 3★ have more synergies, while 4★ are more powerful.  
+* **Squad**: 3★ are weaker but have more synergies, while 5★ are more powerful and have less synergies. 4★ are more balanced between the two.  
 * **Battlefield**: Position based synergies. 3★ commanders have more positional synergies than 2★.  
-* **Elements**: Special element synergies only available with 5★ or other special circumstances.
+* **Elements**: Special element synergies only available with 6★ or other special circumstances.
 
 6. ### Other
 
@@ -108,7 +108,7 @@
 
 * **Banner**: Default banner and monthly banner. Each Banner has two sub-banners:  
   * Field: Features units of all rarities. Usually prioritizes Squad Banner compatible units.  
-  * Squad: Features 3★/4★/5★ units. Gives less quantity of units at a higher cost for better quality.  
+  * Squad: Features 3★/4★/5★/6★ units. Gives less quantity of units at a higher cost for better quality.  
 * **Additions**:   
   * 1★: Fixed roster (no updates).  
   * 2★: Rare additions.  
@@ -117,7 +117,7 @@
 2. ### Resources
 
 * **Materials**: Currency for gacha pulls for units. Gain from sacrificing/prestiging units, quests, battle rewards (win/lose), and plenty for early game.  
-* **Pity Points**: Gain from pulls to exchange for specific 4★/5★ units of choice. Universal for all banners.  
+* **Pity Points**: Gain from pulls to exchange for specific 4★/5★/6★ units of choice. Universal for all banners.  
 * **Time Dilation**: Similar to AP in other games. Spend to participate in battles. Can be used to speed up cooldowns but is expensive. Regains slowly real time and certain quests.  
 * **Orbs**: Main currency for miscellaneous stuff. Gained from Quests, battle rewards (win/lose), and plenty for early game.  
 * **Restart Tickets**: Rare tickets that undos the effect of a failed battle. Dupe numbers and resources are reset to before the battle.  

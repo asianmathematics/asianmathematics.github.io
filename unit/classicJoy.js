@@ -1,26 +1,23 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat, resistDebuff, modifiers } from '../combatDictionary.js';
 
-export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15, 130, 30, 90, 110, "back", 120, 15, undefined, undefined, 90, 10], function() {
+export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15, 130, 30, 90, 110, "back", 120, 15, undefined, undefined, 90, 10], ["Death/Darkness", "Goner/Entropy", "Anomaly/Synthetic", "Independence/Loneliness", "Ingenuity/Insanity"], function() {
     this.actions.rapidFire = {
-        name: "Rapid Fire [techno]",
-        description: "Attacks a single target twice but increases speed by 40% for 1 turn",
-        target: () => {
-            selectTarget(this.actions.rapidFire, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
-        },
+        name: "Rapid Fire [physical, techno]",
+        properties: ["physical", "techno", "attack", "buff"],
+        description: "Attacks a single target twice but increases speed for 1 turn",
+        target: () => { selectTarget(this.actions.rapidFire, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (targets) => {
-            this.previousAction = [false, false, true];
+            this.previousAction = [true, false, true];
             attack(this, targets, 2);
             logAction(`${this.name} performs a Rapid Fire, boosting speed for 1 turn!`, "buff");
             createMod("Rapid Fire Speed", "Temporary speed boost",
                 { caster: this, targets: [this], duration: 1, stats: ["speed"], values: [0.4] },
                 (vars) => {
-                    vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
+                            vars.targets[0].mult[stat] += vars.values[i];
+                            resetStat(vars.targets[0], [stat]);
                         });
-                    });
                 },
                 (vars, unit) => {
                     if(vars.caster === unit) {
@@ -35,8 +32,9 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15,
         }
     };
 
-    this.actions.semiAutomatic = {
+    this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
+        properties: ["techno", "energy", "attack"],
         cost: { energy: 30 },
         description: "Costs 30 energy\nAttacks a single target 3 times with increased accuracy and crit damage",
         target: () => {
@@ -44,7 +42,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15,
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.semiAutomatic, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.energyRifle, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
             this.resource.energy -= 30;
@@ -59,6 +57,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15,
 
     this.actions.emp = {
         name: "EMP [energy]",
+        properties: ["techno", "energy", "inertia/cold", "debuff", "resource"],
         cost: { energy: 55 },
         description: "Costs 55 energy\nSets energy of target to 0 and disables energy regeneration for next turn",
         target: () => {
@@ -90,10 +89,9 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15,
 
     this.actions.synthesizeMedicine = {
         name: "Synthesize Medicine [techno]",
+        properties: ["techno", "nature/life", "heal"],
         description: "Heals target 80 HP",
-        target: () => {
-            selectTarget(this.actions.synthesizeMedicine, () => { playerTurn(this); }, [1, true, unitFilter("player", "")]);
-        },
+        target: () => { selectTarget(this.actions.synthesizeMedicine, () => { playerTurn(this); }, [1, true, unitFilter("player", "")]) },
         code: (target) => {
             this.previousAction = [false, false, true];
             target[0].hp = Math.min(target[0].base.hp, target[0].hp + 80);
@@ -103,6 +101,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15,
 
     this.actions.joy = {
         name: "Joy [stamina]",
+        properties: ["physical", "stamina", "death/darkness", "harmonic/change", "ingenuity/insanity", "buff", "debuff"],
         cost: { stamina: 40 },
         description: "Costs 40 stamina & 50 HP\nDelayed consequences",
         target: () => {
@@ -132,7 +131,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 75, 10, 75, 120, 15,
                 mod.vars.duration = 9;
             } else {
                 createMod("Joy", "Overall increase?",
-                    { caster: this, targets: target, duration: 9, buffs: ["accuracy", "crit", "defense", "resist"], buffValues: [0.25, 0.4, 0.6, 0.4], debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: [-0.25, -0.4, -0.25, -0.1, -0.25] },
+                    { caster: this, targets: target, duration: 9, buffs: ["accuracy", "focus", "defense", "resist"], buffValues: [0.25, 0.4, 0.6, 0.4], debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: [-0.25, -0.4, -0.25, -0.1, -0.25] },
                     (vars) => {
                         vars.targets.forEach(unit => {
                             vars.buffs.forEach((stat, i) => {

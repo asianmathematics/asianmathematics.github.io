@@ -1,9 +1,10 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat } from '../combatDictionary.js';
 
-export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95, 50, 85, 150, "front", 200, 25], function() {
+export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95, 50, 85, 150, "front", 200, 25], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity"], function() {
     this.actions.hammer = {
         name: "Hammer [physical]",
+        properties: ["physical", "attack", "buff"],
         description: "Attacks a single target with increased damage and accuracy and increases speed for 1 turn.",
         target: () => { selectTarget(this.actions.hammer, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
@@ -20,10 +21,8 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
                 },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
                         return true;
                     }
                 }
@@ -34,6 +33,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
 
     this.actions.quake = {
         name: "Quake [stamina]",
+        properties: ["physical", "stamina", "attack", "multitarget"],
         cost: { stamina: 40 },
         description: "Costs 40 stamina\nAttacks all frontline twice at reduced damage and acccuracy.",
         code: () => {
@@ -53,6 +53,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
 
     this.actions.determination = {
         name: "Determination [stamina]",
+        properties: ["physical", "stamina", "harmonic/change", "inertia/cold", "radiance/purity", "heal", "buff"],
         cost: { stamina: 80 },
         description: "Costs 80 stamina\nHeals 60hp this turn and the next 2 turns",
         code: () => {
@@ -80,29 +81,32 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
     };
 
     this.actions.guard = {
-        name: "Guard [physical]",
-        description: "Increases defense and presence for 1 turn",
+        name: "Guard [stamina]",
+        properties: ["physical", "stamina", "inertia/cold", "buff"],
+        cost: { stamina: 20 },
+        description: "Costs 20 stamina\nIncreases defense and presence for 1 turn",
         code: () => {
+            if (this.resource.stamina < 20) {
+                showMessage("Not enough stamina!", "error", "selection");
+                return;
+            }
+            this.resource.stamina -= 20;
             this.previousAction = [true, false, false];
             logAction(`${this.name} protects the team!`, "action");
             const self = this;
             createMod("Guard", "Defense and presence increase",
                 { caster: self, targets: [self], duration: 1, stats: ["defense", "presence"], values: [1, 1] },
                 (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
+                    vars.stats.forEach((stat, i) => {
+                        vars.targets[0].mult[stat] += vars.values[i];
+                        resetStat(vars.targets[0], [stat]);
                     });
                 },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
+                        vars.stats.forEach((stat, i) => {
+                            vars.targets[0].mult[stat] -= vars.values[i];
+                            resetStat(vars.targets[0], [stat]);
                         });
                         return true;
                     }
@@ -112,9 +116,11 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
     };
 
     this.actions.block = {
-        name: "Block",
+        name: "Block [physical]",
+        properties: ["buff"],
         description: "Increases defense for 1 turn",
         code: () => {
+            this.previousAction = [true, false, false];
             const self = this;
             createMod("Block", "Defense increased",
                 { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },
@@ -125,10 +131,8 @@ export const DexSoldier = new Unit("DeX (Soldier)", [900, 50, 20, 20, 90, 20, 95
                 },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
                         return true;
                     }
                 }

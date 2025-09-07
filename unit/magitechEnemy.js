@@ -1,9 +1,10 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
 
-export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 15, 95, 45, 90, 140, "front", 90, 9, 120, 12, 120, 12], function() {
+export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 15, 95, 45, 90, 140, "front", 90, 9, 120, 12, 120, 12], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.arcaneCannon = {
         name: "Arcane Cannon [mana, techno]",
+        properties: ["mystic", "mana", "techno", "attack"],
         cost: { mana: 20 },
         description: "Costs 20 mana\nAttacks a single target twice with increased damage",
         code: () => {
@@ -19,56 +20,54 @@ export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 1
 
     this.actions.elementalShift = {
         name: "Elemental Shift [mystic]",
+        properties: ["mystic", "inertia/cold", "radiance/purity", "buff"],
         description: "Shifts to fire or ice element, gaining different bonuses",
         code: () => {
             this.previousAction = [false, true, false];
+            const self = this;
             if (Math.random() < .5) {
                 logAction(`${this.name} shifts to fire element, becoming more aggressive!`, "buff");
                 createMod("Fire Element", "Offensive enhancement",
-                    { caster: this, targets: [this], duration: 2, stats: ["attack", "speed"], values: [0.3, 0.2] },
+                    { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.3, 0.2] },
                     (vars) => {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] += vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
+                        vars.stats.forEach((stat, i) => {
+                            vars.caster.mult[stat] += vars.values[i];
+                            resetStat(vars.caster, [stat]);
                         });
                     },
-                    (vars) => {
-                        vars.duration--;
-                        if(vars.duration <= 0) {
-                            vars.targets.forEach(unit => {
+                    (vars, unit) => {
+                        if (vars.targets.includes(unit)) {
+                            vars.duration--;
+                            if (vars.duration <= 0) {
                                 vars.stats.forEach((stat, i) => {
-                                    unit.mult[stat] -= vars.values[i];
-                                    resetStat(unit, [stat]);
+                                    vars.caster.mult[stat] -= vars.values[i];
+                                    resetStat(vars.caster, [stat]);
                                 });
-                            });
-                            return true;
+                                return true;
+                            }
                         }
                     }
                 );
             } else {
                 logAction(`${this.name} shifts to ice element, becoming more defensive!`, "buff");
                 createMod("Ice Element", "Defensive enhancement",
-                    { caster: this, targets: [this], duration: 2, stats: ["defense", "resist"], values: [0.3, 0.2] },
+                    { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: [0.3, 0.2] },
                     (vars) => {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] += vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
+                        vars.stats.forEach((stat, i) => {
+                            vars.caster.mult[stat] += vars.values[i];
+                            resetStat(vars.caster, [stat]);
                         });
                     },
-                    (vars) => {
-                        vars.duration--;
-                        if(vars.duration <= 0) {
-                            vars.targets.forEach(unit => {
+                    (vars, unit) => {
+                        if (vars.targets.includes(unit)) {
+                            vars.duration--;
+                            if (vars.duration <= 0) {
                                 vars.stats.forEach((stat, i) => {
-                                    unit.mult[stat] -= vars.values[i];
-                                    resetStat(unit, [stat]);
+                                    vars.caster.mult[stat] -= vars.values[i];
+                                    resetStat(vars.caster, [stat]);
                                 });
-                            });
-                            return true;
+                                return true;
+                            }
                         }
                     }
                 );
@@ -78,6 +77,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 1
 
     this.actions.magitechBarrier = {
         name: "Magitech Barrier [mana, energy]",
+        properties: ["mystic", "mana", "techno", "energy", "inertia/cold", "anomaly/synthetic", "buff", "multitarget"],
         cost: { mana: 25, energy: 25 },
         description: "Costs 25 mana & 25 energy\nIncreases defense of all allies",
         code: () => {
@@ -107,6 +107,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 1
 
     this.actions.essenceAbsorption = {
         name: "Essence Absorption",
+        properties: ["harmonic/change", "resource"],
         description: "Recovers 40 mana and energy",
         code: () => {
             this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + 40);
@@ -117,6 +118,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 1
 
     this.actions.energyWave = {
         name: "Energy Wave [energy]",
+        properties: ["techno", "energy", "harmonic/change", "attack", "multitarget"],
         cost: { energy: 30 },
         description: "Costs 30 energy\nAttacks all front-line enemies with reduced accuracy and damage",
         code: () => {
@@ -132,6 +134,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [550, 45, 15, 30, 100, 1
 
     this.actions.coreOverload = {
         name: "Core Overload [mana, energy]",
+        properties: ["mystic", "mana","techno", "energy", "attack", "multitarget"],
         cost: { mana: 40, energy: 40 },
         description: "Costs 40 mana & 40 energy\nOnly usable when below 30% HP, otherwise does Arcane Cannon\nAttacks all front-line enemies with increased attack",
         code: () => {

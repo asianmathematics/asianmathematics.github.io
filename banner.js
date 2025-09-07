@@ -1,28 +1,33 @@
 const protoField = {
     oneStar: {
-        rate: 0.70,
+        rate: 0.800033,
         units: ["Artificial", "Human", "Exotic", "Darkener", "Techno", "Mystic", "Goner"],
         rates: [1, 1, 1, 1, 1, 1, 1]
     },
     twoStar: {
-        rate: 0.28,
-        units: ["Class 1", "Class 2", "Class 3", "IeX (Generic)", "A (Generic)", "Timelinear", "Experiment"],
-        rates: [1, 1, 1, 1, 1, 1, 1]
+        rate: 0.16016,
+        units: ["Class 1", "Class 2", "Class 3", "Class 4", "HeX", "DeX", "IeX", "A", "Timelinear", "Experiment", "Forgotten"],
+        rates: Array(11).fill(1)
     },
     threeStar: {
-        rate: 0.015,
-        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dandelion", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
-        rates: Array(15).fill(1)
+        rate: 0.03208,
+        units: ["Classical (Joy)", "Righty001", "2 (Soldier)", "Clone 2 (Soldier)", "3 (Scientist)", "Rebellion", "4 (Butler)", "4 (Archer)", "HeX (Soldier)", "DeX (Soldier)", "Prodigy", "Electric", "Prince"],
+        rates: Array(13).fill(1)
     },
     fourStar: {
-        rate: 0.0045,
-        units: ["Jack Spades", "Dark", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
-        rates: Array(15).fill(1)
+        rate: 0.00644,
+        units: ["Classical", "Sunshine", "Revolutionary (3rd)", "4 (Bartender)", "Fear", "Jester", "Amalgam", "Gardener", "Dandelion", "Servant"],
+        rates: Array(10).fill(1)
     },
     fiveStar: {
-        rate: 0.0005,
-        units: ["Creator (Generic)", "Dark (Space)", "Fate", "R. Random", "Green Knight"],
-        rates: [1, 1, 1, 1, 1]
+        rate: 0.0013,
+        units: ["Jack Spades", "Sunshine (Decadent)", "Past", "Present", "Future", "Revolutionary (Collective)", "Narcissus", "Librarian", "Star Dream", "Daisy", "Doll Maker", "Puppeteer", "Void", "Entropy", "Masks", "Template", "Dark", "Servant (Gluttony)"],
+        rates: Array(18).fill(1)
+    },
+    sixStar: {
+        rate: 0.000266,
+        units: ["Creator (Generic)", "Fate", "Green Knight", "Amalgam (Broken Dream)", "R. Random", "Dark (Space)"],
+        rates: [1, 1, 1, 1, 1, 1]
     }
 };
 
@@ -38,19 +43,24 @@ const protoSquad = {
         rates: []
     },
     threeStar: {
-        rate: 0.72,
-        units: ["Classical", "Chaos", "Order", "3 (Scientist)", "Rebellion (Generic)", "Doll Maker", "Amalgam", "Dandelion", "Servant", "Daisy", "Revolutionary (3rd)", "Masks", "Jester", "Star Dream", "Electric"],
-        rates: Array(15).fill(1)
+        rate: 0.65,
+        units: ["Classical (Joy)", "Righty001", "2 (Soldier)", "Clone 2 (Soldier)", "3 (Scientist)", "Rebellion", "4 (Butler)", "4 (Archer)", "HeX (Soldier)", "DeX (Soldier)", "Prodigy", "Electric", "Prince"],
+        rates: Array(13).fill(1)
     },
     fourStar: {
         rate: 0.25,
-        units: ["Jack Spades", "Dark", "Void", "Entropy", "Template", "Revolutionary (Collective)", "Classical (Joy)", "Gardener", "Past", "Present", "Future", "Narcissus", "Servant (Gluttony)", "Sunshine (Decadent)", "Puppeteer"],
-        rates: Array(15).fill(1)
+        units: ["Classical", "Sunshine", "Revolutionary (3rd)", "4 (Bartender)", "Fear", "Jester", "Amalgam", "Gardener", "Dandelion", "Servant"],
+        rates: Array(10).fill(1)
     },
     fiveStar: {
-        rate: 0.03,
-        units: ["Creator (Generic)", "Dark (Space)", "Fate", "R. Random", "Green Knight"],
-        rates: [1, 1, 1, 1, 1]
+        rate: 0.075,
+        units: ["Jack Spades", "Sunshine (Decadent)", "Past", "Present", "Future", "Revolutionary (Collective)", "Narcissus", "Librarian", "Star Dream", "Daisy", "Doll Maker", "Puppeteer", "Void", "Entropy", "Masks", "Template", "Dark", "Servant (Gluttony)"],
+        rates: Array(18).fill(1)
+    },
+    sixStar: {
+        rate: 0.025,
+        units: ["Creator (Generic)", "Fate", "Green Knight", "Amalgam (Broken Dream)", "R. Random", "Dark (Space)"],
+        rates: [1, 1, 1, 1, 1, 1]
     }
 };
 

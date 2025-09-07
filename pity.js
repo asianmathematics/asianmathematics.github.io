@@ -36,13 +36,13 @@ function setupPullListeners() {
         totalCost += 440;
         totalPity += 200;
         updateDisplays();
-        gacha(protoSquad, 10);
+        gacha(protoSquad, 10, 0, 0, 1);
     });
 }
 
 function setupRedemptionListeners() {
-    document.getElementById('redeem4Star').addEventListener('click', redeem4Star);
     document.getElementById('redeem5Star').addEventListener('click', redeem5Star);
+    document.getElementById('redeem6Star').addEventListener('click', redeem6Star);
 }
 
 function updateDisplays() {
@@ -51,10 +51,10 @@ function updateDisplays() {
 }
 
 function populatePityShop() {
-    const fourStarSelect = document.getElementById('fourStarSelect');
     const fiveStarSelect = document.getElementById('fiveStarSelect');
-    protoSquad.fourStar.units.forEach(unit => {fourStarSelect.appendChild(createOption(unit));});
+    const sixStarSelect = document.getElementById('sixStarSelect');
     protoSquad.fiveStar.units.forEach(unit => {fiveStarSelect.appendChild(createOption(unit));});
+    protoSquad.sixStar.units.forEach(unit => {sixStarSelect.appendChild(createOption(unit));});
 }
 
 function createOption(unit) {
@@ -64,20 +64,20 @@ function createOption(unit) {
     return option;
 }
 
-function redeem4Star() {
-    if (totalPity >= 500) {
-        const unit = document.getElementById('fourStarSelect').value;
-        totalPity -= 500;
+function redeem5Star() {
+    if (totalPity >= 2500) {
+        const unit = document.getElementById('fiveStarSelect').value;
+        totalPity -= 2500;
         unitData[unit].count++;
         updateDisplays();
         document.getElementById("collection").innerHTML = `<b>Collection:</b><br>${collectionDisplay()}`;
     }
 }
 
-function redeem5Star() {
-    if (totalPity >= 1500) {
-        const unit = document.getElementById('fiveStarSelect').value;
-        totalPity -= 1500;
+function redeem6Star() {
+    if (totalPity >= 10000) {
+        const unit = document.getElementById('sixStarSelect').value;
+        totalPity -= 10000;
         unitData[unit].count++;
         updateDisplays();
         document.getElementById("collection").innerHTML = `<b>Collection:</b><br>${collectionDisplay()}`;

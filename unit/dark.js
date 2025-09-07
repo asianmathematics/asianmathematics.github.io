@@ -1,11 +1,12 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, resetStat } from '../combatDictionary.js';
 
-export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 175, "front", 150, 18, 250, 30], function() {
-    this.actions.spellAttack = {
-        name: "Spell Attack [mystic]",
+export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 175, "front", 150, 18, 250, 30], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
+    this.actions.iceshock = {
+        name: "Iceshock [mystic]",
+        properties: ["mystic", "intertia/cold", "attack"],
         description: "Attacks a single target 4 times.",
-        target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+        target: () => { selectTarget(this.actions.iceshock, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
         code: (target) => {
             this.previousAction = [false, true, false];
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
@@ -13,54 +14,40 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
         }
     };
 
-    this.actions.shootEmUp = {
-        name: "Shoot 'em up [mana, physical]",
-        cost: { mana: 20 },
-        description: "Costs 20 mana\nIncreases evasion by +100% for 1 turn\nHits a single target twice with increased accuracy and damage",
+    this.actions.perfectFreeze = {
+        name: "Perfect Freeze [mana]",
+        properties: ["mystic", "mana", "intertia/cold", "debuff", "stun"],
+        cost: { mana: 90 },
+        description: "Costs 90 mana\nStuns a single target for a turn",
         target: () => {
-            if (this.resource.mana < 20) {
+            if (this.resource.mana < 90) {
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.shootEmUp, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.perfectFreeze, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
-            this.resource.mana -= 20;
-            this.previousAction = [true, true, false];
-            this.attack *= 2;
-            this.accuracy *= 1.5;
-            logAction(`${this.name} focus fires on ${target[0].name}!`, "action");
-            attack(this, target, 3);
-            resetStat(this, ["attack", "accuracy"]);
-            const self = this;
-            createMod("Shoot 'em Up Evasion", "Temporary evasion boost",
-                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [1.5] },
-                (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
-                    });
-                    logAction(`${vars.caster.name}'s evasion surges!`, "buff");
-                },
-                (vars, unit) => {
-                    if(vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
-                        });
+            this.resource.mana -= 90;
+            this.previousAction = [false, true, false];
+            const will = resistDebuff(this, target);
+            if (will > 50) {
+                logAction(`${this.name} freezes ${target[0].name}!`, "action");
+                const self = this;
+                createMod("Perfect Freeze", "stun effect",
+                    { caster: self, targets: target, duration: 1, stats: ["evasion"], values: [1.5] },
+                    (vars) => { vars.targets[0].stun = true },
+                    (vars, unit) => {
+                        vars.targets[0].stun = false;
                         return true;
                     }
-                }
-            );
+                );
+            } else { logAction(`${target[0].name} resists the freeze!`, "miss") }
         }
     };
 
-    this.actions.bulletHell = {
-        name: "Bullet Hell [mana]",
+    this.actions.danmaku = {
+        name: "Danmaku [mana]",
+        properties: ["mystic", "mana", "attack", "debuff", "multitarget"],
         cost: { mana: 40 },
         description: "Costs 40 mana\nDecreases evasion for 1 turn\nHits up to 6 random enemies 10 times with decreased accuracy and damage",
         code: () => {
@@ -81,20 +68,16 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
                 (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
+                    vars.stats.forEach((stat, i) => {
+                        vars.targets[0].mult[stat] += vars.values[i];
+                        resetStat(vars.targets[0], [stat]);
                     });
                 },
                 (vars, unit) => {
                     if(vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
+                        vars.stats.forEach((stat, i) => {
+                            vars.targets[0].mult[stat] -= vars.values[i];
+                            resetStat(vars.targets[0], [stat]);
                         });
                         return true;
                     }
@@ -105,6 +88,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
 
     this.actions.dispelMagic = {
         name: "Dispel Magic [mana]",
+        properties: ["mystic", "mana", "intertia/cold", "debuff", "resource"],
         cost: { mana: 60 },
         description: "Costs 60 mana\nSets mana of target to 0 and disables mana regeneration for next turn",
         target: () => {
@@ -130,9 +114,16 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
     };
 
     this.actions.dodge = {
-        name: "Dodge [physical]",
-        description: "Increases evasion for 1 turn",
+        name: "Dodge [stamina]",
+        properties: ["physical", "stamina", "buff"],
+        cost: { stamina: 20 },
+        description: "Costs 20 stamina\nIncreases evasion for 1 turn",
         code: () => {
+            if (this.resource.stamina < 20) {
+                showMessage("Not enough stamina!", "error", "selection");
+                return;
+            }
+            this.resource.stamina -= 20;
             this.previousAction = [true, false, false];
             const self = this;
             createMod("Dodge", "Evasion increased",
@@ -144,10 +135,8 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                        unit.mult[vars.stat] -= vars.value;
+                        resetStat(unit, [vars.stat]);
                         return true;
                     }
                 }
