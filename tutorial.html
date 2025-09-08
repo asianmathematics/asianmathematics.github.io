@@ -98,9 +98,9 @@ Debuff (debuff is applied if number is positive, auto apply on 100 and auto fail
     import { createUnit, advanceWave, combatTick } from './combat.js';
     document.addEventListener('DOMContentLoaded', function() {
         createUnit(Electric, 'player');
-        createUnit(new Unit('Basic Dummy', [500, 40, 10, 25, 100, 20, 100, 35, 0, 100, "front", 100, 10], () => {}), 'enemy');
-        createUnit(new Unit('Mystic Dummy', [425, 35, 8, 35, 110, 30, 115, 25, 0, 100, "front", 80, 8, 180, 20], () => {}), 'enemy');
-        createUnit(new Unit('Techno-backline Dummy', [475, 40, 12, 20, 105, 20, 90, 40, 0, 110, "back", 60, 6, undefined, undefined, 150, 15], () => {}), 'enemy');
+        createUnit(new Unit('Basic Dummy', [500, 40, 10, 25, 100, 20, 100, 35, 0, 100, "front", 100, 10], [], () => {}), 'enemy');
+        createUnit(new Unit('Mystic Dummy', [425, 35, 8, 35, 110, 30, 115, 25, 0, 100, "front", 80, 8, 180, 20], [], () => {}), 'enemy');
+        createUnit(new Unit('Techno-backline Dummy', [475, 40, 12, 20, 105, 20, 90, 40, 0, 110, "back", 60, 6, undefined, undefined, 150, 15], [], () => {}), 'enemy');
         advanceWave(-1);
         combatTick();
     });
