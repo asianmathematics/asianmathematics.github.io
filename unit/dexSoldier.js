@@ -71,7 +71,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
                 (vars) => { logAction(`${vars.caster.name} slowly regains hp!`, "buff"); },
                 (vars, unit) => {
                     if (vars.caster === unit) {
-                        caster.hp = Math.min(caster.hp + vars.values[0], caster.base.hp);
+                        vars.caster.hp = Math.min(vars.caster.hp + vars.values[0], vars.caster.base.hp);
                         vars.duration--;
                         if (vars.duration === 0) { return true; }
                     }
