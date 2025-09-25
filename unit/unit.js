@@ -49,6 +49,8 @@ export class Unit {
         this.actions = {};
         this.previousAction = [false, false, false];
         this.stun = false;
+        this.absorb = [];
+        this.shield = [];
         this.actionsInit = actionsInit;
     }
 }

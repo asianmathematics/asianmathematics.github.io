@@ -42,7 +42,7 @@
 
 * **HP**: Unit’s health. Reaching 0 has a small chance of losing that duplicate. Battalion HP is equal to 1/10th Unit HP times number of units, once Battalion HP drops by 1/10th Unit HP, number of units decrease.  
 * **Attack**: Amount of damage dealt to enemy from an attack.  
-* **Defense**: Amount of damage reduced from attacks. Can reduce up to 1/10th attack.  
+* **Defense**: Amount of damage reduced from attacks. Can reduce up to 90% of the damage..  
 * **Lethality**: Bonus damage from criticals. Only in Squad mode.  
 * **Accuracy**: Increase chance to hit an attack. Minimum chance to hit of 15%. Only in Squad mode.  
 * **Evasion**: Decrease chance to get attacked. Only in Squad mode.  
@@ -85,7 +85,7 @@
   * Passion/Hatred  
   * Ingenuity/Insanity  
 * **Relations**: Each main element has a pair it's related to and an opposite it conflicts with (e.g. Darkness pairs with Death and opposes Light).  
-* **Interactions**: To exploit an elemental weakness or resistance, a unit with an elemental pair must be hit by attacks tagged with the elemental pair's opposites (e.g. Death/Darkness unit hit with Nature/Life and Light/Illusion attacks). Healing and Buffs from an opposing pair of the unit weakens the effect while using the same pair as the unit increases effectiveness. Buffs and Debuffs can be weakened using attack weaknesses and Buff/Debuff incompatibility.
+* **Interactions**: To exploit an elemental weakness, a unit with an elemental pair must be hit by attacks tagged with the elemental pair's opposites (e.g. Death/Darkness unit hit with Nature/Life and Light/Illusion attacks). Healing and Buffs from an opposing pair of the unit weakens the effect while using the same pair as the unit increases effectiveness. Buffs and Debuffs can be weakened using elemental incompatibility feom other Buffs/Debuffs.
 
 5. ### Synergies
 
@@ -117,11 +117,10 @@
 2. ### Resources
 
 * **Materials**: Currency for gacha pulls for units. Gain from sacrificing/prestiging units, quests, battle rewards (win/lose), and plenty for early game.  
-* **Pity Points**: Gain from pulls to exchange for specific 4★/5★/6★ units of choice. Universal for all banners.  
+* **Pity Points**: Gain from pulls to exchange for specific 5★/6★ units of choice from an available banner. Universal for all banners. Can also be used to buy duplicates of units pulled at least once.  
 * **Time Dilation**: Similar to AP in other games. Spend to participate in battles. Can be used to speed up cooldowns but is expensive. Regains slowly real time and certain quests.  
 * **Orbs**: Main currency for miscellaneous stuff. Gained from Quests, battle rewards (win/lose), and plenty for early game.  
 * **Restart Tickets**: Rare tickets that undos the effect of a failed battle. Dupe numbers and resources are reset to before the battle.  
-* **Restore Charm**: Can be used to save a dupe from permadeath once per battle.  
 * **Heart Piece**: Premium currency used to improve pull rates, effectively reduce large cooldowns, and exchange for other materials.
 
 3. ### Monetization (unlikely)

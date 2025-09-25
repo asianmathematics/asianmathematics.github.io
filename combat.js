@@ -9,7 +9,7 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
-import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
+import { resetState, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -248,8 +248,9 @@ function cloneUnit(unit) {
         previousAction: [false, false, false],
         base: structuredClone(unit.base),
         mult: structuredClone(unit.mult),
-        resource: { ...unit.base.resource },
+        resource: { ...unit.base.resource},
         actions: {},
+        elements: [...unit.base.elements],
     };
     newUnit.actionsInit = unit.actionsInit;
     for (const stat in newUnit.base) {
@@ -257,6 +258,9 @@ function cloneUnit(unit) {
         if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat]; }
         else { resetStat(newUnit, [stat]); }
     }
+    newUnit.absorb = [];
+    newUnit.shield = (unit.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
+    newUnit.stun = false;
     return newUnit;
 }
 
@@ -320,6 +324,7 @@ function frontTest() {
 }
 
 export async function combatTick() {
+    resetState();
     updateBattleDisplay();
     await sleep(500);
     if (frontTest()) { return; }
@@ -345,6 +350,8 @@ export async function combatTick() {
     turn.timer = 1000;
     if (!turn.stun) {
         regenerateResources(turn);
+        turn.absorb = [];
+        turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
         if (turn.team === "player") { playerTurn(turn); }
         if (turn.team === "enemy") { enemyTurn(turn); }
         turnCounter++;

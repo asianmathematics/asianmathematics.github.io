@@ -1,7 +1,24 @@
-let allUnits = [];
+const allUnits = [];
 const modifiers = [];
 let currentUnit = null;
 let currentAction = null;
+const baseElements = ["death/darkness", "light/illusion", "knowledge/memory", "goner/entropy", "harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic", "nature/life"]
+const elementCombo = {
+    "Death/Darkness": ["light/illusion", "nature/life"],
+    "Light/Illusion": ["death/darkness", "knowledge/memory"],
+    "Knowledge/Memory": ["light/illusion", "goner/entropy"],
+    "Goner/Entropy": ["knowledge/memory", "harmonic/change"],
+    "Harmonic/Change": ["goner/entropy", "inertia/cold"],
+    "Inertia/Cold": ["harmonic/change", "radiance/purity"],
+    "Radiance/Purity": ["inertia/cold", "anomaly/synthetic"],
+    "Anomaly/synthetic": ["radiance/purity", "nature/life"],
+    "Nature/Life": ["anomaly/synthetic", "death/darkness"]
+};
+
+function resetState() {
+    currentUnit = null;
+    currentAction = null;
+}
 
 class Modifier {
     constructor(name, description, vars, initFunc, onTurnFunc) {
@@ -114,13 +131,11 @@ function enemyTurn(unit) {
     for (const action in availableActions) {
         cumulativeWeight += unit.actions.actionWeight[action];
         if (randChoice <= cumulativeWeight) {
-            currentAction = action;
+            currentAction = unit.actions[action];
             unit.actions[action].code();
             break;
         }
     }
-    currentAction = null;
-    currentUnit = null;
     setTimeout(window.combatTick, 1000);
 }
 
@@ -161,14 +176,12 @@ function playerTurn(unit) {
         }
         else {
             const unit = allUnits.find(u => u.name === name);
+            currentAction = unit.actions[action];
             if (unit.actions[action].target !== undefined) { unit.actions[action].target(); }
             else {
-                currentAction = action;
                 unit.actions[action].code();
                 document.getElementById("selection").innerHTML = "";
                 cleanupGlobalHandlers();
-                currentAction = null;
-                currentUnit = null;
                 setTimeout(window.combatTick, 500);
             }
         }
@@ -317,6 +330,34 @@ function crit(attacker, defenders, hit) {
 function damage(attacker, defenders, critical) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
     for (let i = 0; i < defenders.length; i++) {
+        if (currentAction.properties) {
+            for (const prop of currentAction.properties) {
+                if (baseElements.includes(prop.toLowerCase()) ) {
+                    if (defenders[i].shield.includes(prop)) {
+                        defenders[i].shield.pop(prop);
+                    } else if (!defenders[i].absorb.includes(prop)) {
+                        defenders[i].absorb.splice(defenders[i].absorb.indexOf(prop), 1);
+                    }
+                }
+            }
+        }
+        let doubleDamage = false;
+        let comboElement = null;
+        for (const unitElement of defenders[i].elements || []) {
+            const comboKey = Object.keys(elementCombo).find(key => key.toLowerCase() === unitElement.toLowerCase());
+            if (comboKey && currentAction.properties) {
+                for (const actionElement of currentAction.properties) {
+                    if (elementCombo[comboKey].includes(actionElement.toLowerCase())) {
+                        if (elementCombo[comboKey].every(e => defenders[i].absorb.map(a => a.toLowerCase()).includes(e))) {
+                            doubleDamage = true;
+                            comboElement = comboKey;
+                            break;
+                        }
+                    }
+                }
+            } if (doubleDamage) { break }
+        }
+        
         const hit = [];
         let total = 0;
         for (let j = 0; j < critical[i].length; j++) {
@@ -327,21 +368,23 @@ function damage(attacker, defenders, critical) {
             let result; 
             if (critical[i][j] < 1) {
                 result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack, 1));
+                if (doubleDamage) { result *= 2 }
                 hit.push(`${result}`);
                 total += result;
             } else {
                 result = Math.floor(Math.max(((Math.random() / 2) + .75) * (attacker.attack - defenders[i].defense), .1 * attacker.attack * critical[i][j], 1) + attacker.lethality * critical[i][j]);
+                if (doubleDamage) { result *= 2 }
                 hit.push(`<b>${result}</b>`);
                 total += result;
             }
             defenders[i].hp = Math.max(defenders[i].hp - result, 0);
         }
         if (total > 0) {
-            if (critical[i].length > 1) { logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} damage!`, "hit") }
-            else { logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit") }
+            if (critical[i].length > 1) { logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} ${doubleDamage ? "elemental " : ""}damage!`, "hit") }
+            else { logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} ${doubleDamage ? "elemental " : ""}damage!`, "hit") }
         } 
         else { logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss") }
     }
 }
 
-export { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, };
+export { resetState, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements };

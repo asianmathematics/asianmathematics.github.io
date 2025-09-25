@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat } from '../combatDictionary.js';
 
-export const FourArcher = new Unit("4 (Archer)", [440, 30, 7, 35, 110, 30, 135, 45, 90, 115, "back", 60, 4, 80, 6], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
+export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 45, 90, 115, "back", 60, 4, 80, 6], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.perfectShot = {
         name: "Perfect Shot [mystic]",
         properties: ["mystic", "radiance/purity", "attack"],
