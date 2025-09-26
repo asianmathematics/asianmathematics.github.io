@@ -34,11 +34,16 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 logAction(`${this.name} freezes ${target[0].name}!`, "action");
                 const self = this;
                 createMod("Perfect Freeze", "stun effect",
-                    { caster: self, targets: target, duration: 1, stats: ["evasion"], values: [1.5] },
+                    { caster: self, targets: target, duration: 2, stats: ["evasion"], values: [1.5] },
                     (vars) => { vars.targets[0].stun = true },
                     (vars, unit) => {
-                        vars.targets[0].stun = false;
-                        return true;
+                        if(vars.targets[0] === unit) {
+                            vars.duration -= 1;
+                            if (vars.duration === 0) {
+                                vars.targets[0].stun = false;
+                                return true;
+                            }
+                        }
                     }
                 );
             } else { logAction(`${target[0].name} resists the freeze!`, "miss") }

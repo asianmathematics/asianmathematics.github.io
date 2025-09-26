@@ -356,7 +356,10 @@ export async function combatTick() {
         if (turn.team === "enemy") { enemyTurn(turn); }
         turnCounter++;
     }
-    else { combatTick() }
+    else {
+        logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
+        combatTick();
+    }
 }
 
 window.combatTick = combatTick;
