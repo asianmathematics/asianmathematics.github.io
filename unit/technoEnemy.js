@@ -1,19 +1,19 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
 
-export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 60, 6, undefined, undefined, 150, 15], ["Harmonic/Change", "Anomaly/Synthetic"], function() {
+export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 50, 60, 6, undefined, undefined, 150, 15], ["Harmonic/Change", "Anomaly/Synthetic"], function() {
     this.actions.laserBlast = {
         name: "Laser Blast [energy]",
-        properties: ["techno", "energy", "light/illusion", "radiance/purity", "attack"],
+        properties: ["techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "attack"],
         cost: { energy: 25 },
-        description: "Costs 25 energy\nAttacks up to 2 targets",
+        description: "Costs 25 energy\nAttacks up to 2 targets 2 times",
         code: () => {
-            this.previousAction = [false, false, true];
+            this.previousAction[2] = true;
             this.resource.energy -= 25;
             logAction(`${this.name} fires laser beams!`, "action");
             let target = unitFilter("player", "front", false);
             while (target.length > 2) { target = target.filter(unit => unit !== randTarget(target)); }
-            attack(this, target);
+            attack(this, target, 2);
         }
     };
 
@@ -23,26 +23,19 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         cost: { energy: 35 },
         description: "Costs 35 energy\nReduces defense and resist of target for 2 turns",
         code: () => {
-            this.previousAction = [false, false, true];
+            const statDecrease = [-0.3, -0.3];
+            this.previousAction[2] = true;
             this.resource.energy -= 35;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} disrupts ${target[0].name}'s defenses!`, "action");
             const self = this;
             createMod("Shield Disruption", "Defense reduction",
-                { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: [-0.3, -0.3] },
-                (vars) => {
-                    vars.stats.forEach((stat, i) => {
-                        vars.targets[0].mult[stat] += vars.values[i];
-                        resetStat(vars.targets[0], [stat]);
-                    });
-                },
-                (vars) => {
-                    vars.duration--;
-                    if (vars.duration <= 0) {
-                        vars.stats.forEach((stat, i) => {
-                            vars.targets[0].mult[stat] -= vars.values[i];
-                            resetStat(vars.targets[0], [stat]);
-                        });
+                { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: statDecrease },
+                (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
+                (vars, unit) => {
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, vars.stats, vars.values, false);
                         return true;
                     }
                 }
@@ -54,16 +47,16 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         name: "Nanite Repair [energy]",
         properties: ["techno", "energy", "harmonic/change", "anomaly/synthetic", "heal"],
         cost: { energy: 40 },
-        description: "Costs 40 energy\nHeals an ally for 60 HP",
+        description: "Costs 40 energy\nModerately heals an ally (~10% of max HP), does Laser Blast if no ally needs healing",
         code: () => {
-            this.previousAction = [false, false, true];
-            this.resource.energy -= 40;
             const allies = unitFilter("enemy", "", false).filter(unit => unit.hp < unit.base.hp);
             if (allies.length > 0) {
+                this.previousAction[2] = true;
+                this.resource.energy -= 40;
                 const target = [randTarget(allies)];
-                target[0].hp = Math.min(target[0].base.hp, target[0].hp + 60);
+                target[0].hp = Math.min(target[0].base.hp, target[0].hp + target[0].resource.healFactor);
                 logAction(`${this.name} repairs ${target[0].name}!`, "heal");
-            } else { logAction(`${this.name} tries repairing an ally, but there's no allies to repair.`, "warning"); }
+            } else { this.actions.laserBlast.code(); }
         }
     };
 
@@ -73,29 +66,20 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         cost: { stamina: 10, energy: 30 },
         description: "Costs 10 stamina & 30 energy\nIncreases attack and speed for 2 turns",
         code: () => {
-            this.previousAction = [true, false, true];
+            const statIncrease = [0.4, 0.3];
+            this.previousAction[0]= this.previousAction[2] = true;
             this.resource.stamina -= 10;
             this.resource.energy -= 30;
+            logAction(`${this.name}'s systems overcharge!`, "buff");
             const self = this;
             createMod("Overcharge Boost", "Power surge",
-                { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.4, 0.3] },
-                (vars) => {
-                    vars.stats.forEach((stat, i) => {
-                        vars.targets[0].mult[stat] += vars.values[i];
-                        resetStat(vars.targets[0], [stat]);
-                    });
-                    logAction(`${vars.caster.name}'s systems overcharge!`, "buff");
-                },
+                { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: statIncrease },
+                (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
                 (vars, unit) => {
-                    if (vars.targets.includes(unit)) {
-                        vars.duration--;
-                        if (vars.duration <= 0) {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
-                            return true;
-                        }
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, vars.stats, vars.values, false);
+                        return true;
                     }
                 }
             );
@@ -106,11 +90,11 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         name: "Backup Power [stamina]",
         properties: ["physical", "stamina", "harmonic/change", "anomaly/synthetic", "resource"],
         cost: { stamina: 20 },
-        description: "Costs 20 stamina\nRecovers 60 energy",
+        description: `Costs 20 stamina\nRecovers a lot of energy (${this.resource.energyRegen * 4})`,
         code: () => {
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
             this.resource.stamina -= 20;
-            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + 60);
+            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + (this.resource.energyRegen * 4) );
             logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };
@@ -120,7 +104,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         properties: ["physical", "position"],
         description: "Switch between front and back line positions",
         code: () => {
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
@@ -167,23 +151,21 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         description: "Costs 20 stamina\nIncreases evasion for 1 turn",
         code: () => {
             if (this.resource.stamina < 20) {
-                logAction(`${this.name} is too fatigued to dodge!`, "info");
+                showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = 2;
             this.resource.stamina -= 20;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
+            logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} dodges.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
+                (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        unit.mult[vars.stat] -= vars.value;
-                        resetStat(unit, [vars.stat]);
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }

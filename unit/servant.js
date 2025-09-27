@@ -1,17 +1,14 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat, damage } from '../combatDictionary.js';
-
-export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 115, 60, "front", 120, 14], ["Death/Darkness", "Knowledge/Memory", "Anomaly/Synthetic"], function() {
+export const Servant = new Unit("Servant", [660, 55, 15, 60, 110, 35, 125, 30, 115, 60, "front", 70, 120, 14], ["Death/Darkness", "Knowledge/Memory", "Anomaly/Synthetic"], function() {
     this.actions.meleeAttack = {
         name: "Melee Attack",
         properties: ["attack"],
         description: "Attacks a single target twice with increased damage.",
-        target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+        target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (target) => {
-            this.attack *= 2;
             logAction(`${this.name} deals with ${target[0].name}`, "action");
-            attack(this, target, 2);
-            resetStat(this, ["attack"]);
+            attack(this, target, 2, { attacker: { attack: this.attack * 2 } } );
         }
     };
 
@@ -19,19 +16,19 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
         name: "Taking Out Trash [stamina]",
         properties: ["physical", "stamina", "death/darkness", "attack", "autohit"],
         cost: { stamina: 60 },
-        description: "Costs 60 stamina\nDirect attack on a single target with guaranteed critical hit.",
+        description: "Costs 60 stamina\nDirect attack on a single target with near guaranteed critical hit.",
         target: () => {
             if (this.resource.stamina < 60) {
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.takingOutTrash, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.takingOutTrash, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
             this.resource.stamina -= 60;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
             logAction(`${this.name} takes out the trash!`, "action");
-            damage(this, target, [[4]]);
+            damage(this, target, [[this.focus / 50]]);
         }
     };
 
@@ -45,24 +42,18 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = [-0.5, 0.5, 0.9, 1];
             this.resource.stamina -= 45;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
+            logAction(`${this.name} enters a hyper-focused state!`, "buff");
             const self = this;
             createMod("Sneak Adjustment", "Combat focus modification",
-                { caster: self, targets: [self], duration: 1, stats: ["presence", "accuracy", "focus", "lethality"], values: [-0.5, 0.5, 0.9, 1] },
-                (vars) => {
-                    vars.stats.forEach((stat, i) => {
-                        vars.targets[0].mult[stat] += vars.values[i];
-                        resetStat(vars.targets[0], [stat]);
-                    });
-                    logAction(`${vars.caster.name} enters a hyper-focused state!`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: ["presence", "accuracy", "focus", "lethality"], values: statIncrease },
+                (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {
-                    if(vars.caster === unit) {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] -= vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, vars.stats, vars.values, false);
                         return true;
                     }
                 }
@@ -80,20 +71,18 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = 2;
             this.resource.stamina -= 20;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
+            logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} dodges.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
+                (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        unit.mult[vars.stat] -= vars.value;
-                        resetStat(unit, [vars.stat]);
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }
@@ -106,19 +95,17 @@ export const Servant = new Unit("Servant", [700, 55, 15, 60, 110, 35, 125, 30, 1
         properties: ["physical", "buff"],
         description: "Increases defense for 1 turn",
         code: () => {
-            this.previousAction = [true, false, false];
+            const statIncrease = 1;
+            this.previousAction[0] = true;
+            logAction(`${this.name} blocks.`, "buff");
             const self = this;
             createMod("Block", "Defense increased",
-                { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} blocks.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
+                (vars) => { resetStat(vars.caster, [vars.stat], [vars.values]) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        unit.mult[vars.stat] -= vars.value;
-                        resetStat(unit, [vars.stat]);
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }

@@ -1,14 +1,14 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
 
-export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 25, 115, 160, "front", 140, 15, 180, 20], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
+export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 25, 115, 160, "front", 44, 140, 15, 180, 20], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
         properties: ["mystic", "attack"],
         description: "Attacks a single target 4 times.",
-        target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (target) => {
-            this.previousAction = [false, true, false];
+            this.previousAction[1] = true;
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
             attack(this, target, 4);
         }
@@ -24,16 +24,13 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.focusFire, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.focusFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
             this.resource.mana -= 30;
-            this.previousAction = [true, true, false];
-            this.attack *= 1.5;
-            this.accuracy *= 1.25;
+            this.previousAction[0] = this.previousAction[1] = true;
             logAction(`${this.name} focus fires on ${target[0].name}!`, "action");
-            attack(this, target, 2);
-            resetStat(this, ["attack", "accuracy"]);
+            attack(this, target, 2, { attacker: { accuracy: this.accuracy * 1.25, attack: this.attack * 1.5 } });
         }
     };
 
@@ -47,34 +44,21 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
+            const statDecrease = -0.5;
             this.resource.mana -= 60;
-            this.previousAction = [false, true, false];
-            this.attack *= .5;
-            this.accuracy *= .75;
+            this.previousAction[1] = true;
             logAction(`${this.name} shoots some damaku!`, "action");
             let target = unitFilter("enemy", "front", false);
             while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target, true)); }
-            attack(this, target, 6);
-            resetStat(this, ["attack", "accuracy"]);
+            attack(this, target, 6, { attacker: { accuracy: this.accuracy * 0.75, attack: this.attack * 0.5 } });
             const self = this;
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
-                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
-                (vars) => {
-                    vars.targets.forEach(unit => {
-                        vars.stats.forEach((stat, i) => {
-                            unit.mult[stat] += vars.values[i];
-                            resetStat(unit, [stat]);
-                        });
-                    });
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statDecrease },
+                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
-                    if(vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
-                        });
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }
@@ -93,23 +77,16 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 return;
             }
             this.resource.stamina -= 40;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
             logAction(`${this.name} draws attention to himself!`, "action");
             const self = this;
             createMod("Feint", "Defense, evasion, and presence increase",
                 { caster: self, targets: [self], duration: 1, stats: ["defense", "evasion", "presence"], values: [0.5, 1.5, 2] },
-                (vars) => {
-                    vars.stats.forEach((stat, i) => {
-                        vars.targets[0].mult[stat] += vars.values[i];
-                        resetStat(vars.targets[0], [stat]);
-                    });
-                },
+                (vars) => { resetStat(vars.caster, vars.stats, vars.values); },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        vars.stats.forEach((stat, i) => {
-                            vars.targets[0].mult[stat] -= vars.values[i];
-                            resetStat(vars.targets[0], [stat]);
-                        });
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, vars.stats, vars.values, false);
                         return true;
                     }
                 }
@@ -128,21 +105,16 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 return;
             }
             this.resource.stamina -= 20;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
+            logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} dodges.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: 2 },
+                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }

@@ -9,7 +9,7 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
-import { resetState, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements } from './combatDictionary.js';
+import { refreshState, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -52,8 +52,8 @@ function initUnitSelection() {
                 return;
             }
             card.classList.toggle('selected');
-            if (card.classList.contains('selected')) { selectedUnits.push(unit); }
-            else { selectedUnits = selectedUnits.filter(u => u.name !== unit.name); }
+            if (card.classList.contains('selected')) { selectedUnits.push(unit) }
+            else { selectedUnits = selectedUnits.filter(u => u.name !== unit.name) }
             countDisplay.textContent = `Selected Units (${selectedUnits.length}/4)`;
             renderSelectedUnits();
         });
@@ -97,9 +97,7 @@ export function startCombat() {
 
 function getModifiersDisplay() {
     let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
-    if (modifiers.length === 0) { 
-        modDisplay += "<p>No active modifiers</p>"; 
-    }
+    if (modifiers.length === 0) { modDisplay += "<p>No active modifiers</p>" }
     else {
         modDisplay += "<ul class='modifier-list'>";
         for (const modifier of modifiers) {
@@ -233,9 +231,9 @@ export function createUnit(unit, team) {
     let name = unit.name;
     let dupe = 1;
     const filter = allUnits.filter(obj => obj.name.includes(name));
-    while (filter.some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}`; }
+    while (filter.some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}` }
     newUnit.name = name;
-    if (newUnit.position === "mid") { newUnit.position = "back"; }
+    if (newUnit.position === "mid") { newUnit.position = "back" }
     newUnit.team = team;
     allUnits.push(newUnit);
     newUnit.actionsInit();
@@ -255,8 +253,8 @@ function cloneUnit(unit) {
     newUnit.actionsInit = unit.actionsInit;
     for (const stat in newUnit.base) {
         if (typeof newUnit.base[stat] === 'object') { continue; }
-        if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat]; }
-        else { resetStat(newUnit, [stat]); }
+        if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat] }
+        else { resetStat(newUnit, [stat]) }
     }
     newUnit.absorb = [];
     newUnit.shield = (unit.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
@@ -265,14 +263,14 @@ function cloneUnit(unit) {
 }
 
 function regenerateResources(unit) {
-    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen))); }
-    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen))); }
-    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen))); }
+    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen))) }
+    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen))) }
+    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen))) }
     unit.previousAction = [false, false, false];
 }
 
 export function advanceWave(x = 0) {
-    if (x) { wave = x; }
+    if (x) { wave = x }
     let turnId = allUnits[currentTurn].name;
     if (wave < 3) { allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))) }
     switch (wave) {
@@ -297,14 +295,13 @@ export function advanceWave(x = 0) {
 function frontTest() {
     const playersAlive = unitFilter("player", "front", false);
     const enemiesAlive = unitFilter("enemy", "front", false);
-    if (playersAlive.length && enemiesAlive.length) {return;}
+    if (playersAlive.length && enemiesAlive.length) { return }
     if (!playersAlive.length) {
         const midLine = unitFilter("player", "mid", false);
         if (midLine.length) {
-            for (const unit of midLine) { unit.actions.switchPosition.code(); }
+            for (const unit of midLine) { unit.actions.switchPosition.code() }
             logAction(`All player midline units moved to the frontline!`, "turn")
-        }
-        else {
+        } else {
             showMessage("Defeat!", "error", "selection", 0);
             return true;
         }
@@ -312,7 +309,7 @@ function frontTest() {
     if (!enemiesAlive.length) {
         const midLine = unitFilter("enemy", "mid", false);
         if (midLine.length) {
-            for (const unit of midLine) { unit.actions.switchPosition.code(); }
+            for (const unit of midLine) { unit.actions.switchPosition.code() }
             logAction(`All enemy midline units moved to the frontline!`, "turn");
         }
         const win = advanceWave();
@@ -324,16 +321,16 @@ function frontTest() {
 }
 
 export async function combatTick() {
-    resetState();
+    refreshState();
     updateBattleDisplay();
     await sleep(500);
-    if (frontTest()) { return; }
-    if (currentTurn === -1) { currentTurn = 0; }
+    if (frontTest()) { return }
+    if (currentTurn === -1) { currentTurn = 0 }
     let turn;
     while (turn == undefined) {
         for (let i = 0; i < allUnits.length; i++) {
             const unit = allUnits[(currentTurn + i) % allUnits.length];
-            if (unit.hp <= 0) { continue; }
+            if (unit.hp <= 0) { continue }
             unit.timer -= unit.speed;
             if (unit.timer <= 0) {
                 turn = unit;
@@ -352,11 +349,10 @@ export async function combatTick() {
         regenerateResources(turn);
         turn.absorb = [];
         turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
-        if (turn.team === "player") { playerTurn(turn); }
-        if (turn.team === "enemy") { enemyTurn(turn); }
+        if (turn.team === "player") { playerTurn(turn) }
+        if (turn.team === "enemy") { enemyTurn(turn) }
         turnCounter++;
-    }
-    else {
+    } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
         combatTick();
     }

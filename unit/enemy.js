@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
 
-export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 100, 100, "front", 100, 10], [], function() {
+export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 100, 100, "front", 50, 100, 10], [], function() {
     this.actions.basicAttack = {
         name: "Basic Attack",
         properties: ["attack"],
@@ -17,16 +17,13 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
         name: "Strong Attack [stamina]",
         properties: ["physical", "stamina", "attack"],
         cost: { stamina: 30 },
-        description: "Costs 30 stamina\nAttacks a single target twice with increased damage",
+        description: "Costs 30 stamina\nAttacks a single target 3 times with increased damage and accuracy",
         code: () => {
             this.resource.stamina -= 30;
-            this.previousAction = [true, false, false];
-            this.attack *= 2;
-            this.accuracy *= 1.5;
+            this.previousAction[0] = true;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} unleashes two powerful strikes against ${target[0].name}!`, "action");
-            attack(this, target, 2);
-            resetStat(this, ["attack", "accuracy"]);
+            attack(this, target, 3, { attacker: { accuracy: this.accuracy * 1.5, attack: this.attack * 2 } });
         }
     };
 
@@ -40,20 +37,18 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = 2;
             this.resource.stamina -= 20;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
+            logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} dodges.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
+                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        unit.mult[vars.stat] -= vars.value;
-                        resetStat(unit, [vars.stat]);
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }
@@ -66,21 +61,17 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
         properties: ["physical", "buff"],
         description: "Increases defense for 1 turn",
         code: () => {
-            this.previousAction = [true, false, false];
+            const statIncrease = 1;
+            this.previousAction[0] = true;
+            logAction(`${this.name} blocks.`, "buff");
             const self = this;
             createMod("Block", "Defense increased",
-                { caster: self, targets: [self], duration: 1, stat: "defense", value: 1 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} blocks.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
+                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        vars.targets.forEach(unit => {
-                            unit.mult[vars.stat] -= vars.value;
-                            resetStat(unit, [vars.stat]);
-                        });
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }

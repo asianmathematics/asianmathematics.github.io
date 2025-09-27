@@ -1,12 +1,12 @@
 import { Unit } from './unit.js';
 import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, resetStat } from '../combatDictionary.js';
 
-export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 175, "front", 150, 18, 250, 30], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
+export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 175, "front", 66, 150, 18, 250, 30], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
     this.actions.iceshock = {
         name: "Iceshock [mystic]",
         properties: ["mystic", "intertia/cold", "attack"],
         description: "Attacks a single target 4 times.",
-        target: () => { selectTarget(this.actions.iceshock, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]); },
+        target: () => { selectTarget(this.actions.iceshock, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (target) => {
             this.previousAction = [false, true, false];
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
@@ -24,23 +24,23 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.perfectFreeze, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.perfectFreeze, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
             this.resource.mana -= 90;
-            this.previousAction = [false, true, false];
+            this.previousAction[1] = true;
             const will = resistDebuff(this, target);
             if (will > 50) {
                 logAction(`${this.name} freezes ${target[0].name}!`, "action");
                 const self = this;
                 createMod("Perfect Freeze", "stun effect",
-                    { caster: self, targets: target, duration: 2, stats: ["evasion"], values: [1.5] },
+                    { caster: self, targets: target, duration: 2 },
                     (vars) => { vars.targets[0].stun = true },
                     (vars, unit) => {
-                        if(vars.targets[0] === unit) {
-                            vars.duration -= 1;
+                        if (vars.targets[0] === unit) {
+                            vars.duration--;
                             if (vars.duration === 0) {
-                                vars.targets[0].stun = false;
+                                unit.stun = false;
                                 return true;
                             }
                         }
@@ -60,30 +60,21 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
+            const statDecrease = -0.5;
             this.resource.mana -= 40;
-            this.previousAction = [false, true, false];
-            this.attack *= .5;
-            this.accuracy *= .75;
+            this.previousAction[1] = true;
             logAction(`${this.name} shoots some damaku!`, "action");
             let target = unitFilter("enemy", "front", false);
             while (target.length > 6) { target = target.filter(unit => unit !== target[Math.floor(Math.random() * target.length)]); }
-            attack(this, target, 10);
-            resetStat(this, ["attack", "accuracy"]);
+            attack(this, target, 10, { attacker: { accuracy: this.accuracy * 0.75, attack: this.attack * 0.5 } });
             const self = this;
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
-                { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
-                (vars) => {
-                    vars.stats.forEach((stat, i) => {
-                        vars.targets[0].mult[stat] += vars.values[i];
-                        resetStat(vars.targets[0], [stat]);
-                    });
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statDecrease },
+                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
-                    if(vars.caster === unit) {
-                        vars.stats.forEach((stat, i) => {
-                            vars.targets[0].mult[stat] -= vars.values[i];
-                            resetStat(vars.targets[0], [stat]);
-                        });
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }
@@ -101,20 +92,19 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.dispelMagic, () => { playerTurn(this); }, [1, true, unitFilter("enemy", "front", false)]);
+            selectTarget(this.actions.dispelMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
             this.resource.mana -= 60;
-            this.previousAction = [false, true, false];
+            this.previousAction[1] = true;
             const will = resistDebuff(this, target);
             if (target[0].resource.mana !== undefined) {
                 if (will[0] > 45) {
                     target[0].resource.mana = 0;
                     target[0].previousAction[1] = true;
                     logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
-                } else { logAction(`${target[0].name} resists dispel magic`, "miss"); }
-            }
-            else { logAction(`${target[0].name} has no magic to dispel!`, "warning"); }
+                } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
+            } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
         }
     };
 
@@ -128,20 +118,18 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = 2;
             this.resource.stamina -= 20;
-            this.previousAction = [true, false, false];
+            this.previousAction[0] = true;
+            logAction(`${this.name} dodges.`, "buff");
             const self = this;
             createMod("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stat: "evasion", value: 2 },
-                (vars) => {
-                    vars.caster.mult[vars.stat] += vars.value;
-                    resetStat(vars.caster, [vars.stat]);
-                    logAction(`${vars.caster.name} dodges.`, "buff");
-                },
+                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
+                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
-                    if (vars.caster === unit) {
-                        unit.mult[vars.stat] -= vars.value;
-                        resetStat(unit, [vars.stat]);
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, [vars.stats], [vars.values], false);
                         return true;
                     }
                 }

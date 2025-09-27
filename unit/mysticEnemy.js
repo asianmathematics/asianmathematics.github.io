@@ -1,20 +1,18 @@
 import { Unit } from './unit.js';
 import { logAction, unitFilter, attack, createMod, resetStat, randTarget, resistDebuff } from '../combatDictionary.js';
 
-export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 115, 100, "front", 80, 8, 180, 20], ["Death/Darkness", "Anomaly/Synthetic"], function() {
+export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 115, 100, "front", 35, 80, 8, 180, 20], ["Death/Darkness", "Anomaly/Synthetic"], function() {
     this.actions.manaBolt = {
         name: "Mana Bolt [mystic]",
         properties: ["mystic", "attack"],
         cost: { mana: 20 },
         description: "Costs 20 mana\nAttacks a single target twice with increased accuracy",
         code: () => {
-            this.previousAction = [false, true, false];
+            this.previousAction[1] = true;
             this.resource.mana -= 20;
-            this.accuracy *= 1.5;
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} fires mana bolts at ${target[0].name}!`, "action");
-            attack(this, target, 2);
-            resetStat(this, ["accuracy"]);
+            attack(this, target, 2, { attacker: { accuracy: this.accuracy * 1.5 } });
         }
     };
 
@@ -24,27 +22,23 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
         cost: { mana: 40 },
         description: "Costs 40 mana\nReduces accuracy and evasion of all front-line enemies",
         code: () => {
+            const statDecrease = [-0.15, -0.15];
+            this.previousAction[1] = true;
             this.resource.mana -= 40;
+            logAction(`${this.name} casts Curse Field!`, "action");
+            const self = this;
             createMod("Curse Field", "Reduces accuracy and evasion",
-                { caster: this, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: [-0.15, -0.15] },
+                { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: statDecrease },
                 (vars) => {
                     vars.targets.forEach(unit => {
-                        if (resistDebuff(vars.caster, [unit]) > 50) {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] += vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
-                        } else { vars.targets.splice(vars.targets.indexOf(unit), 1) }
+                        if (resistDebuff(vars.caster, [unit]) > 50) { resetStat(unit, vars.stats, vars.values) }
+                        else { vars.targets.splice(vars.targets.indexOf(unit), 1) }
                     });
-                    logAction(`${vars.caster.name} casts Curse Field!`, "action");
                 },
                 (vars, unit) => {
                     if (vars.targets.includes(unit)) {
                         if (resistDebuff(vars.caster, [unit]) > 30) {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
+                            resetStat(unit, vars.stats, vars.values);
                             vars.targets.splice(vars.targets.indexOf(unit), 1);
                         }
                     }
@@ -57,18 +51,18 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
     this.actions.drainLife = {
         name: "Drain Life [mana]",
         properties: ["mystic", "mana", "death/darkness", "attack", "heal"],
-        cost: { mana: 30 },
-        description: "Costs 30 mana\nAttacks a single target and heals the caster",
+        cost: { mana: 40 },
+        description: "Costs 40 mana\nAttacks a single target and heals the caster by damage dealt",
         code: () => {
-            this.previousAction = [false, true, false];
-            this.resource.mana -= 30;
+            this.previousAction[1] = true;
+            this.resource.mana -= 40;
             const target = [randTarget(unitFilter("player", "front", false))];
             const hpCheck = target[0].hp;
             logAction(`${this.name} tries to drain ${target[0].name}!`, "action");
-            attack(this, target);
+            attack(this, target, 1, { attacker: { attack: this.attack * 2, focus: this.focus * 3 } });
             if (hpCheck < target[0].hp) {
                 logAction(`${this.name} drains life from ${target[0].name}`, "heal");
-                this.hp = Math.min(this.base.hp, this.hp + 25);
+                this.hp = Math.min(this.base.hp, this.hp + (hpCheck - target[0].hp));
             }
         }
     };
@@ -79,27 +73,19 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
         cost: { mana: 25 },
         description: "Costs 25 mana\nIncreases defense and crit resist for 2 turns",
         code: () => {
-            this.previousAction = [true, true, false];
+            const statIncrease = [0.5, 0.3];
+            this.previousAction[0] = this.previousAction[1] = true;
             this.resource.mana -= 25;
+            const self = this;
             logAction(`${this.name} creates an arcane shield, enhancing their defenses!`, "buff");
             createMod("Arcane Shield", "Enhanced defenses",
-                { caster: this, targets: [this], duration: 2, stats: ["defense", "resist"], values: [0.5, 0.3] },
-                (vars) => {
-                    vars.stats.forEach((stat, i) => {
-                        vars.targets[0].mult[stat] += vars.values[i];
-                        resetStat(vars.targets[0], [stat]);
-                    });
-                },
+                { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: statIncrease },
+                (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {
-                    if (vars.targets.includes(unit)) {
-                        vars.duration--;
-                        if (vars.duration <= 0) {
-                            vars.stats.forEach((stat, i) => {
-                                unit.mult[stat] -= vars.values[i];
-                                resetStat(unit, [stat]);
-                            });
-                            return true;
-                        }
+                    if (vars.caster === unit) { vars.duration-- }
+                    if (vars.duration === 0) {
+                        resetStat(vars.caster, vars.stats, vars.values, false);
+                        return true;
                     }
                 }
             );
@@ -109,10 +95,10 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
     this.actions.meditate = {
         name: "Meditate [physical]",
         properties: ["physical", "harmonic/change", "resource"],
-        description: "Recovers 50 mana",
+        description: `Recovers a lot of mana (${this.resource.manaRegen * 3})`,
         code: () => {
-            this.previousAction = [true, false, false];
-            this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + 50);
+            this.previousAction[0] = true;
+            this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + (this.resource.manaRegen * 3) );
             logAction(`${this.name} meditates and recovers mana!`, "heal");
         }
     };

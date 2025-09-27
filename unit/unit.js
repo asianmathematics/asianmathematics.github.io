@@ -15,8 +15,9 @@ export class Unit {
             position: stat[10],
             elements: elements,
             resource: {
-                stamina: stat[11],
-                staminaRegen: stat[12],
+                healFactor: stat[11],
+                stamina: stat[12],
+                staminaRegen: stat[13],
             }
         };
         this.mult = {
@@ -30,17 +31,18 @@ export class Unit {
             speed: 1,
             presence: 1,
             resource: {
+                healFactor: 1,
                 staminaRegen: 1,
             }
         };
-        if (stat[13]) { 
-            this.base.resource.mana = stat[13];
-            this.base.resource.manaRegen = stat[14];
+        if (stat[14]) { 
+            this.base.resource.mana = stat[14];
+            this.base.resource.manaRegen = stat[15];
             this.mult.resource.manaRegen = 1;
         }
-        if (stat[15]) { 
-            this.base.resource.energy = stat[15];
-            this.base.resource.energyRegen = stat[16];
+        if (stat[16]) { 
+            this.base.resource.energy = stat[16];
+            this.base.resource.energyRegen = stat[17];
             this.mult.resource.energyRegen = 1;
         }
         this.elements = this.base.elements;
