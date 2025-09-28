@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 100, 100, "front", 50, 100, 10], [], function() {
     this.actions.basicAttack = {
@@ -42,7 +42,7 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            createMod("Dodge", "Evasion increased",
+            new Modifier("Dodge", "Evasion increased",
                 { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
@@ -65,7 +65,7 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
             this.previousAction[0] = true;
             logAction(`${this.name} blocks.`, "buff");
             const self = this;
-            createMod("Block", "Defense increased",
+            new Modifier("Block", "Defense increased",
                 { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {

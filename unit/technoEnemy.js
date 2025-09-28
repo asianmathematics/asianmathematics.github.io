@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 50, 60, 6, undefined, undefined, 150, 15], ["Harmonic/Change", "Anomaly/Synthetic"], function() {
     this.actions.laserBlast = {
@@ -29,7 +29,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             const target = [randTarget(unitFilter("player", "front", false))];
             logAction(`${this.name} disrupts ${target[0].name}'s defenses!`, "action");
             const self = this;
-            createMod("Shield Disruption", "Defense reduction",
+            new Modifier("Shield Disruption", "Defense reduction",
                 { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: statDecrease },
                 (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
                 (vars, unit) => {
@@ -72,7 +72,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             this.resource.energy -= 30;
             logAction(`${this.name}'s systems overcharge!`, "buff");
             const self = this;
-            createMod("Overcharge Boost", "Power surge",
+            new Modifier("Overcharge Boost", "Power surge",
                 { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: statIncrease },
                 (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
                 (vars, unit) => {
@@ -159,7 +159,7 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            createMod("Dodge", "Evasion increased",
+            new Modifier("Dodge", "Evasion increased",
                 { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {

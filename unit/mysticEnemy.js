@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, unitFilter, attack, createMod, resetStat, randTarget, resistDebuff } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 115, 100, "front", 35, 80, 8, 180, 20], ["Death/Darkness", "Anomaly/Synthetic"], function() {
     this.actions.manaBolt = {
@@ -27,7 +27,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
             this.resource.mana -= 40;
             logAction(`${this.name} casts Curse Field!`, "action");
             const self = this;
-            createMod("Curse Field", "Reduces accuracy and evasion",
+            new Modifier("Curse Field", "Reduces accuracy and evasion",
                 { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: statDecrease },
                 (vars) => {
                     vars.targets.forEach(unit => {
@@ -78,7 +78,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
             this.resource.mana -= 25;
             const self = this;
             logAction(`${this.name} creates an arcane shield, enhancing their defenses!`, "buff");
-            createMod("Arcane Shield", "Enhanced defenses",
+            new Modifier("Arcane Shield", "Enhanced defenses",
                 { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: statIncrease },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {

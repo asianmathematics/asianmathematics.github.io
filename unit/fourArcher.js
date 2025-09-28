@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 45, 90, 115, "back", 40, 60, 4, 80, 6], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.perfectShot = {
@@ -48,7 +48,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 
             this.previousAction = [false, true, false];
             logAction(`${this.name} becomes luckier!`, "buff");
             const self = this;
-			createMod("Lucky Aura", "Increased luck",
+			new Modifier("Lucky Aura", "Increased luck",
                 { caster: self, targets: [self], duration: 4, stats: ["accuracy", "focus", "evasion", "resist", "presence"], values: [0.75, 0.75, 0.25, 0.25, 0.25] },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {
@@ -80,7 +80,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 
             this.previousAction[1] = true;
             logAction(`${this.name} targets ${target[0].name} with a luck arrow!`, "buff");
             const self = this;
-            createMod("Impose Luck", "Increased accuracy and crit chance",
+            new Modifier("Impose Luck", "Increased accuracy and crit chance",
                 { caster: self, targets: target, duration: 3, stats: ["accuracy", "focus"], values: statIncrease },
                 (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
                 (vars, unit) => {
@@ -106,7 +106,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 
             this.resource.mana = Math.min(this.resource.mana + (this.resource.manaRegen * 2), this.base.resource.mana);
             logAction(`${this.name} layed down lazily.`, "action");
             const self = this;
-            createMod("Resting", "decreased evasion and speed",
+            new Modifier("Resting", "decreased evasion and speed",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion", "speed"], values: statDecrease },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {

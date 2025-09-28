@@ -1,4 +1,4 @@
-import { sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers } from './combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from './combatDictionary.js';
 import { initHexGrid, generateStrategicMap, grid, Hex, Grid } from './field.js';
 const Honeycomb = window.Honeycomb;
 let turnCounter = 1;
@@ -155,7 +155,7 @@ function resolveCombat(vars) {
 
 function combatRound(attacker, hex) {
     const defender = grid.state.terrainData.get(`${hex.q},${hex.r},${hex.s}`).unit;
-    createMod(
+    new Modifier(
         `Combat Round ${attacker.name}`,
         "Active engagement between units",
         {

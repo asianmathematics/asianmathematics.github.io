@@ -16,6 +16,7 @@ const elementCombo = {
 };
 
 function refreshState() { currentUnit = currentAction = null }
+function setUnit(unit) { currentUnit = unit }
 
 class Modifier {
     constructor(name, description, vars, initFunc, onTurnFunc) {
@@ -24,23 +25,16 @@ class Modifier {
       this.vars = vars;
       this.init = () => initFunc(this.vars);
       this.onTurn = (unit) => onTurnFunc(this.vars, unit);
+      modifiers.push(this);
+      this.init();
     }
 }
 
+function updateMod(unit) { for (let i = modifiers.length - 1; i >= 0; i--) { if (modifiers[i].onTurn(unit)) { modifiers.splice(i, 1) } } }
+
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
 
-function unitFilter(team, position, downed = null) {
-    return allUnits.filter(unit => {
-        const teamMatch = team === '' || unit.team === team;
-        let positionMatch;
-        if (position === "mid") { positionMatch = unit.base.position === "mid" }
-        else { positionMatch = position === '' || unit.position === position }
-        let healthMatch = true;
-        if (downed === true) { healthMatch = unit.hp <= 0 }
-        if (downed === false) { healthMatch = unit.hp > 0 }
-        return teamMatch && positionMatch && healthMatch;
-    });
-}
+function unitFilter(team, position, downed = null) { return allUnits.filter(unit => { return (team === '' || unit.team === team) && (position === "mid" ? unit.base.position === "mid" : position === '' || unit.position === position) && (downed === null ? true : (downed ? unit.hp <= 0 : unit.hp > 0)) }) }
 
 function logAction(message, type = 'info') {
     const logContainer = document.getElementById('action-log');
@@ -55,7 +49,7 @@ function logAction(message, type = 'info') {
 }
 
 function resistDebuff(attacker, defenders) {
-    const will= []
+    const will = []
     for (const unit of defenders) {
         const roll = Math.floor(Math.random() * 100 + 1);
         if (roll === 1 || roll === 100) {
@@ -66,15 +60,6 @@ function resistDebuff(attacker, defenders) {
     }
     return will;
 }
-
-function createMod(name, description, vars, initFunc, onTurnFunc) {
-    const modifier = new Modifier(name, description, vars, initFunc, onTurnFunc);
-    modifiers.push(modifier);
-    modifier.init();
-    return modifier;
-}
-
-function updateMod(unit) { for (let i = modifiers.length - 1; i >= 0; i--) { if (modifiers[i].onTurn(unit)) { modifiers.splice(i, 1) } } }
 
 function resetStat(unit, statList, values = null, add = true) {
     if (values && values.length > 0) {
@@ -94,7 +79,6 @@ function resetStat(unit, statList, values = null, add = true) {
 }
 
 function enemyTurn(unit) {
-    currentUnit = unit;
     const availableActions = {};
     let totalWeight = 0;
     for (const action in unit.actions.actionWeight) {
@@ -143,7 +127,7 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
         }
     }
     const selectedTargets = [];
-    const availableUnits = [...unitList];
+    const availableUnits = unitList;
     for (let i = 0; i < count && availableUnits.length > 0; i++) {
         let selectedUnit;
         if (trueRand) {
@@ -169,7 +153,6 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
 
 
 function playerTurn(unit) {
-    currentUnit = unit;
     let actionButton = "<div>";
     for (const actionKey in unit.actions) { 
         const action = unit.actions[actionKey];
@@ -398,4 +381,4 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     }
 }
 
-export { refreshState, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements };
+export { Modifier, refreshState, setUnit, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo };

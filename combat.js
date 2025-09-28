@@ -9,7 +9,7 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
-import { refreshState, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, updateMod, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements } from './combatDictionary.js';
+import { Modifier, refreshState, setUnit, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -95,30 +95,28 @@ export function startCombat() {
     initUnitSelection();
 }
 
-function getModifiersDisplay() {
-    let modDisplay = "<div class='modifiers-container'><h3>Active Modifiers</h3>";
+function updateModifiers() {
+    let modDisplay = "<h3>Active Modifiers</h3>";
     if (modifiers.length === 0) { modDisplay += "<p>No active modifiers</p>" }
     else {
         modDisplay += "<ul class='modifier-list'>";
         for (const modifier of modifiers) {
-            const caster = modifier.vars.caster?.name || "System";
-            const targets = modifier.vars.targets.map(u => u.name).join(", ");
             modDisplay += `
             <li class="modifier-item">
-                <span class="modifier-caster">${caster}'s</span>
+                <span class="modifier-caster">${modifier.vars.caster?.name || "System"}'s</span>
                 <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
-                <div class="modifier-targets">Targets: ${targets}</div>
+                <div class="modifier-targets">Targets: ${modifier.vars.targets.map(u => u.name).join(", ")}</div>
                 <div class="modifier-duration">${modifier.vars.duration} turn(s) left</div>
             </li>`;
         }
         modDisplay += "</ul>";
     }
-    return modDisplay + "</div>";
+    document.querySelector(".modifiers-container").innerHTML = modDisplay;
 }
 
 function updateBattleDisplay() {
-    let battleDisplay = getModifiersDisplay();
-    battleDisplay += "<div class='battle-display'>";
+    updateModifiers();
+    let battleDisplay = "<div class='battle-display'>";
     battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
     for (const unit of unitFilter("player", '')) {
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
@@ -181,19 +179,19 @@ function updateBattleDisplay() {
                 const hpPercentage = Math.max(0, Math.min(100, (unit.hp / unit.base.hp) * 100));
                 const staminaPercentage = Math.max(0, Math.min(100, (unit.resource.stamina / unit.base.resource.stamina) * 100));
                 battleDisplay += `
-                <div class='stat-row'>
+            <div class='stat-row'>
                     <div class='stat-label'>HP</div>
                     <div class='stat-bar-container'>
                         <div class='stat-bar hp-bar' style='width: ${hpPercentage}%'></div>
                     </div>
-                </div>
-                <div class='stat-row'>
+            </div>
+            <div class='stat-row'>
                     <div class='stat-label'>Stamina</div>
                     <div class='stat-bar-container'>
                         <div class='stat-bar stamina-bar' style='width: ${staminaPercentage}%'></div>
-                    </div>
+            </div>
                 </div>`;
-                if (unit.base.resource.mana) {
+        if (unit.base.resource.mana) {
                     const manaPercentage = Math.max(0, Math.min(100, (unit.resource.mana / unit.base.resource.mana) * 100));
                     battleDisplay += `
                     <div class='stat-row'>
@@ -201,9 +199,9 @@ function updateBattleDisplay() {
                         <div class='stat-bar-container'>
                             <div class='stat-bar mana-bar' style='width: ${manaPercentage}%'></div>
                         </div>
-                    </div>`;
-                }
-                if (unit.base.resource.energy) {
+            </div>`;
+        }
+        if (unit.base.resource.energy) {
                     const energyPercentage = Math.max(0, Math.min(100, (unit.resource.energy / unit.base.resource.energy) * 100));
                     battleDisplay += `
                     <div class='stat-row'>
@@ -211,27 +209,26 @@ function updateBattleDisplay() {
                         <div class='stat-bar-container'>
                             <div class='stat-bar energy-bar' style='width: ${energyPercentage}%'></div>
                         </div>
-                    </div>`;
-                }
+            </div>`;
+        }
                 battleDisplay += `
                 <div class='stat-row'>
                     <div class='stat-label'>Ready: ${unit.timer <= 0 ? 'Yes!' : 'Charging...'}</div>
                     <div class='stat-bar-container'>
                         <div class='stat-bar timer-bar' style='width: ${timerProgress}%'></div>
                     </div>
-                </div>`;
+        </div>`;
             }
             battleDisplay += `</div>`;
     }
-    document.getElementById("battle-container").innerHTML = battleDisplay + "</div></div>";
+    document.querySelector(".battle-display").innerHTML = battleDisplay + "</div>";
 }
 
 export function createUnit(unit, team) {
     const newUnit = cloneUnit(unit);
     let name = unit.name;
     let dupe = 1;
-    const filter = allUnits.filter(obj => obj.name.includes(name));
-    while (filter.some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}` }
+    while (allUnits.filter(obj => obj.name.includes(name)).some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}` }
     newUnit.name = name;
     if (newUnit.position === "mid") { newUnit.position = "back" }
     newUnit.team = team;
@@ -252,7 +249,7 @@ function cloneUnit(unit) {
     };
     newUnit.actionsInit = unit.actionsInit;
     for (const stat in newUnit.base) {
-        if (typeof newUnit.base[stat] === 'object') { continue; }
+        if (typeof newUnit.base[stat] === 'object') { continue }
         if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat] }
         else { resetStat(newUnit, [stat]) }
     }
@@ -311,9 +308,7 @@ function frontTest() {
         if (midLine.length) {
             for (const unit of midLine) { unit.actions.switchPosition.code() }
             logAction(`All enemy midline units moved to the frontline!`, "turn");
-        }
-        const win = advanceWave();
-        if (win && !unitFilter("enemy", "front", false).length) {
+        } else if (advanceWave() && !unitFilter("enemy", "front", false).length) {
             showMessage("Victory!", "success", "selection", 0);
             return true;
         }
@@ -359,3 +354,4 @@ export async function combatTick() {
 }
 
 window.combatTick = combatTick;
+window.updateModifiers = updateModifiers;

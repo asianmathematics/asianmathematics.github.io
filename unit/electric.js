@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, resetStat } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 125, 150, "front", 40, 100, 15, 75, 10, 200, 25], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.electricDischarge = {
@@ -40,7 +40,7 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
             const self = this;
-            createMod("Sick Beats Buff", "Rhythmic performance enhancement",
+            new Modifier("Sick Beats Buff", "Rhythmic performance enhancement",
                 { caster: self, targets: target, duration: 4, stats: ["speed", "presence"], values: statIncrease },
                 (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
                 (vars, unit) => {
@@ -86,7 +86,7 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            createMod("Dodge", "Evasion increased",
+            new Modifier("Dodge", "Evasion increased",
                 { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
@@ -109,7 +109,7 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
             this.previousAction[0] = true;
             logAction(`${this.name} blocks.`, "buff");
             const self = this;
-            createMod("Block", "Defense increased",
+            new Modifier("Block", "Defense increased",
                 { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {

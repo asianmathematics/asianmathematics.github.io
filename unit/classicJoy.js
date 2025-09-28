@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat, resistDebuff, modifiers } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 120, 30, 90, 110, "back", 40, 120, 15, undefined, undefined, 90, 10], ["Death/Darkness", "Goner/Entropy", "Anomaly/Synthetic", "Independence/Loneliness", "Ingenuity/Insanity"], function() {
     this.actions.rapidFire = {
@@ -13,7 +13,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 
             attack(this, target, 2);
             logAction(`${this.name} performs a Rapid Fire, boosting speed for 1 turn!`, "buff");
             const self = this;
-            createMod("Rapid Fire Speed", "Temporary speed boost",
+            new Modifier("Rapid Fire Speed", "Temporary speed boost",
                 { caster: self, targets: [self], duration: 1, stats: "speed", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
@@ -112,7 +112,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 
                 mod.vars.duration = 9;
             } else {
                 logAction(`${this.name} gives ${target[0].name} some joy!`, "buff");
-                createMod("Joy", "Overall increase?",
+                new Modifier("Joy", "Overall increase?",
                     { caster: this, targets: target, duration: 9, buffs: ["accuracy", "focus", "defense", "resist"], buffValues: statIncrease, debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: statDecrease },
                     (vars) => { resetStat(vars.targets[0], vars.buffs, vars.buffValues) },
                     (vars, unit) => {

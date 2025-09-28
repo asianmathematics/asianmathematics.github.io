@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, unitFilter, attack, createMod, resetStat, randTarget } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 15, 95, 45, 90, 140, "front", 80, 90, 9, 120, 12, 120, 12], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.arcaneCannon = {
@@ -26,7 +26,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
             const self = this;
             if (Math.random() < .5) {
                 logAction(`${this.name} shifts to fire stance, becoming more aggressive!`, "buff");
-                createMod("Fire Stance", "Offensive enhancement",
+                new Modifier("Fire Stance", "Offensive enhancement",
                     { caster: self, targets: [self], duration: 2, stats: ["attack", "focus"], values: statIncrease },
                     (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                     (vars, unit) => {
@@ -39,7 +39,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
                 );
             } else {
                 logAction(`${this.name} shifts to ice stance, becoming more defensive!`, "buff");
-                createMod("Ice Stance", "Defensive enhancement",
+                new Modifier("Ice Stance", "Defensive enhancement",
                     { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: statIncrease },
                     (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                     (vars, unit) => {
@@ -65,7 +65,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
             this.resource.energy -= 25;
             logAction(`${this.name} creates a protective barrier!`, "buff");
             const self = this;
-            createMod("Magitech Barrier", "Defensive field",
+            new Modifier("Magitech Barrier", "Defensive field",
                 { caster: self, targets: unitFilter("enemy", "", false), duration: 1, stat: "defense", value: 0.25 },
                 (vars) => { resetStat(vars.caster, [vars.stat], [vars.value]) },
                 (vars, unit) => {

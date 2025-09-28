@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, createMod, resetStat } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95, 50, 85, 150, "front", 99, 200, 25], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity"], function() {
     this.actions.hammer = {
@@ -13,7 +13,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
             logAction(`${this.name} swings a hammer at ${target[0].name}`, "action");
             attack(this, target, 1, { attacker: { accuracy: this.accuracy * 2, attack: this.attack * 3 } });
             const self = this;
-            createMod("Hammer Speed", "Temporary speed boost",
+            new Modifier("Hammer Speed", "Temporary speed boost",
                 { caster: self, targets: [self], duration: 1, stats: "speed", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
@@ -59,7 +59,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
             this.previousAction[0] = true;
             logAction(`${this.name} held onto hope!`, "action");
             const self = this;
-            createMod("Determination", "Healing over time",
+            new Modifier("Determination", "Healing over time",
                 { caster: self, targets: [self], duration: 2, stats: "hp", values: self.resource.healFactor },
                 (vars) => { },
                 (vars, unit) => {
@@ -88,7 +88,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
             this.previousAction[0] = true;
             logAction(`${this.name} protects the team!`, "action");
             const self = this;
-            createMod("Guard", "Defense and presence increase",
+            new Modifier("Guard", "Defense and presence increase",
                 { caster: self, targets: [self], duration: 1, stats: ["defense", "presence"], values: statIncrease },
                 (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
                 (vars, unit) => {
@@ -111,7 +111,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
             this.previousAction[0] = true;
             logAction(`${this.name} blocks.`, "buff");
             const self = this;
-            createMod("Block", "Defense increased",
+            new Modifier("Block", "Defense increased",
                 { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stat], [vars.values]) },
                 (vars, unit) => {

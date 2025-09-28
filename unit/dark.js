@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, createMod, resetStat } from '../combatDictionary.js';
+import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
 
 export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 175, "front", 66, 150, 18, 250, 30], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
     this.actions.iceshock = {
@@ -33,7 +33,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
             if (will > 50) {
                 logAction(`${this.name} freezes ${target[0].name}!`, "action");
                 const self = this;
-                createMod("Perfect Freeze", "stun effect",
+                new Modifier("Perfect Freeze", "stun effect",
                     { caster: self, targets: target, duration: 2 },
                     (vars) => { vars.targets[0].stun = true },
                     (vars, unit) => {
@@ -68,7 +68,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
             while (target.length > 6) { target = target.filter(unit => unit !== target[Math.floor(Math.random() * target.length)]); }
             attack(this, target, 10, { attacker: { accuracy: this.accuracy * 0.75, attack: this.attack * 0.5 } });
             const self = this;
-            createMod("Evasion Penalty", "Evasion reduced during bullet hell",
+            new Modifier("Evasion Penalty", "Evasion reduced during bullet hell",
                 { caster: self, targets: [self], duration: 1, stats: "evasion", values: statDecrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
@@ -123,7 +123,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            createMod("Dodge", "Evasion increased",
+            new Modifier("Dodge", "Evasion increased",
                 { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
                 (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
                 (vars, unit) => {
