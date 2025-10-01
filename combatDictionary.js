@@ -99,7 +99,7 @@ function resistDebuff(attacker, defenders) {
     const will = []
     for (const unit of defenders) {
         const roll = Math.floor(Math.random() * 100 + 1);
-        const resistSingle = roll === 1 || roll === 100 ? roll : ((attacker.presence + attacker.crit) / Math.max(200 - (attacker.presence + attacker.crit) + (unit.presence + unit.resist), 20) ) + roll;
+        const resistSingle = roll === 1 || roll === 100 ? roll : ((attacker.presence + attacker.focus) / Math.max(200 - (attacker.presence + attacker.focus) + (unit.presence + unit.resist), 20) ) + roll;
         if (eventState.singleResist.flag) { handleEvent('singleResist', {attacker, defender: unit, resistSingle}) }
         will.push(resistSingle);
     }
