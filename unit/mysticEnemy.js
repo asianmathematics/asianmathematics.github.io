@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 115, 25, 115, 100, "front", 35, 80, 8, 180, 20], ["Death/Darkness", "Anomaly/Synthetic"], function() {
     this.actions.manaBolt = {
@@ -28,18 +28,18 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
             logAction(`${this.name} casts Curse Field!`, "action");
             const self = this;
             new Modifier("Curse Field", "Reduces accuracy and evasion",
-                { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: statDecrease },
+                { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', attributes: ["mystic"], elements: ["anomaly/synthetic"], stats: ["accuracy", "evasion"], values: statDecrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true },
                 (vars) => {
                     vars.targets.forEach(unit => {
                         if (resistDebuff(vars.caster, [unit]) > 50) { resetStat(unit, vars.stats, vars.values) }
                         else { vars.targets.splice(vars.targets.indexOf(unit), 1) }
                     });
                 },
-                (vars, unit) => {
-                    if (vars.targets.includes(unit)) {
-                        if (resistDebuff(vars.caster, [unit]) > 30) {
-                            resetStat(unit, vars.stats, vars.values);
-                            vars.targets.splice(vars.targets.indexOf(unit), 1);
+                (vars, context) => {
+                    if (vars.targets.includes(context.unit)) {
+                        if (resistDebuff(vars.caster, [context.unit]) > 30) {
+                            resetStat(context.unit, vars.stats, vars.values);
+                            vars.targets.splice(vars.targets.indexOf(context.unit), 1);
                         }
                     }
                     if (vars.targets.length === 0) { return true }
@@ -62,6 +62,8 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
             attack(this, target, 1, { attacker: { attack: this.attack * 2, focus: this.focus * 3 } });
             if (hpCheck < target[0].hp) {
                 logAction(`${this.name} drains life from ${target[0].name}`, "heal");
+                const self = this;
+                if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: self.actions.drainLife, unit: self, resource: ['hp'], value: [hpCheck - target[0].hp] }) }
                 this.hp = Math.min(this.base.hp, this.hp + (hpCheck - target[0].hp));
             }
         }
@@ -78,17 +80,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
             this.resource.mana -= 25;
             const self = this;
             logAction(`${this.name} creates an arcane shield, enhancing their defenses!`, "buff");
-            new Modifier("Arcane Shield", "Enhanced defenses",
-                { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: statIncrease },
-                (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, vars.stats, vars.values, false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Arcane Shield", "Enhanced defenses", { caster: self, targets: [self], duration: 2, attributes: ["mystic"], elements: ["inertia/cold"], stats: ["defense", "resist"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -98,6 +90,8 @@ export const mysticEnemy = new Unit("Mystic Fiend", [425, 35, 8, 35, 110, 30, 11
         description: `Recovers a lot of mana (${this.resource.manaRegen * 3})`,
         code: () => {
             this.previousAction[0] = true;
+            const self = this;
+            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: self.actions.meditate, unit: self, resource: ['mana'], value: [self.resource.manaRegen * 3] }) }
             this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + (this.resource.manaRegen * 3) );
             logAction(`${this.name} meditates and recovers mana!`, "heal");
         }

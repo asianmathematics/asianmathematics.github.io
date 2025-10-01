@@ -85,7 +85,7 @@
   * Passion/Hatred  
   * Ingenuity/Insanity  
 * **Relations**: Each main element has a pair it's related to and an opposite it conflicts with (e.g. Darkness pairs with Death and opposes Light).  
-* **Interactions**: To exploit an elemental weakness, a unit with an elemental pair must be hit by attacks tagged with the elemental pair's opposites (e.g. Death/Darkness unit hit with Nature/Life and Light/Illusion attacks). Healing and Buffs from an opposing pair of the unit weakens the effect while using the same pair as the unit increases effectiveness. Buffs and Debuffs can be weakened using elemental incompatibility feom other Buffs/Debuffs.
+* **Interactions**: To exploit an elemental weakness, a unit with an elemental pair must be hit by attacks tagged with the elemental pair's opposites (e.g. Death/Darkness unit hit with Nature/Life and Light/Illusion attacks). Healing and Buffs from an opposing pair of the unit weakens the effect while using the same pair as the unit increases effectiveness.
 
 5. ### Synergies
 

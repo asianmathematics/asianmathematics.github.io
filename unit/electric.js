@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 125, 150, "front", 40, 100, 15, 75, 10, 200, 25], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.electricDischarge = {
@@ -35,22 +35,12 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
             selectTarget(this.actions.sickBeats, () => { playerTurn(this) }, [1, true, unitFilter("player", "", false)]);
         },
         code: (target) => {
-            const statIncrease = [1 -((target[0].base.speed + 50) / target[0].base.speed), 1 - ((target[0].base.presence + 70) / target[0].base.presence)];
+            const statIncrease = [((target[0].base.speed + 50) / target[0].base.speed) - 1, ((target[0].base.presence + 70) / target[0].base.presence) - 1];
             this.resource.energy -= 40;
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
             const self = this;
-            new Modifier("Sick Beats Buff", "Rhythmic performance enhancement",
-                { caster: self, targets: target, duration: 4, stats: ["speed", "presence"], values: statIncrease },
-                (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
-                (vars, unit) => {
-                    if (vars.targets[0] === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.targets[0], vars.stats, vars.values, false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Sick Beats Buff", "Rhythmic performance enhancement", { caster: self, targets: target, duration: 3, attributes: ["techno"], elements: ["harmonic/change"], stats: ["speed", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -67,6 +57,8 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
             this.resource.mana -= 30;
             this.previousAction[1] = true;
             logAction(`${this.name} generates electricity!`, "heal");
+            const self = this;
+            if (eventState.resourceChange.flag) {handleEvent('resourceChange', { effect: self.actions.recharge, unit: self, resource: ['energy'], value: [self.resource.energyRegen * 3] }) }
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + this.resource.energyRegen * 3);
         }
     };
@@ -81,22 +73,12 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            const statIncrease = 2;
+            const statIncrease = [2];
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            new Modifier("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Dodge", "Evasion increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -105,21 +87,11 @@ export const Electric = new Unit("Electric", [450, 50, 8, 35, 105, 25, 110, 30, 
         properties: ["physical", "buff"],
         description: "Increases defense for 1 turn",
         code: () => {
-            const statIncrease = 1;
+            const statIncrease = [1];
             this.previousAction[0] = true;
             logAction(`${this.name} blocks.`, "buff");
             const self = this;
-            new Modifier("Block", "Defense increased",
-                { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Block", "Defense increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["defense"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 });

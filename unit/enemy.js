@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35, 100, 100, "front", 50, 100, 10], [], function() {
     this.actions.basicAttack = {
@@ -17,13 +17,13 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
         name: "Strong Attack [stamina]",
         properties: ["physical", "stamina", "attack"],
         cost: { stamina: 30 },
-        description: "Costs 30 stamina\nAttacks a single target 3 times with increased damage and accuracy",
+        description: "Costs 30 stamina\nAttacks a single target 4 times with increased damage and accuracy",
         code: () => {
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             const target = [randTarget(unitFilter("player", "front", false))];
-            logAction(`${this.name} unleashes two powerful strikes against ${target[0].name}!`, "action");
-            attack(this, target, 3, { attacker: { accuracy: this.accuracy * 1.5, attack: this.attack * 2 } });
+            logAction(`${this.name} unleashes three powerful strikes against ${target[0].name}!`, "action");
+            attack(this, target, 4, { attacker: { accuracy: this.accuracy * 1.5, attack: this.attack * 2 } });
         }
     };
 
@@ -37,22 +37,12 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            const statIncrease = 2;
+            const statIncrease = [2];
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            new Modifier("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statIncrease },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Dodge", "Evasion increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -61,21 +51,11 @@ export const enemy = new Unit("Basic Enemy", [500, 40, 10, 25, 100, 20, 100, 35,
         properties: ["physical", "buff"],
         description: "Increases defense for 1 turn",
         code: () => {
-            const statIncrease = 1;
+            const statIncrease = [1];
             this.previousAction[0] = true;
             logAction(`${this.name} blocks.`, "buff");
             const self = this;
-            new Modifier("Block", "Defense increased",
-                { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Block", "Defense increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["defense"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 

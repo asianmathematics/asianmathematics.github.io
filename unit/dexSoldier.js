@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95, 50, 85, 150, "front", 99, 200, 25], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity"], function() {
     this.actions.hammer = {
@@ -8,22 +8,12 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
         description: "Attacks a single target with increased damage and accuracy and increases speed for 1 turn.",
         target: () => { selectTarget(this.actions.hammer, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (target) => {
-            const statIncrease = 0.5;
+            const statIncrease = [0.5];
             this.previousAction[0] = true;
             logAction(`${this.name} swings a hammer at ${target[0].name}`, "action");
             attack(this, target, 1, { attacker: { accuracy: this.accuracy * 2, attack: this.attack * 3 } });
             const self = this;
-            new Modifier("Hammer Speed", "Temporary speed boost",
-                { caster: self, targets: [self], duration: 1, stats: "speed", values: statIncrease },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Hammer Speed", "Temporary speed boost", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["speed"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -55,16 +45,20 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
                 return;
             }
             this.resource.stamina -= 80;
-            this.hp = Math.min(this.hp + this.resource.healFactor, this.base.hp);
             this.previousAction[0] = true;
             logAction(`${this.name} held onto hope!`, "action");
             const self = this;
             new Modifier("Determination", "Healing over time",
-                { caster: self, targets: [self], duration: 2, stats: "hp", values: self.resource.healFactor },
-                (vars) => { },
-                (vars, unit) => {
-                    if (vars.caster === unit) {
-                        unit.hp = Math.min(unit.hp + vars.values, unit.base.hp);
+                { caster: self, targets: [self], duration: 2, attributes: ["physical"], stats: "hp", values: self.resource.healFactor, listeners: {turnStart: true}, cancel: false, applied: true, focus: true, mod },
+                (vars) => {
+                    vars.mod = modifiers.find(m => m.name === "Determination" && m.vars.caster === vars.caster);
+                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: vars.mod, unit: vars.caster, resource: ['hp'], value: [vars.value] }) }
+                    this.hp = Math.min(vars.caster.hp + vars.caster.values, vars.caster.base.hp);
+                },
+                (vars, context) => {
+                    if (vars.caster === context.unit) {
+                        if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: vars.mod, unit: vars.caster, resource: ['hp'], value: [vars.value] }) }
+                        if (vars.applied) { context.unit.hp = Math.min(context.unit.hp + vars.values, context.unit.base.hp) }
                         vars.duration--;
                     }
                     if (vars.duration === 0) { return true }
@@ -88,17 +82,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
             this.previousAction[0] = true;
             logAction(`${this.name} protects the team!`, "action");
             const self = this;
-            new Modifier("Guard", "Defense and presence increase",
-                { caster: self, targets: [self], duration: 1, stats: ["defense", "presence"], values: statIncrease },
-                (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, vars.stats, vars.values, false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Guard", "Defense and presence increase", { caster: self, targets: [self], duration: 1, attributes: ["physical"], elements: ["inertia/cold"], stats: ["defense", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -107,21 +91,11 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
         properties: ["physical", "buff"],
         description: "Increases defense for 1 turn",
         code: () => {
-            const statIncrease = 1;
+            const statIncrease = [1];
             this.previousAction[0] = true;
             logAction(`${this.name} blocks.`, "buff");
             const self = this;
-            new Modifier("Block", "Defense increased",
-                { caster: self, targets: [self], duration: 1, stats: "defense", values: statIncrease },
-                (vars) => { resetStat(vars.caster, [vars.stat], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Block", "Defense increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["defense"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 });

@@ -9,7 +9,7 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
-import { Modifier, refreshState, setUnit, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from './combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -116,8 +116,7 @@ function updateModifiers() {
 
 function updateBattleDisplay() {
     updateModifiers();
-    let battleDisplay = "<div class='battle-display'>";
-    battleDisplay += "<div class='team player-team'><h2>Player Team</h2>";
+    let battleDisplay = "<div class='team player-team'><h2>Player Team</h2>";
     for (const unit of unitFilter("player", '')) {
         battleDisplay += `<div class='unit ${unit.hp <= 0 ? "defeated" : ""} ${unit.position === "back" ? "back" : ""}'>
             <div class='unit-name'>${unit.name}</div>
@@ -221,7 +220,7 @@ function updateBattleDisplay() {
             }
             battleDisplay += `</div>`;
     }
-    document.querySelector(".battle-display").innerHTML = battleDisplay + "</div>";
+    document.querySelector(".battle-display").innerHTML = battleDisplay;
 }
 
 export function createUnit(unit, team) {
@@ -246,6 +245,10 @@ function cloneUnit(unit) {
         resource: { ...unit.base.resource},
         actions: {},
         elements: [...unit.base.elements],
+        absorb: [],
+        shield: (unit.base.elements || []).filter(e => baseElements.includes(e.toLowerCase())),
+        stun: false,
+        cancel: false
     };
     newUnit.actionsInit = unit.actionsInit;
     for (const stat in newUnit.base) {
@@ -253,16 +256,14 @@ function cloneUnit(unit) {
         if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat] }
         else { resetStat(newUnit, [stat]) }
     }
-    newUnit.absorb = [];
-    newUnit.shield = (unit.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
-    newUnit.stun = false;
     return newUnit;
 }
 
 function regenerateResources(unit) {
-    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + (unit.resource.staminaRegen * unit.mult.resource.staminaRegen))) }
-    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + (unit.resource.manaRegen * unit.mult.resource.manaRegen))) }
-    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + (unit.resource.energyRegen * unit.mult.resource.energyRegen))) }
+    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: regenerateResources, unit, resource: 'null' }) }
+    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + unit.resource.staminaRegen)) }
+    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + unit.resource.manaRegen)) }
+    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + unit.resource.energyRegen)) }
     unit.previousAction = [false, false, false];
 }
 
@@ -283,6 +284,8 @@ export function advanceWave(x = 0) {
             createUnit(technoEnemy, 'enemy');
             currentTurn = allUnits.findIndex(unit => unit.name === turnId);
             wave += 1;
+            if (eventState.waveChange.flag) { handleEvent('waveChange', {wave}) }
+            initBattleDisplay();
             break;
         default:
             return true;
@@ -337,19 +340,22 @@ export async function combatTick() {
         }
     }
     logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
-    updateMod(turn);
     updateBattleDisplay();
+    if (eventState.turnStart.flag) { handleEvent('turnStart', { unit: turn }) }
     turn.timer = 1000;
     if (!turn.stun) {
+        setUnit(turn)
         regenerateResources(turn);
         turn.absorb = [];
         turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
         if (turn.team === "player") { playerTurn(turn) }
         if (turn.team === "enemy") { enemyTurn(turn) }
+        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }
         turnCounter++;
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
-        combatTick();
+        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }
+        setTimeout(combatTick, 500);
     }
 }
 

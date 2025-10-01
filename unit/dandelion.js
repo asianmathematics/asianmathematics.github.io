@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 25, 115, 160, "front", 44, 140, 15, 180, 20], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
     this.actions.spellAttack = {
@@ -44,25 +44,15 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            const statDecrease = -0.5;
+            const statDecrease = [-0.5];
             this.resource.mana -= 60;
             this.previousAction[1] = true;
             logAction(`${this.name} shoots some damaku!`, "action");
             let target = unitFilter("enemy", "front", false);
-            while (target.length > 4) { target = target.filter(unit => unit !== randTarget(target, true)); }
+            if (target.length > 4) { target = randTarget(target, 4, true) }
             attack(this, target, 6, { attacker: { accuracy: this.accuracy * 0.75, attack: this.attack * 0.5 } });
             const self = this;
-            new Modifier("Evasion Penalty", "Evasion reduced during bullet hell",
-                { caster: self, targets: [self], duration: 1, stats: "evasion", values: statDecrease },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
 
@@ -76,21 +66,12 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = [0.5, 1.5, 2]
             this.resource.stamina -= 40;
             this.previousAction[0] = true;
             logAction(`${this.name} draws attention to himself!`, "action");
             const self = this;
-            new Modifier("Feint", "Defense, evasion, and presence increase",
-                { caster: self, targets: [self], duration: 1, stats: ["defense", "evasion", "presence"], values: [0.5, 1.5, 2] },
-                (vars) => { resetStat(vars.caster, vars.stats, vars.values); },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, vars.stats, vars.values, false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Feint", "Defense, evasion, and presence increase", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -104,21 +85,12 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
+            const statIncrease = [2];
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
             const self = this;
-            new Modifier("Dodge", "Evasion increased",
-                { caster: self, targets: [self], duration: 1, stats: "evasion", values: 2 },
-                (vars) => { resetStat(vars.caster, [vars.stats], [vars.values]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Dodge", "Evasion increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 });

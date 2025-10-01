@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 15, 95, 45, 90, 140, "front", 80, 90, 9, 120, 12, 120, 12], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.arcaneCannon = {
@@ -26,30 +26,10 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
             const self = this;
             if (Math.random() < .5) {
                 logAction(`${this.name} shifts to fire stance, becoming more aggressive!`, "buff");
-                new Modifier("Fire Stance", "Offensive enhancement",
-                    { caster: self, targets: [self], duration: 2, stats: ["attack", "focus"], values: statIncrease },
-                    (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
-                    (vars, unit) => {
-                        if (vars.caster === unit) { vars.duration-- }
-                        if (vars.duration === 0) {
-                            resetStat(vars.caster, vars.stats, vars.values, false);
-                            return true;
-                        }
-                    }
-                );
+                basicModifier("Fire Stance", "Offensive enhancement", { caster: self, targets: [self], duration: 2, attributes: ["mystic"], elements: ["radiance/purity"], stats: ["attack", "focus"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
             } else {
                 logAction(`${this.name} shifts to ice stance, becoming more defensive!`, "buff");
-                new Modifier("Ice Stance", "Defensive enhancement",
-                    { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: statIncrease },
-                    (vars) => { resetStat(vars.caster, vars.stats, vars.values) },
-                    (vars, unit) => {
-                        if (vars.caster === unit) { vars.duration-- }
-                        if (vars.duration === 0) {
-                            resetStat(vars.caster, vars.stats, vars.values, false);
-                            return true;
-                        }
-                    }
-                );
+                basicModifier("Ice Stance", "Defensive enhancement", { caster: self, targets: [self], duration: 2, attributes: ["mystic"], elements: ["inertia/cold"], stats: ["defense", "resist"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
             }
         }
     };
@@ -60,22 +40,13 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
         cost: { mana: 25, energy: 25 },
         description: "Costs 25 mana & 25 energy\nIncreases defense of all allies",
         code: () => {
+            const statIncrease = [0.25];
             this.previousAction[1] = this.previousAction[2] = true;
             this.resource.mana -= 25;
             this.resource.energy -= 25;
             logAction(`${this.name} creates a protective barrier!`, "buff");
             const self = this;
-            new Modifier("Magitech Barrier", "Defensive field",
-                { caster: self, targets: unitFilter("enemy", "", false), duration: 1, stat: "defense", value: 0.25 },
-                (vars) => { resetStat(vars.caster, [vars.stat], [vars.value]) },
-                (vars, unit) => {
-                    if (vars.caster === unit) { vars.duration-- }
-                    if (vars.duration === 0) {
-                        resetStat(vars.caster, [vars.stats], [vars.values], false);
-                        return true;
-                    }
-                }
-            );
+            basicModifier("Magitech Barrier", "Defensive field", { caster: self, targets: unitFilter("enemy", "", false), duration: 1, attributes: ["mystic"], elements: ["inertia/cold", "anomaly/synthetic"], stats: ["defense"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -84,6 +55,8 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
         properties: ["harmonic/change", "resource"],
         description: `Recovers a lot of mana (${this.resource.manaRegen * 3.5}) and energy (${this.resource.energyRegen * 3.5})`,
         code: () => {
+            const self = this;
+            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: self.actions.essenceAbsorption, unit: self, resource: ['mana', 'energy'], value: [self.resource.manaRegen * 3.5, self.resource.energyRegen * 3.5] }) }
             this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + (this.resource.manaRegen * 3.5) );
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + (this.resource.energyRegen * 3.5) );
             logAction(`${this.name} absorbs ambient essence, replenishing resources!`, "heal");
@@ -122,7 +95,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [700, 45, 15, 30, 100, 1
 
     this.actions.actionWeight = { 
         arcaneCannon: 0.10, 
-        elementalShift: 0.20, 
+        stanceShift: 0.20, 
         magitechBarrier: 0.20, 
         essenceAbsorption: 0.15, 
         energyWave: 0.10, 

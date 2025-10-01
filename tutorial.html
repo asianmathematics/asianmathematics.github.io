@@ -12,6 +12,19 @@
     <p>This tutorial will guide you through the basics of the mechanics for my squad combat prototype. This prototype is based of the manual squad mode for my game where you manually take control of units actions.<p><br><br>
     <p>These are modifiers. For the current prototype, they just modify stats for a set duration, but in the future some modifiers can perform advanced abilities such as counterattacks or action/modifier nullification.</p>
     <div id="battle-container">
+        <div class='modifiers-container'>
+            <h3>Active Modifiers</h3>
+        </div>
+        <div class='battle-display'>
+            <div class='team player-team'>
+                <h2 class="team-header">Player Team</h2>
+                <div class="unit-row"></div>
+            </div>
+            <div class='team enemy-team'>
+                <h2 class="team-header">Enemy Team</h2>
+                <div class="unit-row"></div>
+            </div>
+        </div>
     </div>
     <p>These are units.</p>
     <ul>
@@ -58,21 +71,24 @@
         <li><strong>Speed</strong><span>: Increases turn frequency.</span></li>
         <li><strong>Presence</strong><span>: Increases chance to get targeted, and adds onto crit and resist for debuff calculations.</span></li>
     </ul>
+    <h3>Element system</h3>
+    <p>Units and actions are usually tagged with one or more elemental pairs. There are 9 main elemental pairs and 4 special elemental pairs. Units without an element are rare.</p>
+    <p><strong>Main Elements</strong>: Death/Darkness, Light/Illusion, Knowledge/Memory, Goner/Entropy, Harmonic/Change, Inertia/Cold, Radiance/Purity, Anomaly/Synthetic, and Nature/Life.</p>
+    <ul>
+        <li>Each element has pair associated, such as Death & Darkness, Light & Illusion, etc. And each main element has an opposite, such as Life & Death, Darkness & Light, etc. (This relation is shown by the order of each element in the list)</li>
+        <li>To exploit an elemental weakness or resistance, a unit with an elemental pair must be hit by attacks tagged with the elemental pair's opposites (e.g. Death/Darkness unit hit with Nature/Life and Light/Illusion attacks). Hitting a unit with an element it already has nullifies the element for that one attack until the start of its turn.</li>
+        <li>Healing and Buffs from an opposing pair of the unit weakens the effect while using the same pair as the unit increases effectiveness.</li>
+    </ul>
+    <p><strong>Special Elements</strong>: Precision/Perfection, Independence/Loneliness, Passion/Hatred, and Ingenuity/Insanity.</p>
+    <ul>
+        <li>Special Elements don't have opposites, so they don't have the usual interactions as the main elements. These elements are mostly used for synergies.</li>
+    </ul>
     <h2>Future mechanics</h2>
     <p>These aren't implemented yet, but will be once I finish programming them.</p>
     <h3>Passive Skills</h3>
     <p>Units can have active skills (actions) and passive skills. A passive skill is a modifier that lasts the entire combat.</p>
     <h3>Unit synergy</h3>
     <p>Certain unit may have synergies when paired with other units. These synergies may range from stat modifications to new actions to completely changing the unit. Due to the small amount of units and the limitations of the current build, this isn't implemented yet.</p>
-    <h3>Element system</h3>
-    <p>Units and actions are usually tagged with one or more elemental pairs. There are 9 main elemental pairs and 4 special elemental pairs. Units without an element are rare.</p>
-    <ul>
-        <li>Main Elements: Death/Darkness, Light/Illusion, Knowledge/Memory, Goner/Entropy, Harmonic/Change, Inertia/Cold, Radiance/Purity, Anomaly/Synthetic, and Nature/Life.</li>
-        <li>Each element has pair associated, such as Death & Darkness, Light & Illusion, etc. And each main element has an opposite, such as Life & Death, Darkness & Light, etc. (This relation is shown by the order of each element in the list)</li>
-        <li>To exploit an elemental weakness or resistance, a unit with an elemental pair must be hit by attacks tagged with the elemental pair's opposites (e.g. Death/Darkness unit hit with Nature/Life and Light/Illusion attacks). Healing and Buffs from an opposing pair of the unit weakens the effect while using the same pair as the unit increases effectiveness. Buffs and Debuffs can be weakened using attacks or Buff/Debuff incompatibility.</li>
-        <li>Special Elements: Precision/Perfection, Independence/Loneliness, Passion/Hatred, and Ingenuity/Insanity.</li>
-        <li>Special Elements don't have opposites, so they don't have the usual interactions as the main elements. These elements are mostly used for synergies.</li>
-    </ul>
     <h3>Unit Progression</h3>
     <p>You can upgrade a unit by increasing it's level and power.</p>
     <ul>
