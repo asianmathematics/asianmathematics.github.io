@@ -56,7 +56,7 @@ button#back{border:1px solid #ff0055;border-radius:0;background-color:#0a0a0a;pa
 .modifier-list{list-style:none;padding:0}
 .modifier-list li{margin-bottom:5px;padding:5px;border-radius:0;border-left:3px solid #ff0055}
 .modifier-target{font-weight:700;color:#00aaff}
-.modifier-duration{color:#ff0055}
+.modifier-icon {width:18px;height:18px;margin-right:6px;vertical-align:middle;filter:drop-shadow(0 0 4px #00ff88);}
 .modifier-caster{color:#00ff88;font-size:0.9em;display:block;margin-bottom:3px;}
 .modifier-name{color:#fff;font-weight:bold;cursor:help;position:relative;display:inline-block;}
 .modifier-name:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background-color:#0a0a0a;color:#00ff88;padding:8px 12px;border-radius:0;white-space:pre-line;z-index:1000;width:max-content;max-width:300px;box-shadow:0 0 15px rgba(0,255,136,0.3);font-family:'Courier Prime',monospace;font-size:14px;border:1px solid #00ff88}

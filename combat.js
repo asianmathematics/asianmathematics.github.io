@@ -5,6 +5,7 @@ import { ClassicJoy } from './unit/classicJoy.js';
 import { DexSoldier } from './unit/dexSoldier.js';
 import { Dandelion } from './unit/dandelion.js';
 import { FourArcher } from './unit/fourArcher.js';
+import { Paragon } from './unit/paragon.js';
 import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
@@ -14,16 +15,17 @@ let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
 
-const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher];
+const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon];
 let selectedUnits = [];
 
 Dark.description = "5 star mystic unit with high evasion, speed, and offensive capabilities";
-Electric.description = "3 star magitech unit with high versatility";
+Electric.description = "4 star magitech unit with high versatility";
 Servant.description = "4 star unit with stealth and critical hit capabilities";
 ClassicJoy.description = "3 star techno backline unit with high attack, low speed, and healing";
 DexSoldier.description = "3 star unit with strong offensive and tank abilities and low speed";
 Dandelion.description = "4 star mystic unit with decent evasion, speed, and offensive capabilities";
 FourArcher.description = "3 star mystic backline unit with high luck and low speed";
+Paragon.description = "5 star techno backline unit with low offensive capabilities and good healing"
 
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
@@ -62,6 +64,17 @@ function initUnitSelection() {
     document.getElementById('start-with-selected').addEventListener('click', () => {
         if (selectedUnits.length === 0) {
             showMessage('Please select at least 1 unit!', 'error', 'selection');
+            return;
+        }
+        let frontcheck = true;
+        for (const unit of selectedUnits) {
+            if (!unit.description.includes("backline")) {
+                frontcheck = false;
+                break;
+            }
+        }
+        if (frontcheck) {
+            showMessage('Please select at least 1 non-backline unit!', 'error', 'selection');
             return;
         }
         startCombatWithSelected();
@@ -103,6 +116,7 @@ function updateModifiers() {
         for (const modifier of modifiers) {
             modDisplay += `
             <li class="modifier-item">
+                <!-- <img class="modifier-icon" src="icons/${modifier.vars.icon}" alt="${modifier.name} icon"> -->
                 <span class="modifier-caster">${modifier.vars.caster?.name || "System"}'s</span>
                 <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
                 <div class="modifier-targets">Targets: ${modifier.vars.targets.map(u => u.name).join(", ")}</div>
@@ -285,7 +299,7 @@ export function advanceWave(x = 0) {
             currentTurn = allUnits.findIndex(unit => unit.name === turnId);
             wave += 1;
             if (eventState.waveChange.flag) { handleEvent('waveChange', {wave}) }
-            initBattleDisplay();
+            updateBattleDisplay();
             break;
         default:
             return true;
@@ -339,19 +353,18 @@ export async function combatTick() {
             await sleep(0);
         }
     }
-    logAction(`<strong>Turn ${turnCounter}: ${turn.name}'s turn</strong>`, "turn");
-    updateBattleDisplay();
+    logAction(`<strong>Turn ${turnCounter++}: ${turn.name}'s turn</strong>`, "turn");
     if (eventState.turnStart.flag) { handleEvent('turnStart', { unit: turn }) }
-    turn.timer = 1000;
+    turn.timer += 1000;
     if (!turn.stun) {
         setUnit(turn)
         regenerateResources(turn);
         turn.absorb = [];
         turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
+        updateBattleDisplay();
         if (turn.team === "player") { playerTurn(turn) }
         if (turn.team === "enemy") { enemyTurn(turn) }
         if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }
-        turnCounter++;
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
         if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }

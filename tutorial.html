@@ -66,7 +66,7 @@
         <li><strong>Lethality</strong><span>: Bonus damage from criticals.</span></li>
         <li><strong>Accuracy</strong><span>: Increase chance to hit an attack. Minimum chance to hit of 15%.</span></li>
         <li><strong>Evasion</strong><span>: Decrease chance to get attacked.</span></li>
-        <li><strong>Crit</strong><span>: Increase critical and debuff chance. Multiple criticals can stack.</span></li>
+        <li><strong>Focus</strong><span>: Increase critical and debuff chance. Multiple criticals can stack.</span></li>
         <li><strong>Resist</strong><span>: Decrease critical and debuff chance.</span></li>
         <li><strong>Speed</strong><span>: Increases turn frequency.</span></li>
         <li><strong>Presence</strong><span>: Increases chance to get targeted, and adds onto crit and resist for debuff calculations.</span></li>
@@ -101,7 +101,7 @@ Roll is a random number from 1-100<br><br>
 To hit (accuracy doubles at a roll of 100 and auto miss at a 1, Hit ≤ 0 is a miss):<br>
 \[Hit = \frac{Accuracy_{Attacker}}{Evasion_{Defender}} + Roll - 85\]<br><br>
 To crit (denominator can't go below 10):<br>
-\[Critical = \frac{Hit}{5Resist_{Defender}-Crit_{Attacker}}\]<br><br>
+\[Critical = \frac{Hit}{5Resist_{Defender}-Focus_{Attacker}}\]<br><br>
 Damage function (HP can't go below 0):<br>
 <p style="text-align: center;">If Critical < 1:</p> \[Damage_{Normal} = Attack_{Attacker} - Defense_{Defender}\] <p style="text-align: center">(Multiplied by a random number between .75 to 1.25, Minimum of 10% of attack or 1)</p><br><br>
 <p style="text-align: center;">If Critical ≥ 1:</p> \[Damage_{Critical} = Damage_{Normal} \text{ (Minimum increased by * Critical)} + Lethality_{Attacker} * Critical\]<br><br>

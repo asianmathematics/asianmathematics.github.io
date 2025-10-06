@@ -1,4 +1,4 @@
-# **Game Design Document: IDA gacha**
+# **Game Design Document: IDA game**
 
 ## **1\. Core Identity**
 

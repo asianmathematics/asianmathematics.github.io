@@ -2,6 +2,7 @@ const allUnits = [];
 const modifiers = [];
 let currentUnit = null;
 let currentAction = null;
+let currentMod = [];
 const baseElements = ["death/darkness", "light/illusion", "knowledge/memory", "goner/entropy", "harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic", "nature/life"]
 const elementCombo = {
     "Death/Darkness": ["light/illusion", "nature/life"],
@@ -11,7 +12,7 @@ const elementCombo = {
     "Harmonic/Change": ["goner/entropy", "inertia/cold"],
     "Inertia/Cold": ["harmonic/change", "radiance/purity"],
     "Radiance/Purity": ["inertia/cold", "anomaly/synthetic"],
-    "Anomaly/synthetic": ["radiance/purity", "nature/life"],
+    "Anomaly/Synthetic": ["radiance/purity", "nature/life"],
     "Nature/Life": ["anomaly/synthetic", "death/darkness"]
 };
 const eventState = {};
@@ -42,18 +43,24 @@ class Modifier {
             }
         }
         if (eventState.modifierStart.flag) { handleEvent('modifierStart', { modifier: this }) }
+        currentMod.push(this);
         this.init()
+        currentMod.pop();
+        this.vars.start = true;
         window.updateModifiers();
     }
 }
 
 function handleEvent(eventType, context) {
     for (let i = eventState[eventType].listeners.length - 1; i >= 0; i--) {
+        if (!eventState[eventType].listeners[i].vars.start) { continue }
+        currentMod.push(eventState[eventType].listeners[i]);
         try { if (eventState[eventType].listeners[i].onTurn(context)) { removeModifier(eventState[eventType].listeners[i]) } }
         catch (e) {
             console.error(`Error in ${eventType} listener (${eventState[eventType].listeners[i].name}):`, e);
             removeModifier(eventState[eventType].listeners[i]);
         }
+        currentMod.pop();
     }
     window.updateModifiers();
 }
@@ -62,7 +69,9 @@ function removeModifier(modifier) {
     if (modifier.vars.applied) {
         modifier.vars.cancel = true;
         if (eventState.cancel.flag) {handleEvent('cancel', { effect: removeModifier, target: modifier, cancel: true }) }
+        currentMod.push(modifier)
         modifier.onTurn({})
+        currentMod.pop();
     }
     if (eventState.modifierEnd.flag) { handleEvent('modifierEnd', { modifier }) }
     if (modifier.vars && modifier.vars.listeners) {
@@ -437,7 +446,7 @@ function damage(attacker, defenders, critical, calcMods = {}) {
         for (let j = 0; j < critical[i].length; j++) {
             let damageSingle = (doubleDamage + 1) * (critical[i][j] <= 0 ? 0 : critical[i][j] < 1 ? Math.ceil(Math.max(((Math.random() / 2) + .75) * (attackMods.attack - defendMods.defense), .1 * attackMods.attack)) : Math.ceil(Math.max(((Math.random() / 2) + .75) * (attackMods.attack - defendMods.defense), .1 * attackMods.attack * critical[i][j]) + attackMods.lethality * critical[i][j]));
             if (eventState.singleDamage.flag) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
-            hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] < 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
+            hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
             total += damageSingle;
         }
         if (total > 0) {

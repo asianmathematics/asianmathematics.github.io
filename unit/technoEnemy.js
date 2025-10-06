@@ -1,10 +1,10 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 50, 60, 6, undefined, undefined, 150, 15], ["Harmonic/Change", "Anomaly/Synthetic"], function() {
+export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 90, 40, 110, 110, "mid", 50, 80, 10, undefined, undefined, 150, 15], ["Harmonic/Change", "Anomaly/Synthetic"], function() {
     this.actions.laserBlast = {
         name: "Laser Blast [energy]",
-        properties: ["techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "attack"],
+        properties: ["techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "attack", "multitarget"],
         cost: { energy: 25 },
         description: "Costs 25 energy\nAttacks up to 2 targets 2 times",
         code: () => {
@@ -37,16 +37,23 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
         name: "Nanite Repair [energy]",
         properties: ["techno", "energy", "harmonic/change", "anomaly/synthetic", "heal"],
         cost: { energy: 40 },
-        description: "Costs 40 energy\nModerately heals an ally (~10% of max HP), does Laser Blast if no ally needs healing",
+        description: "Costs 40 energy\Heals an ally somewhat (~20% of max HP), does Laser Blast if no ally needs healing",
         code: () => {
             const allies = unitFilter("enemy", "", false).filter(unit => unit.hp < unit.base.hp);
             if (allies.length > 0) {
                 this.previousAction[2] = true;
                 this.resource.energy -= 40;
                 const target = [randTarget(allies)];
+                let elementBonus = 0;
+                if (target[0].elements.includes("Harmonic/Change")) { elementBonus++ }
+                if (target[0].elements.includes("Anomaly/Synthetic")) { elementBonus++ }
+                if (target[0].elements.includes("Goner/Entropy") || target[0].elements.includes("Inertia/Cold")) { elementBonus-- }
+                if (target[0].elements.includes("Radiance/Purity") || target[0].elements.includes("Nature/Life")) { elementBonus-- }
+                if (elementBonus < 0) { elementBonus = 2 ** elementBonus }
+                else { elementBonus++ }
                 const self = this;
-                if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: self.actions.naniteRepair, unit: target[0], resource: ['hp'], value: [target[0].resource.healFactor] }) }
-                target[0].hp = Math.min(target[0].base.hp, target[0].hp + target[0].resource.healFactor);
+                if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: self.actions.naniteRepair, unit: target[0], resource: ['hp'], value: [target[0].resource.healFactor * elementBonus] }) }
+                target[0].hp = Math.min(target[0].base.hp, target[0].hp + (target[0].resource.healFactor * elementBonus));
                 logAction(`${this.name} repairs ${target[0].name}!`, "heal");
             } else { this.actions.laserBlast.code(); }
         }
@@ -54,12 +61,12 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
 
     this.actions.overcharge = {
         name: "Overcharge [stamina, energy]",
-        properties: ["physical", "stamina", "techno", "energy", "harmonic/change", "anomaly/synthetic", "buff"],
+        properties: ["physical", "stamina", "techno", "energy", "harmonic/change", "anomaly/synthetic", "buff", "resource"],
         cost: { stamina: 10, energy: 30 },
         description: "Costs 10 stamina & 30 energy\nIncreases attack and speed for 2 turns",
         code: () => {
             const statIncrease = [0.4, 0.3];
-            this.previousAction[0]= this.previousAction[2] = true;
+            this.previousAction[0] = this.previousAction[2] = true;
             this.resource.stamina -= 10;
             this.resource.energy -= 30;
             logAction(`${this.name}'s systems overcharge!`, "buff");
@@ -71,14 +78,14 @@ export const technoEnemy = new Unit("Techno Drone", [475, 40, 12, 20, 105, 20, 9
     this.actions.backupPower = {
         name: "Backup Power [stamina]",
         properties: ["physical", "stamina", "harmonic/change", "anomaly/synthetic", "resource"],
-        cost: { stamina: 20 },
-        description: `Costs 20 stamina\nRecovers a lot of energy (${this.resource.energyRegen * 4})`,
+        cost: { stamina: 30 },
+        description: `Costs 40 stamina\nRecovers a lot of energy (${this.resource.energyRegen * 3})`,
         code: () => {
             this.previousAction[0] = true;
-            this.resource.stamina -= 20;
+            this.resource.stamina -= 30;
             const self = this;
-            if (eventState.resourceChange.flag) {handleEvent('resourceChange', { effect: self.actions.backupPower, unit: self, resource: ['energy'], value: [self.resource.energyRegen * 4] }) }
-            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + (this.resource.energyRegen * 4) );
+            if (eventState.resourceChange.flag) {handleEvent('resourceChange', { effect: self.actions.backupPower, unit: self, resource: ['energy'], value: [self.resource.energyRegen * 3] }) }
+            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + (this.resource.energyRegen * 3) );
             logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };

@@ -29,7 +29,7 @@ export const Servant = new Unit("Servant", [660, 55, 15, 60, 110, 35, 125, 30, 1
             this.resource.stamina -= 60;
             this.previousAction[0] = true;
             logAction(`${this.name} takes out the trash!`, "action");
-            damage(this, target, [[this.focus / 50]]);
+            damage(this, target, [[this.focus / Math.min(50, 2 * target[0].resist)]]);
         }
     };
 
@@ -48,7 +48,7 @@ export const Servant = new Unit("Servant", [660, 55, 15, 60, 110, 35, 125, 30, 1
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
             const self = this;
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["presence", "focus", "resist", "evasion"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["presence", "focus", "resist", "evasion"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 

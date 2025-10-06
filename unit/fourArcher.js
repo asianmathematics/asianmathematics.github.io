@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 45, 90, 115, "back", 40, 60, 4, 80, 6], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
+export const FourArcher = new Unit("4 (Archer)", [400, 30, 7, 30, 110, 30, 130, 45, 77, 115, "back", 40, 60, 4, 80, 6], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
     this.actions.perfectShot = {
         name: "Perfect Shot [mystic]",
         properties: ["mystic", "radiance/purity", "attack"],
@@ -10,7 +10,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 
         code: (target) => {
             this.previousAction[1] = true;
             logAction(`${this.name} shoots a mystic arrow!`, "action");
-            attack(this, target, 1, { attacker: { accuracy: this.accuracy * 1.75, focus: this.focus * 2.5 } });
+            attack(this, target, 1, { attacker: { accuracy: this.accuracy * 1.5, focus: this.focus * 2 } });
         }
     };
 
@@ -46,7 +46,7 @@ export const FourArcher = new Unit("4 (Archer)", [440, 40, 7, 35, 110, 30, 135, 
             }
             const statIncrease = [0.75, 0.75, 0.25, 0.25, 0.25];
             this.resource.mana -= 40;
-            this.previousAction = [false, true, false];
+            this.previousAction[1] = true;
             logAction(`${this.name} becomes luckier!`, "buff");
             const self = this;
 			basicModifier("Lucky Aura", "Increased luck", { caster: self, targets: [self], duration: 4, attributes: ["mystic"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["accuracy", "focus", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });

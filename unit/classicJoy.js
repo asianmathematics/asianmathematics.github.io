@@ -3,11 +3,19 @@ import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, set
 
 export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 120, 30, 90, 110, "back", 40, 120, 15, undefined, undefined, 90, 10], ["Death/Darkness", "Goner/Entropy", "Anomaly/Synthetic", "Independence/Loneliness", "Ingenuity/Insanity"], function() {
     this.actions.rapidFire = {
-        name: "Rapid Fire [physical, techno]",
-        properties: ["physical", "techno", "attack", "buff"],
-        description: "Attacks a single target twice but increases speed for 1 turn",
-        target: () => { selectTarget(this.actions.rapidFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        name: "Rapid Fire [physical, energy]",
+        properties: ["physical", "techno", "energy", "attack", "buff"],
+        cost: { energy: 10 },
+        description: "Costs 10 energy\nAttacks a single target twice but increases speed for 1 turn",
+        target: () => {
+            if (this.resource.energy < 10) {
+                showMessage("Not enough energy!", "error", "selection");
+                return;
+            }
+            selectTarget(this.actions.rapidFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+        },
         code: (target) => {
+            this.resource.energy -= 10;
             const statIncrease = [0.4];
             this.previousAction[0] = this.previousAction[2] = true;
             attack(this, target, 2);
@@ -21,7 +29,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "attack"],
         cost: { energy: 30 },
-        description: "Costs 30 energy\nAttacks a single target 3 times with increased accuracy and crit damage",
+        description: "Costs 30 energy\nAttacks a single target 4 times with increased accuracy and crit damage",
         target: () => {
             if (this.resource.energy < 30) {
                 showMessage("Not enough energy!", "error", "selection");
@@ -33,7 +41,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 
             this.resource.energy -= 30;
             this.previousAction[2] = true;
             logAction(`${this.name} fires at ${target[0].name}!`, "action");
-            attack(this, target, 4, { attacker: { accuracy: this.accuracy * 1.5, lethality: this.lethality * 1.7 } });
+            attack(this, target, 4, { attacker: { accuracy: this.accuracy * 1.75, lethality: this.lethality * 2 } });
         }
     };
 
@@ -71,7 +79,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 
         description: "Moderately heals target (~10% max HP)",
         target: () => { selectTarget(this.actions.synthesizeMedicine, () => { playerTurn(this) }, [1, true, unitFilter("player", "")]) },
         code: (target) => {
-            this.previousAction = [false, false, true];
+            this.previousAction[2] = true;
             let elementBonus = 0;
             if (target[0].elements.includes("Anomaly/Synthetic")) { elementBonus++ }
             if (target[0].elements.includes("Radiance/Purity") || target[0].elements.includes("Nature/Life")) { elementBonus-- }
@@ -112,30 +120,36 @@ export const ClassicJoy = new Unit("Classical (Joy)", [380, 60, 8, 60, 110, 15, 
                     else { resetStat(target[0], mod.vars.buffs, mod.vars.buffValues, false) }
                 }
                 logAction(`${this.name} reapplies Joy on ${target[0].name}!`, "buff");
-                mod.vars = { caster: self, targets: target, duration: 15, elements: ["death/darkness", "goner/entropy", "harmonic/change", "anomaly/synthetic", "ingenuity/insanity"], buffs: ["accuracy", "focus", "defense", "resist"], buffValues: statIncrease, debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: statDecrease, listeners: { turnStart: true, actionStart: false }, cancel: false, applied: true, focus: false, penality: false, mod };
+                mod.vars.duration = 15;
+                mod.vars.elements = ["death/darkness", "goner/entropy", "harmonic/change", "anomaly/synthetic", "ingenuity/insanity"];
+                mod.vars.buffs = ["accuracy", "focus", "defense", "resist"];
+                mod.vars.buffValues = statIncrease;
+                mod.vars.debuffs = ["attack", "defense", "evasion", "speed", "accuracy"];
+                mod.vars.debuffValues = statDecrease;
+                mod.vars.listeners = { turnStart: true, actionStart: false };
+                mod.vars.cancel = false;
+                mod.vars.applied = true;
+                mod.vars.focus = false;
+                mod.vars.penality = false;
+                mod.vars.mod = null;
                 mod.init();
             } else {
                 const self = this;
                 logAction(`${this.name} gives ${target[0].name} some joy!`, "buff");
                 new Modifier("Joy", "Overall increase?",
-                    { caster: self, targets: target, duration: 15, elements: ["death/darkness", "goner/entropy", "harmonic/change", "anomaly/synthetic", "ingenuity/insanity"], buffs: ["accuracy", "focus", "defense", "resist"], buffValues: statIncrease, debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: statDecrease, listeners: { turnStart: true, actionStart: false }, cancel: false, applied: true, focus: false, penality: false, mod },
+                    { caster: self, targets: target, duration: 15, elements: ["death/darkness", "goner/entropy", "harmonic/change", "anomaly/synthetic", "ingenuity/insanity"], buffs: ["accuracy", "focus", "defense", "resist"], buffValues: statIncrease, debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: statDecrease, listeners: { turnStart: true, actionStart: false }, cancel: false, applied: true, focus: false, penality: false, mod: null },
                     (vars) => {
-                        vars.mod = modifiers.find(m => m.name === "Joy" && m.vars.targets.includes(target[0]));
+                        vars.mod = modifiers.find(m => m.name === "Joy" && m.vars.targets[0] === vars.targets[0]);
                         let elementBonus = 0;
                         if (vars.targets[0].elements.includes("Death/Darkness")) { elementBonus++ }
                         if (vars.targets[0].elements.includes("Anomaly/Synthetic")) { elementBonus++ }
-                        if (vars.targets[0].elements.includes("Light/Illusion")) { elementBonus-- }
-                        if (vars.targets[0].elements.includes("Knowledge/Memory")) { elementBonus-- }
-                        if (vars.targets[0].elements.includes("Inertia/Cold")) { elementBonus-- }
-                        if (vars.targets[0].elements.includes("Radiance/Purity")) { elementBonus-- }
-                        if (vars.targets[0].elements.includes("Nature/Life")) { elementBonus-- }
-                        if (vars.targets[0].elements.includes("Ingenuity/Insanity")) { elementBonus += 3 }
+                        if (vars.targets[0].elements.includes("Light/Illusion") || vars.targets[0].elements.includes("Radiance/Purity")) { elementBonus-- }
+                        if (vars.targets[0].elements.includes("Radiance/Purity") || vars.targets[0].elements.includes("Nature/Life")) { elementBonus-- }
+                        if (vars.targets[0].elements.includes("Ingenuity/Insanity")) { elementBonus += 2 }
                         if (eventState.elementEffect.flag) { handleEvent('elementEffect', { effect: vars.mod, target: vars.targets[0], elementBonus }) }
                         if (elementBonus !== 0) {
-                            if (elementBonus < 0) { elementBonus = 2 ** elementBonus }
-                            else { elementBonus++ }
-                            for (let i = 0; i < vars.buffValues.length; i++) { vars.buffValues[i] *= elementBonus }
-                            for (let i = 0; i < vars.debuffValues.length; i++) { vars.debuffValues[i] *= elementBonus }
+                            for (let i = 0; i < vars.buffValues.length; i++) { vars.buffValues[i] *= 1.5 ** elementBonus }
+                            for (let i = 0; i < vars.debuffValues.length; i++) { vars.debuffValues[i] *= (2/3) ** elementBonus }
                         }
                         resetStat(vars.targets[0], vars.buffs, vars.buffValues);
                     },

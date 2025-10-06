@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95, 50, 85, 150, "front", 99, 200, 25], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity"], function() {
+export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95, 50, 85, 150, "front", 99, 200, 30], ["Harmonic/Change", "Inertia/Cold", "Radiance/Purity"], function() {
     this.actions.hammer = {
         name: "Hammer [physical]",
         properties: ["physical", "attack", "buff"],
@@ -30,35 +30,38 @@ export const DexSoldier = new Unit("DeX (Soldier)", [770, 50, 20, 20, 90, 20, 95
             this.resource.stamina -= 40;
             this.previousAction[0] = true;
             logAction(`${this.name} hits the ground to create a tremor!`, "action");
-            attack(this, unitFilter("enemy", "front", false), 2, { attacker: { accuracy: this.accuracy * 0.75, attack: this.attack * 0.5 } });
+            attack(this, unitFilter("enemy", "front", false), 2, { attacker: { attack: this.attack * 0.75 } });
         }
     };
 
     this.actions.determination = {
         name: "Determination [stamina]",
-        properties: ["physical", "stamina", "harmonic/change", "inertia/cold", "radiance/purity", "heal", "buff"],
-        cost: { stamina: 80 },
-        description: `Costs 80 stamina\nModerately heals (${this.resource.healFactor} HP) this turn and the next 2 turns`,
+        properties: ["physical", "stamina", "harmonic/change", "inertia/cold", "radiance/purity", "heal"],
+        cost: { stamina: 60 },
+        description: `Costs 60 stamina\nModerately heals (${this.resource.healFactor} HP) for 3 turns`,
         code: () => {
-            if (this.resource.stamina < 80) {
+            if (this.resource.stamina < 60) {
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            this.resource.stamina -= 80;
+            this.resource.stamina -= 60;
             this.previousAction[0] = true;
-            logAction(`${this.name} held onto hope!`, "action");
+            logAction(`${this.name} held onto hope!`, "heal");
             const self = this;
             new Modifier("Determination", "Healing over time",
-                { caster: self, targets: [self], duration: 2, attributes: ["physical"], stats: "hp", values: self.resource.healFactor, listeners: {turnStart: true}, cancel: false, applied: true, focus: true, mod },
+                { caster: self, targets: [self], duration: 2, attributes: ["physical"], stats: ["hp"], values: [self.resource.healFactor], listeners: {turnStart: true}, cancel: false, applied: true, focus: true, mod: null },
                 (vars) => {
                     vars.mod = modifiers.find(m => m.name === "Determination" && m.vars.caster === vars.caster);
-                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: vars.mod, unit: vars.caster, resource: ['hp'], value: [vars.value] }) }
-                    this.hp = Math.min(vars.caster.hp + vars.caster.values, vars.caster.base.hp);
+                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: vars.mod, unit: vars.caster, resource: ['hp'], value: vars.values }) }
+                    vars.caster.hp = Math.min(vars.caster.hp + vars.values[0], vars.caster.base.hp);
                 },
                 (vars, context) => {
                     if (vars.caster === context.unit) {
-                        if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: vars.mod, unit: vars.caster, resource: ['hp'], value: [vars.value] }) }
-                        if (vars.applied) { context.unit.hp = Math.min(context.unit.hp + vars.values, context.unit.base.hp) }
+                        if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: vars.mod, unit: vars.caster, resource: ['hp'], value: vars.values }) }
+                        if (vars.applied) {
+                            vars.caster.hp = Math.min(vars.caster.hp + vars.values[0], vars.caster.base.hp);
+                            logAction(`${this.name} held onto hope!`, "heal");
+                        }
                         vars.duration--;
                     }
                     if (vars.duration === 0) { return true }

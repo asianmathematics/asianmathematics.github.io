@@ -8,7 +8,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
         description: "Attacks a single target 4 times.",
         target: () => { selectTarget(this.actions.iceshock, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (target) => {
-            this.previousAction = [false, true, false];
+            this.previousAction[1] = true;
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
             attack(this, target, 4);
         }
@@ -34,9 +34,9 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
                 logAction(`${this.name} freezes ${target[0].name}!`, "action");
                 const self = this;
                 new Modifier("Perfect Freeze", "stun effect",
-                    { caster: self, targets: target, duration: 1, attributes: ["mystic"], elements: ["inertia/cold"], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, mod, modlist },
+                    { caster: self, targets: target, duration: 1, attributes: ["mystic"], elements: ["inertia/cold"], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, mod: null, modlist: null },
                     (vars) => {
-                        vars.mod = modifiers.find(m => m.name === "Perfect Freeze" && m.vars.targets.includes(target[0]) && m.vars.caster === vars.caster);
+                        vars.mod = modifiers.findLast(m => m.name === "Perfect Freeze" && m.vars.targets.includes(target[0]) && m.vars.caster === vars.caster);
                         vars.targets[0].stun = true;
                         if (eventState.stun.flag) {handleEvent('stun', { effect: vars.mod, unit: vars.targets[0], stun: true }) }
                         if (vars.targets[0].stun) {
@@ -108,7 +108,7 @@ export const Dark = new Unit("Dark", [550, 75, 18, 50, 115, 45, 120, 35, 125, 17
         name: "Dispel Magic [mana]",
         properties: ["mystic", "mana", "intertia/cold", "debuff", "resource"],
         cost: { mana: 60 },
-        description: "Costs 60 mana\nSets target's mana to 0, disables mana regeneration for next turn, and ends all mystic modifers it's focusing",
+        description: "Costs 60 mana\nSets target's mana to 0, disables mana regeneration for next turn, and ends all mystic modifers it\'s focusing",
         target: () => {
             if (this.resource.mana < 60) {
                 showMessage("Not enough mana!", "error", "selection");
