@@ -106,7 +106,7 @@ Damage function (HP can't go below 0):<br>
 <p style="text-align: center;">If Critical < 1:</p> \[Damage_{Normal} = Attack_{Attacker} - Defense_{Defender}\] <p style="text-align: center">(Multiplied by a random number between .75 to 1.25, Minimum of 10% of attack or 1)</p><br><br>
 <p style="text-align: center;">If Critical ≥ 1:</p> \[Damage_{Critical} = Damage_{Normal} \text{ (Minimum increased by * Critical)} + Lethality_{Attacker} * Critical\]<br><br>
 Debuff (debuff is applied if number is positive, auto apply on 100 and auto fail on 1, denominator can't go below 20):<br>
-\[Debuff = \frac{Presence_{Attacker} + Crit_{Attacker}}{200-(Presence_{Attacker} + Crit_{Attacker}) + (Presence_{Defender} + Resist_{Defender})} + Roll - DebuffSpecificConstant\]
+\[Debuff = \frac{Presence_{Attacker} + Focus_{Attacker}}{200-(Presence_{Attacker} + Focus_{Attacker}) + (Presence_{Defender} + Resist_{Defender})} + Roll - DebuffSpecificConstant\]
 </body>
 <script type="module">
     import { Electric } from './unit/electric.js';
