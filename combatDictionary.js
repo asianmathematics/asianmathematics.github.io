@@ -44,7 +44,7 @@ class Modifier {
         }
         if (eventState.modifierStart.flag) { handleEvent('modifierStart', { modifier: this }) }
         currentMod.push(this);
-        this.init.call(this, this.vars);
+        this.init();
         currentMod.pop();
         this.vars.start = true;
         window.updateModifiers();
@@ -55,10 +55,11 @@ function handleEvent(eventType, context) {
     for (let i = eventState[eventType].listeners.length - 1; i >= 0; i--) {
         if (!eventState[eventType].listeners[i].vars.start) { continue }
         currentMod.push(eventState[eventType].listeners[i]);
-        try { if (eventState[eventType].listeners[i].onTurn.call(eventState[eventType].listeners[i], eventState[eventType].listeners[i].vars, context)) { removeModifier(eventState[eventType].listeners[i]) } }
+        try { if (eventState[eventType].listeners[i].onTurn(context)) { removeModifier(eventState[eventType].listeners[i]) } }
         catch (e) {
             console.error(`Error in ${eventType} listener (${eventState[eventType].listeners[i]?.name}):`, e);
             removeModifier(eventState[eventType].listeners[i]);
+            logAction(`An error occurred with a modifier.`, "error");
         }
         currentMod.pop();
     }
@@ -85,8 +86,8 @@ function removeModifier(modifier) {
             }
         }
     }
-    const index = currentMod.indexOf(modifier);
-    if (index !== -1) { currentMod.splice(index, 1) }
+    const index = modifiers.indexOf(modifier);
+    if (index !== -1) { modifiers.splice(index, 1) }
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
@@ -478,38 +479,38 @@ function elementInteraction(attacker, defender, actionOverride = null) {
 function basicModifier(name, description, vari) {
     if (vari.targets.length === 1) {
         return new Modifier(name, description, vari,
-            function(vars) { resetStat(vars.targets[0], vars.stats, vars.values) },
-            function(vars, context) {
-                if (vars.cancel && vars.applied) {
-                    resetStat(vars.targets[0], vars.stats, vars.values, false);
-                    vars.applied = false;
+            function() { resetStat(this.vars.targets[0], this.vars.stats, this.vars.values) },
+            function(context) {
+                if (this.vars.cancel && this.vars.applied) {
+                    resetStat(this.vars.targets[0], this.vars.stats, this.vars.values, false);
+                    this.vars.applied = false;
                 }
-                else if (!vars.cancel && !vars.applied) {
-                    resetStat(vars.targets[0], vars.stats, vars.values);
-                    vars.applied = true;
+                else if (!this.vars.cancel && !this.vars.applied) {
+                    resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
+                    this.vars.applied = true;
                 }
-                if (vars.targets[0] === context.unit) { vars.duration-- }
-                if (vars.duration <= 0) { return true }
+                if (this.vars.targets[0] === context.unit) { this.vars.duration-- }
+                if (this.vars.duration <= 0) { return true }
             }
         );
     } else {
         return new Modifier(name, description, vari,
-            function(vars) { for (const unit of vars.targets) { resetStat(unit, vars.stats, vars.values) } },
-            function(vars, context) {
-                if (vars.cancel && vars.applied) {
-                    for (const unit of vars.targets) {
-                        resetStat(unit, vars.stats, vars.values, false);
-                        vars.applied = false;
+            function() { for (const unit of this.vars.targets) { resetStat(unit, this.vars.stats, this.vars.values) } },
+            function(context) {
+                if (this.vars.cancel && this.vars.applied) {
+                    for (const unit of this.vars.targets) {
+                        resetStat(unit, this.vars.stats, this.vars.values, false);
+                        this.vars.applied = false;
                     }
                 }
-                else if (!vars.cancel && !vars.applied) {
-                    for (const unit of vars.targets) {
-                        resetStat(unit, vars.stats, vars.values);
-                        vars.applied = true;
+                else if (!this.vars.cancel && !this.vars.applied) {
+                    for (const unit of this.vars.targets) {
+                        resetStat(unit, this.vars.stats, this.vars.values);
+                        this.vars.applied = true;
                     }
                 }
-                if (vars.caster === context.unit) { vars.duration-- }
-                if (vars.duration <= 0) { return true }
+                if (this.vars.caster === context.unit) { this.vars.duration-- }
+                if (this.vars.duration <= 0) { return true }
             }
         );
     }
