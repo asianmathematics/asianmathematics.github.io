@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turn-Based Combat Game</title>
     <link rel="stylesheet" href="combat.css">
+    <style></style>
 </head>
 <body>
-    <h1>Turn-Based Combat Game</h1>
-    <a href="./tutorial.html">Squad Combat Tutorial</a>
+    <h1 style="font-size:84px;text-align:center;margin:6px">Turn-Based Combat Game</h1>
     
     <div id="game-controls">
         <button class="action-button" id="combatStart">Start Combat</button>
@@ -25,19 +25,6 @@
     </div>
     
     <div class="game-layout">
-        <div class="left-column">
-            <div id="selection">
-            </div>
-            
-            <div id="message-container" class="message-container">
-            </div>
-            
-            <div id="action-log-container">
-                <h3>Combat Log</h3>
-                <div id="action-log"></div>
-            </div>
-        </div>
-        
         <div class="right-column">
             <div id="battle-container">
                 <div class='modifiers-container'>
@@ -55,8 +42,23 @@
                 </div>
             </div>
         </div>
+        <div class="left-column">
+            <div id="selection">
+            </div>
+            
+            <div id="message-container" class="message-container">
+            </div>
+            
+            <div id="action-log-container">
+                <h3>Combat Log</h3>
+                <div id="action-log"></div>
+            </div>
+        </div>
     </div>
 
+    <div class="info-display"></div>
+    
+    <a href="./tutorial.html">Squad Combat Tutorial</a>
     <p style="color:white">Hover over (or hold on mobile) action buttons to see description</p>
 
     <script type="module">

@@ -42,11 +42,10 @@
 
 * **HP**: Unit’s health. Reaching 0 has a small chance of losing that duplicate. Battalion HP is equal to 1/10th Unit HP times number of units, once Battalion HP drops by 1/10th Unit HP, number of units decrease.  
 * **Attack**: Amount of damage dealt to enemy from an attack.  
-* **Defense**: Amount of damage reduced from attacks. Can reduce up to 90% of the damage..  
-* **Lethality**: Bonus damage from criticals. Only in Squad mode.  
+* **Defense**: Amount of damage reduced from attacks. Can reduce up to 90% of the damage.
 * **Accuracy**: Increase chance to hit an attack. Minimum chance to hit of 15%. Only in Squad mode.  
 * **Evasion**: Decrease chance to get attacked. Only in Squad mode.  
-* **Crit**: Increase critical and debuff chance. Multiple criticals can stack. Only in Squad mode.  
+* **Focus**: Increase critical and debuff chance. Multiple criticals can stack. Only in Squad mode.  
 * **Resist**: Decrease critical and debuff chance. Only in Squad mode.  
 * **Speed**: Increases turn frequency. More units a Battalion has, the lower its speed.  
 * **Presence**: Increases chance to get targeted, and adds onto crit and resist for debuff calculations.
@@ -57,7 +56,7 @@
 * **Power**: Gain xp from unspent duplicates or sacrifices, 128 hard cap, increases base stats. Only 3★/4★/5★ has power, 1★/2★ rely more on duplicates. Certain skills and environments can modify a unit's power.  
 * **Power Chains**: Higher-star units can only have as much power as the power of specific lower-star units (e.g., a 5★ power is soft capped by a specific 4★’s power, but 3★ is not capped by 2★'s power).  
 * **Sacrifice**: Sacrifice a unit to the same unit or a compatible higher star unit. Sacrificing a unit loses the duplicate, but gives a lot of power (e.g. 2★ sacrifice \> 4★ unspent duplicate).  
-* **Prestige**: At max level, reset a 3★/4★ unit's level to boost a 4★/5★ unit’s power and level. Loses a duplicate of that unit.
+* **Prestige**: At max level, reset a 3★/4★/5★ unit's level to boost a 4★/5★/6★ unit’s power and level. Loses a duplicate of that unit.
 
 3. ### Attributes
 

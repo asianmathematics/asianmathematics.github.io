@@ -1,11 +1,12 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 25, 115, 160, "front", 44, 140, 15, 180, 20], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
+export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 130, 160, "front", 120, 80, 10, 120, 20], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
         properties: ["mystic", "attack"],
         description: "Attacks a single target 4 times.",
+        points: 60,
         target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
         code: (target) => {
             this.previousAction[1] = true;
@@ -17,80 +18,73 @@ export const Dandelion = new Unit("Dandelion", [400, 60, 12, 45, 115, 40, 120, 2
     this.actions.focusFire = {
         name: "Focus Fire [mana, physical]",
         properties: ["mystic", "mana", "physical", "attack"],
-        cost: { mana: 30 },
-        description: "Costs 30 mana\nHits a single target twice with increased accuracy and damage",
+        cost: { mana: 10 },
+        description: "Costs 10 mana\nHits a single target 3 times with increased accuracy and damage",
+        points: 60,
         target: () => {
-            if (this.resource.mana < 30) {
+            if (this.resource.mana < 10) {
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
             selectTarget(this.actions.focusFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
         },
         code: (target) => {
-            this.resource.mana -= 30;
+            this.resource.mana -= 10;
             this.previousAction[0] = this.previousAction[1] = true;
             logAction(`${this.name} focus fires on ${target[0].name}!`, "action");
-            attack(this, target, 2, { attacker: { accuracy: this.accuracy * 1.25, attack: this.attack * 1.5 } });
+            attack(this, target, 3, { attacker: { accuracy: this.accuracy + 30, attack: this.attack + 28 } });
         }
     };
 
-    this.actions.bulletHell = {
-        name: "Bullet Hell [mana]",
+    this.actions.danmaku = {
+        name: "Danmaku [mana]",
         properties: ["mystic", "mana", "attack", "debuff", "multitarget"],
-        cost: { mana: 60 },
-        description: "Costs 60 mana\nDecreases evasion for 1 turn\nHits up to 4 random enemies 6 times with decreased accuracy and damage",
+        cost: { mana: 50 },
+        description: "Costs 50 mana\nAttacks 4 random enemies 6 times with decreased accuracy and damage, decreases evasion for 1 turn",
+        points: 60,
         code: () => {
-            if (this.resource.mana < 60) {
+            if (this.resource.mana < 50) {
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            const statDecrease = [-0.5];
-            this.resource.mana -= 60;
+            const statDecrease = [-20];
+            this.resource.mana -= 50;
             this.previousAction[1] = true;
-            logAction(`${this.name} shoots some damaku!`, "action");
-            let target = unitFilter("enemy", "front", false);
-            if (target.length > 4) { target = randTarget(target, 4, true) }
-            attack(this, target, 6, { attacker: { accuracy: this.accuracy * 0.75, attack: this.attack * 0.5 } });
-            const self = this;
-            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
+            logAction(`${this.name} shoots some danmaku!`, "action");
+            attack(this, randTarget(unitFilter("enemy", "front", false), 4, true), 6, { attacker: { accuracy: this.accuracy - 36, attack: this.attack - 20, focus: this.focus - 50 } });
+            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
 
     this.actions.feint = {
         name: "Feint [stamina]",
         properties: ["physical", "stamina", "light/illusion", "buff"],
-        cost: { stamina: 40 },
-        description: "Costs 40 stamina\nIncreases defense, evasion, and presense for 1 turn", 
-        code: () => {
-            if (this.resource.stamina < 40) {
-                showMessage("Not enough stamina!", "error", "selection");
-                return;
-            }
-            const statIncrease = [0.5, 1.5, 2]
-            this.resource.stamina -= 40;
-            this.previousAction[0] = true;
-            logAction(`${this.name} draws attention to himself!`, "action");
-            const self = this;
-            basicModifier("Feint", "Defense, evasion, and presence increase", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
-        }
-    };
-
-    this.actions.dodge = {
-        name: "Dodge [stamina]",
-        properties: ["physical", "stamina", "buff"],
         cost: { stamina: 20 },
-        description: "Costs 20 stamina\nIncreases evasion for 1 turn",
+        description: "Costs 20 stamina\nGreatly increases defense, evasion, and presence for 1 turn",
+        points: 60,
         code: () => {
             if (this.resource.stamina < 20) {
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            const statIncrease = [2];
+            const statIncrease = [12, 20, 100];
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
+            logAction(`${this.name} draws attention to himself!`, "action");
+            basicModifier("Feint", "Defense, evasion, and presence increase", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+        }
+    };
+
+    this.actions.dodge = {
+        name: "Dodge [physical]",
+        properties: ["physical", "buff"],
+        description: "Slightly increases defense and resist, slightly decreases presence, and increases evasion for 1 turn",
+        points: 60,
+        code: () => {
+            const statIncrease = [2, 12, 7, -2];
+            this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            const self = this;
-            basicModifier("Dodge", "Evasion increased", { caster: self, targets: [self], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 });

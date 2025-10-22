@@ -6,6 +6,7 @@ import { DexSoldier } from './unit/dexSoldier.js';
 import { Dandelion } from './unit/dandelion.js';
 import { FourArcher } from './unit/fourArcher.js';
 import { Paragon } from './unit/paragon.js';
+import { Righty001 } from './unit/righty001.js';
 import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
@@ -15,17 +16,18 @@ let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
 
-const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon];
+const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001];
 let selectedUnits = [];
 
 Dark.description = "5 star mystic unit with high evasion, speed, and offensive capabilities";
 Electric.description = "4 star magitech unit with high versatility";
 Servant.description = "4 star unit with stealth and critical hit capabilities";
-ClassicJoy.description = "3 star techno backline unit with high attack, low speed, and healing";
+ClassicJoy.description = "4 star techno backline unit with high attack, low speed, and healing";
 DexSoldier.description = "3 star unit with strong offensive and tank abilities and low speed";
 Dandelion.description = "4 star mystic unit with decent evasion, speed, and offensive capabilities";
 FourArcher.description = "3 star mystic backline unit with high luck and low speed";
-Paragon.description = "5 star techno backline unit with low offensive capabilities and good healing"
+Paragon.description = "5 star techno backline unit with low offensive capabilities and good healing";
+Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
 
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
@@ -49,6 +51,8 @@ function initUnitSelection() {
         tooltip.appendChild(tooltipText);
         card.appendChild(tooltip);
         card.addEventListener('click', () => {
+            unit.actionsInit();
+            updateInfoDisplay(unit);
             if (selectedUnits.length >= 4 && !card.classList.contains('selected')) {
                 showMessage('Maximum 4 units allowed!', 'warning', 'selection');
                 return;
@@ -89,6 +93,7 @@ function renderSelectedUnits() {
         card.className = 'unit-card selected';
         card.innerHTML = `<strong>${unit.name}</strong>`;
         container.appendChild(card);
+        card.addEventListener('click', () => { updateInfoDisplay(unit) })
     });
 }
 
@@ -100,6 +105,43 @@ function startCombatWithSelected() {
     createUnit(magitechEnemy, 'enemy');
     updateBattleDisplay();
     combatTick();
+}
+
+function updateInfoDisplay(unit) {
+    const infoDisplay = document.querySelector('.info-display');
+    if (!infoDisplay || !unit) return;
+    let html = `<div class="left-column">
+            <h3>${unit.name}</h3>
+            <h4>Stats (Current)</h4>`;
+    for (const statName of ['hp', 'attack', 'defense', 'accuracy', 'evasion', 'focus', 'resist', 'speed', 'presence']) {
+        if (statName === 'hp') { html += `<div class="stat-line"><span><strong>HP</strong></span><span>${Math.max(0, unit.hp).toFixed(0)} / ${unit.base.hp.toFixed(0)}</span></div>` }
+        else if (unit[statName] !== undefined) { html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit[statName].toFixed(0)}</span></div>` }
+        else if (unit.base[statName] !== undefined) { html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit.base[statName].toFixed(0)}</span></div>` }
+    }
+    html += `<h4>Resources</h4>`;
+    for (const resName in unit.resource) {
+        const resValue = unit.resource[resName].toFixed(0);
+        const label = resName.charAt(0).toUpperCase() + resName.slice(1);
+        if (!unit.mult.resource[resName]) { html += `<div class="stat-line"><span>${label}</span><span>${resValue} / ${unit.base.resource[resName].toFixed(0)}</span></div>` }
+        else { html += `<div class="stat-line"><span>${label}</span><span>${resValue}</span></div>` }
+    }
+    html += `</div>`;
+    if (unit.actions && Object.keys(unit.actions).length > 0) {
+        html += `<div class="right-column">
+            <h4>Actions</h4>`;
+        for (const actionKey in unit.actions) {
+            const action = unit.actions[actionKey];
+            html += `<div class="action-info-box">`;
+            html += `<div class="action-name">${action.name}</div>`;
+            let costs = [];
+            for (const costType in action.cost) { if (action.cost[costType] > 0) { costs.push(`${action.cost[costType]} ${costType.charAt(0).toUpperCase() + costType.slice(1)}`) } }
+            html += `<p><strong>Cost:</strong> ${costs.length > 0 ? costs.join(', ') : 'None'}</p>
+                <p><strong>Description:</strong><br>${action.description ? action.description.replace(/\n/g, '<br>') : 'No description available.'}</p>`;
+            if (action.properties && action.properties.length > 0) { html += `<p><strong>Properties:</strong> ${action.properties.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')}</p>` }
+            html += `</div>`;
+        }
+    } else { html += `<p>No active actions for this unit.</p>` }
+    infoDisplay.innerHTML = html + '</div>';
 }
 
 export function startCombat() {
@@ -253,6 +295,7 @@ export function createUnit(unit, team) {
 function cloneUnit(unit) {
     const newUnit = {
         name: unit.name,
+        description: unit?.description,
         previousAction: [false, false, false],
         base: structuredClone(unit.base),
         mult: structuredClone(unit.mult),
@@ -267,17 +310,16 @@ function cloneUnit(unit) {
     newUnit.actionsInit = unit.actionsInit;
     for (const stat in newUnit.base) {
         if (typeof newUnit.base[stat] === 'object') { continue }
-        if (newUnit.mult[stat] === undefined) { newUnit[stat] = newUnit.base[stat] }
-        else { resetStat(newUnit, [stat]) }
+        newUnit[stat] = newUnit.base[stat];
     }
     return newUnit;
 }
 
 function regenerateResources(unit) {
-    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: regenerateResources, unit, resource: 'null' }) }
-    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + unit.resource.staminaRegen)) }
-    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + unit.resource.manaRegen)) }
-    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + unit.resource.energyRegen)) }
+    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: regenerateResources, unit, resource: [] }) }
+    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + unit.resource.staminaRegen + Number.EPSILON)) }
+    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + unit.resource.manaRegen + Number.EPSILON)) }
+    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + unit.resource.energyRegen + Number.EPSILON)) }
     unit.previousAction = [false, false, false];
 }
 
@@ -313,8 +355,11 @@ function frontTest() {
     if (!playersAlive.length) {
         const midLine = unitFilter("player", "mid", false);
         if (midLine.length) {
-            for (const unit of midLine) { unit.actions.switchPosition.code() }
-            logAction(`All player midline units moved to the frontline!`, "turn")
+            for (const unit of midLine) {
+                unit.actions.switchPosition.code();
+                unit.timer += 1000;
+            }
+            logAction(`All player midline units moved to the frontline!`, "turn");
         } else {
             showMessage("Defeat!", "error", "selection", 0);
             return true;
@@ -323,7 +368,10 @@ function frontTest() {
     if (!enemiesAlive.length) {
         const midLine = unitFilter("enemy", "mid", false);
         if (midLine.length) {
-            for (const unit of midLine) { unit.actions.switchPosition.code() }
+            for (const unit of midLine) {
+                unit.actions.switchPosition.code();
+                unit.timer += 1000;
+            }
             logAction(`All enemy midline units moved to the frontline!`, "turn");
         } else if (advanceWave() && !unitFilter("enemy", "front", false).length) {
             showMessage("Victory!", "success", "selection", 0);
@@ -362,7 +410,10 @@ export async function combatTick() {
         turn.absorb = [];
         turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
         updateBattleDisplay();
-        if (turn.team === "player") { playerTurn(turn) }
+        if (turn.team === "player") {
+            playerTurn(turn);
+            updateInfoDisplay(turn);
+        }
         if (turn.team === "enemy") { enemyTurn(turn) }
         if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }
     } else {

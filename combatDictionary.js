@@ -31,8 +31,8 @@ class Modifier {
         this.name = name;
         this.description = description;
         this.vars = vars;
-        this.init = () => initFunc(this.vars);
-        this.onTurn = (context) => onTurnFunc(this.vars, context);
+        this.init = initFunc;
+        this.onTurn = onTurnFunc;
         modifiers.push(this);
         if (this.vars.listeners) {
             for (const eventType in this.vars.listeners) {
@@ -44,7 +44,7 @@ class Modifier {
         }
         if (eventState.modifierStart.flag) { handleEvent('modifierStart', { modifier: this }) }
         currentMod.push(this);
-        this.init()
+        this.init.call(this, this.vars);
         currentMod.pop();
         this.vars.start = true;
         window.updateModifiers();
@@ -55,9 +55,9 @@ function handleEvent(eventType, context) {
     for (let i = eventState[eventType].listeners.length - 1; i >= 0; i--) {
         if (!eventState[eventType].listeners[i].vars.start) { continue }
         currentMod.push(eventState[eventType].listeners[i]);
-        try { if (eventState[eventType].listeners[i].onTurn(context)) { removeModifier(eventState[eventType].listeners[i]) } }
+        try { if (eventState[eventType].listeners[i].onTurn.call(eventState[eventType].listeners[i], eventState[eventType].listeners[i].vars, context)) { removeModifier(eventState[eventType].listeners[i]) } }
         catch (e) {
-            console.error(`Error in ${eventType} listener (${eventState[eventType].listeners[i].name}):`, e);
+            console.error(`Error in ${eventType} listener (${eventState[eventType].listeners[i]?.name}):`, e);
             removeModifier(eventState[eventType].listeners[i]);
         }
         currentMod.pop();
@@ -77,14 +77,16 @@ function removeModifier(modifier) {
     if (modifier.vars && modifier.vars.listeners) {
         for (const event in modifier.vars.listeners) {
             if (modifier.vars.listeners[event]) {
-                if (eventState[event].listeners.indexOf(modifier) !== -1) {
-                    eventState[event].listeners.splice(eventState[event].listeners.indexOf(modifier), 1);
+                const index = eventState[event].listeners.indexOf(modifier);
+                if (index !== -1) {
+                    eventState[event].listeners.splice(index, 1);
                     if (eventState[event].listeners.length === 0) { eventState[event].flag = false }
                 }
             }
         }
     }
-    if (modifiers.indexOf(modifier) !== -1) { modifiers.splice(modifiers.indexOf(modifier), 1); }
+    const index = currentMod.indexOf(modifier);
+    if (index !== -1) { currentMod.splice(index, 1) }
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
@@ -108,7 +110,7 @@ function resistDebuff(attacker, defenders) {
     const will = []
     for (const unit of defenders) {
         const roll = Math.floor(Math.random() * 100 + 1);
-        const resistSingle = roll === 1 || roll === 100 ? roll : ((attacker.presence + attacker.focus) / Math.max(200 - (attacker.presence + attacker.focus) + (unit.presence + unit.resist), 20) ) + roll;
+        const resistSingle = roll === 1 || roll === 100 ? roll : roll * ((attacker.presence + attacker.focus) / (unit.presence + (2 * unit.resist)));
         if (eventState.singleResist.flag) { handleEvent('singleResist', {attacker, defender: unit, resistSingle}) }
         will.push(resistSingle);
     }
@@ -117,20 +119,20 @@ function resistDebuff(attacker, defenders) {
 
 function resetStat(unit, statList, values = [], add = true) {
     if (values.length > 0) {
-        if (eventState.statChange.flag) { handleEvent('statChange', { unit, statList, values, add  }) }
+        if (eventState.statChange.flag) { handleEvent('statChange', { unit, statList, values, add }) }
         for (let i = 0; i < Math.min(statList.length, values.length); i++) {
             if (statList[i].includes('.')) {
                 const [parent, child] = statList[i].split('.');
                 unit.mult[parent][child] += add ? values[i] : -values[i];
-            } else { unit.mult[statList[i]] += add ? values[i] : -values[i] }
+            } else { unit.mult[statList[i]] += add ? values[i] : -values[i]; }
         }
     }
     for (const stat of statList) {
-        if (stat.includes('.')) {
-            const [parent, child] = stat.split('.');
-            unit[parent][child] = unit.base[parent][child] * Math.max(0.2, unit.mult[parent][child]);
-        } else { unit[stat] = unit.base[stat] * Math.max(0.2, unit.mult[stat]) }
-    }
+    if (stat.includes('.')) {
+        const [parent, child] = stat.split('.');
+        unit[parent][child] = unit.base[parent][child] + Math.max(-0.8 * unit.base[parent][child], unit.mult[parent][child]);
+    } else { unit[stat] = unit.base[stat] + Math.max(-0.8 * unit.base[stat], unit.mult[stat]) }
+}
 }
 
 function enemyTurn(unit) {
@@ -171,11 +173,11 @@ function enemyTurn(unit) {
 }
 
 function randTarget(unitList = allUnits, count = 1, trueRand = false) {
+    if (count >= unitList.length) {
+        if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: unitList}) }
+        return unitList;
+    }
     if (count === 1) {
-        if (unitList.length === 1) {
-            if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: unitList}) }
-            return unitList[0];
-        }
         if (trueRand) {
             if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: unitList}) }
             return [unitList[Math.floor(Math.random() * unitList.length)]];
@@ -186,12 +188,12 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
             cumulativePresence += obj.presence;
             if (randChoice <= cumulativePresence) {
                 if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: [obj]}) }
-                return obj;
+                return [obj];
             }
         }
     }
     const selectedTargets = [];
-    const availableUnits = unitList;
+    const availableUnits = [ ...unitList];
     for (let i = 0; i < count && availableUnits.length > 0; i++) {
         let selectedUnit;
         if (trueRand) {
@@ -218,11 +220,14 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
 
 
 function playerTurn(unit) {
-    let actionButton = "<div>";
-    for (const actionKey in unit.actions) { 
+    let actionButton = `<h3 style="text-align:center;font-size:48px;margin:10px;"><b>${unit.name}'s turn</b></h3><div>`;
+    for (const actionKey in unit.actions) {
         const action = unit.actions[actionKey];
         let disabled = '';
-        if (action.cost) { for (const resource in action.cost) { if (unit.resource[resource] < action.cost[resource]) { disabled = " disabled" }}}
+        if (action.cost) {
+            if (action.cost.hasOwnProperty("position") && action.cost.position !== unit.position) { continue }
+            for (const resource in action.cost) { if (resource !== "position" && unit.resource[resource] < action.cost[resource]) { disabled = " disabled" } }
+        }
         actionButton += `
         <button id='${action.name}' class='action-button${disabled}' data-tooltip='${action.description}' onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${action.name}</button>`;
     }
@@ -256,32 +261,28 @@ function playerTurn(unit) {
 function selectTarget(action, back, target, targetType = 'unit') {
     let maxSelections = target[0];
     if (target[0] === -1 || target[0] > target[2].length) { maxSelections = target[2].length; }
-    let selectionTitle = `<h1>Action: ${action.name}</h1>`;
+    let selectionTitle = `<h2 style="text-align:center;">Action: ${action.name}</h2>`;
     let selectionForm = `<form id='targetSelection' onsubmit='submitTargetSelection(event)'>`;
     if (targetType === 'hex') { selectionForm += `<div class="hex-selection-container">`; }
     for (const obj of target[2]) {
-        let objId, objLabel, objValue, inputType;
+        let objId, objLabel, objValue;
         if (targetType === 'hex') {
             const coords = `${obj.coord.q},${obj.coord.r},${obj.coord.s}`;
             objId = `hex-${obj.coord.q}-${obj.coord.r}-${obj.coord.s}`;
             objLabel = obj.name || `Hex (${coords})`;
             objValue = coords;
-            inputType = (maxSelections === 1) ? 'radio' : 'checkbox';
             selectionForm += `
             <div class="hex-option">
-                <input type='${inputType}' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
+                <input type='${(maxSelections === 1) ? 'radio' : 'checkbox'}' id='${objId}' name='${objId}' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
                 <label for='${objId}' class="hex-label ${obj.terrain ? `terrain-${obj.terrain}` : ''}">
                     ${objLabel}
                 </label>
             </div>`;
         } else {
-            objId = obj.name;
-            objLabel = obj.name;
-            objValue = obj.name;
-            inputType = (maxSelections === 1) ? 'radio' : 'checkbox';
+            objId = objLabel = objValue = obj.name;
             selectionForm += `
             <div>
-                <input type='${inputType}' id='${objId}' name='targetSelection' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
+                <input type='${(maxSelections === 1) ? 'radio' : 'checkbox'}' id='${objId}' name='targetSelection' value='${objValue}' onclick='checkTargetSelection(this, ${maxSelections})'>
                 <label for='${objId}'>${objLabel}</label>
             </div>`;
         }
@@ -368,15 +369,16 @@ function cleanupGlobalHandlers() {
 
 function attack(attacker, defenders, num = 1, calcMods = {}) {
     if (eventState.attackStart.flag) { handleEvent('attackStart', {attacker, defenders, num, calcMods}) }
-    const attackMods = { ...attacker, ...(calcMods.attacker && calcMods.attacker) };
+    const attackMods = { ...attacker, ...calcMods.attacker };
     const array = [];
     for (const unit of defenders) {
-        const defendMods = { ...unit, ...(calcMods.defender && calcMods.defender) };
+        const defendMods = { ...unit, ...calcMods.defender };
         const hit = [];
         for (let i = 0; i < num; i++) { 
             const roll = Math.floor(Math.random() * 100 + 1);
             let hitSingle = roll === 1 ? 0 : 10 * ((roll === 100 ? 2 * attackMods.accuracy : attackMods.accuracy) / defendMods.evasion ) + roll - 85;
-            if (eventState.singleAttack.flag) { handleEvent('singleAttack', {attacker, defender: defenders[i], hitSingle}) }
+            if (roll === 100) { hitSingle = Math.min(-hitSingle, -100) }
+            if (eventState.singleAttack.flag) { handleEvent('singleAttack', {attacker, defender: unit, hitSingle}) }
              if (attacker.cancel) {
                 hitSingle = 0; 
                 attacker.cancel = false;
@@ -391,13 +393,18 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
 function crit(attacker, defenders, hit, calcMods = {}) {
     if (hit.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and hit (${hit}) array lengths are not equal`)}
     if (eventState.critStart.flag) { handleEvent('critStart', {attacker, defenders, hit, calcMods}) }
-    const attackMods = { ...attacker, ...(calcMods.attacker && calcMods.attacker) };
+    const attackMods = { ...attacker, ...calcMods.attacker };
     const array = [];
     for (let i = 0; i < defenders.length; i++) {
-        const defendMods = { ...defenders[i], ...(calcMods.defender && calcMods.defender) };
+        const defendMods = { ...defenders[i], ...calcMods.defender };
         const critical = [];
-        for (let j = 0; j < hit[i].length; j++) { 
-            let critSingle = hit[i][j] <= 0 ? 0 : hit[i][j] / (Math.max(5*defendMods.resist - attackMods.focus, 10));
+        for (let j = 0; j < hit[i].length; j++) {
+            let max = false;
+            if (hit[i][j] <= -100) {
+                hit[i][j] *= -1;
+                max = true;
+            }
+            let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (Math.max((3 * defendMods.resist) - attackMods.focus, 10)), max);
             if (eventState.singleCrit.flag) { handleEvent('singleCrit', {attacker, defender: defenders[i], critSingle}) }
             if (attacker.cancel) {
                 critSingle = 0; 
@@ -413,38 +420,14 @@ function crit(attacker, defenders, hit, calcMods = {}) {
 function damage(attacker, defenders, critical, calcMods = {}) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
     if (eventState.damageStart.flag) { handleEvent('damageStart', {attacker, defenders, critical, calcMods}) }
-    const attackMods = { ...attacker, ...(calcMods.attacker && calcMods.attacker) };
+    const attackMods = { ...attacker, ...calcMods.attacker };
     for (let i = 0; i < defenders.length; i++) {
-        if (currentAction.properties) {
-            for (const prop of currentAction.properties) {
-                if (baseElements.includes(prop.toLowerCase()) ) {
-                    if (defenders[i].shield.includes(prop.toLowerCase())) { defenders[i].shield.splice(defenders[i].shield.indexOf(prop.toLowerCase()), 1) }
-                    else if (!defenders[i].absorb.includes(prop.toLowerCase())) { defenders[i].absorb.push(prop.toLowerCase()) }
-                }
-            }
-        }
-        let doubleDamage = false;
-        let comboElement = null;
-        for (const unitElement of defenders[i].elements || []) {
-            const comboKey = Object.keys(elementCombo).find(key => key.toLowerCase() === unitElement.toLowerCase());
-            if (comboKey && currentAction.properties) {
-                for (const actionElement of currentAction.properties) {
-                    if (elementCombo[comboKey].includes(actionElement.toLowerCase())) {
-                        if (elementCombo[comboKey].every(e => defenders[i].absorb.map(a => a.toLowerCase()).includes(e))) {
-                            doubleDamage = true
-                            comboElement = comboKey
-                            if (eventState.elementDamage.flag) { handleEvent('elementDamage', { attacker, unit: defenders[i], comboElement, doubleDamage }) }
-                            if (doubleDamage) { break }
-                        }
-                    }
-                }
-            } if (doubleDamage) { break }
-        }
-        const defendMods = { ...defenders[i], ...(calcMods.defender && calcMods.defender) };
+        const doubleDamage = elementInteraction(attacker, defenders[i], calcMods?.actionOverride || null);
+        const defendMods = { ...defenders[i], ...calcMods.defender };
         const hit = [];
         let total = 0;
         for (let j = 0; j < critical[i].length; j++) {
-            let damageSingle = (doubleDamage + 1) * (critical[i][j] <= 0 ? 0 : critical[i][j] < 1 ? Math.ceil(Math.max(((Math.random() / 2) + .75) * (attackMods.attack - defendMods.defense), .1 * attackMods.attack)) : Math.ceil(Math.max(((Math.random() / 2) + .75) * (attackMods.attack - defendMods.defense), .1 * attackMods.attack * critical[i][j]) + attackMods.lethality * critical[i][j]));
+            let damageSingle = (doubleDamage + 1) * (critical[i][j] <= 0 ? 0 : Math.ceil(Math.max(((Math.random() / 2) + .75) * ((critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1)) - defendMods.defense), .1 * (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1)))));
             if (eventState.singleDamage.flag) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
             hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
             total += damageSingle;
@@ -458,11 +441,45 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     }
 }
 
+function elementInteraction(attacker, defender, actionOverride = null) {
+    let elementSource = null;
+    if (actionOverride) { elementSource = actionOverride }
+    else if (currentMod.length > 0) { elementSource = currentMod[currentMod.length - 1] }
+    else { elementSource = currentAction }
+    const properties = elementSource?.properties || elementSource?.vars?.elements || [];
+    if (properties.length === 0) { return false }
+    for (const prop of properties) {
+        if (baseElements.includes(prop.toLowerCase())) {
+            if (defender.shield.includes(prop.toLowerCase())) { defender.shield.splice(defender.shield.indexOf(prop.toLowerCase()), 1) }
+            else if (!defender.absorb.includes(prop.toLowerCase())) { defender.absorb.push(prop.toLowerCase()) }
+        }
+    }
+    let doubleDamage = false;
+    let comboElement = null;
+    const comboKeys = Object.keys(elementCombo);
+    for (const unitElement of defender.elements || []) {
+        const comboKey = comboKeys.find(key => key.toLowerCase() === unitElement.toLowerCase());
+        if (comboKey && properties) {
+            for (const actionElement of properties) {
+                if (elementCombo[comboKey].includes(actionElement.toLowerCase())) {
+                    if (elementCombo[comboKey].every(e => defender.absorb.map(a => a.toLowerCase()).includes(e))) {
+                        doubleDamage = true;
+                        comboElement = comboKey;
+                        if (eventState.elementDamage.flag) { handleEvent('elementDamage', { attacker, unit: defender, comboElement, doubleDamage }) }
+                        break;
+                    }
+                }
+            }
+        } if (doubleDamage) { break }
+    }
+    return doubleDamage;
+}
+
 function basicModifier(name, description, vari) {
     if (vari.targets.length === 1) {
         return new Modifier(name, description, vari,
-            (vars) => { resetStat(vars.targets[0], vars.stats, vars.values) },
-            (vars, context) => {
+            function(vars) { resetStat(vars.targets[0], vars.stats, vars.values) },
+            function(vars, context) {
                 if (vars.cancel && vars.applied) {
                     resetStat(vars.targets[0], vars.stats, vars.values, false);
                     vars.applied = false;
@@ -477,8 +494,8 @@ function basicModifier(name, description, vari) {
         );
     } else {
         return new Modifier(name, description, vari,
-            (vars) => { for (const unit of vars.targets) { resetStat(unit, vars.stats, vars.values) } },
-            (vars, context) => {
+            function(vars) { for (const unit of vars.targets) { resetStat(unit, vars.stats, vars.values) } },
+            function(vars, context) {
                 if (vars.cancel && vars.applied) {
                     for (const unit of vars.targets) {
                         resetStat(unit, vars.stats, vars.values, false);
@@ -498,4 +515,4 @@ function basicModifier(name, description, vari) {
     }
 }
 
-export { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState };
+export { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementInteraction, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState };

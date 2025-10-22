@@ -47,9 +47,9 @@
             <p>These are actions, hovering over one of them (or holding it on mobile) will show more information about the action. Some actions require targeting a unit. After performing an action, it will be logged for reference to see the history of the battle.</p>
         </div>
     </div>
-    <p>Note: When tag is referenced, that just means the action, unit, or modifier has the tag in its name or description.</p>
+    <p>Note: When tag is referenced, that just means the action, unit, or modifier has the tag in its name or description.</p><br><br><br>
     <h2>Advanced Mechanics</h2>
-    <p>These mechanics aren't as clear in normal gameplay, so here's the run down.</p>
+    <p>These mechanics aren't as clear in normal gameplay, you don't need to read anything below this, but it still useful.</p>
     <h3>Attributes and Resources</h3>
     <p>There are 3 different attributes (Physical, Mystic, and Techno) and a resource associated with each attribute (Stamina, Mana, and Energy).</p>
     <ul>
@@ -63,13 +63,12 @@
         <li><strong>HP</strong><span>: Unit's health.</span></li>
         <li><strong>Attack</strong><span>: Amount of damage dealt to enemy from an attack.</span></li>
         <li><strong>Defense</strong><span>: Amount of damage reduced from attacks. Can reduce up to 1/10th of opponent's attack.</span></li>
-        <li><strong>Lethality</strong><span>: Bonus damage from criticals.</span></li>
         <li><strong>Accuracy</strong><span>: Increase chance to hit an attack. Minimum chance to hit of 15%.</span></li>
         <li><strong>Evasion</strong><span>: Decrease chance to get attacked.</span></li>
         <li><strong>Focus</strong><span>: Increase critical and debuff chance. Multiple criticals can stack.</span></li>
         <li><strong>Resist</strong><span>: Decrease critical and debuff chance.</span></li>
         <li><strong>Speed</strong><span>: Increases turn frequency.</span></li>
-        <li><strong>Presence</strong><span>: Increases chance to get targeted, and adds onto crit and resist for debuff calculations.</span></li>
+        <li><strong>Presence</strong><span>: Increases chance to get targeted, and adds onto focus and resist for debuff calculations.</span></li>
     </ul>
     <h3>Element system</h3>
     <p>Units and actions are usually tagged with one or more elemental pairs. There are 9 main elemental pairs and 4 special elemental pairs. Units without an element are rare.</p>
@@ -98,15 +97,15 @@
     </ul>
     <h2>Formulas</h2>
 Roll is a random number from 1-100<br><br>
-To hit (accuracy doubles at a roll of 100 and auto miss at a 1, Hit ≤ 0 is a miss):<br>
-\[Hit = \frac{Accuracy_{Attacker}}{Evasion_{Defender}} + Roll - 85\]<br><br>
-To crit (denominator can't go below 10):<br>
-\[Critical = \frac{Hit}{5Resist_{Defender}-Focus_{Attacker}}\]<br><br>
+To hit (accuracy doubles and auto crits at a roll of 100 and auto miss at a 1, Hit ≤ 0 is a miss):<br>
+\[Hit = 10\frac{Accuracy_{Attacker}}{Evasion_{Defender}} + Roll - 85\]<br><br>
+To crit (denominator can't go below 10, minimum of 1 if roll is 100):<br>
+\[Critical = \frac{Hit}{3Resist_{Defender}-Focus_{Attacker}}\]<br><br>
 Damage function (HP can't go below 0):<br>
-<p style="text-align: center;">If Critical < 1:</p> \[Damage_{Normal} = Attack_{Attacker} - Defense_{Defender}\] <p style="text-align: center">(Multiplied by a random number between .75 to 1.25, Minimum of 10% of attack or 1)</p><br><br>
-<p style="text-align: center;">If Critical ≥ 1:</p> \[Damage_{Critical} = Damage_{Normal} \text{ (Minimum increased by * Critical)} + Lethality_{Attacker} * Critical\]<br><br>
+<p style="text-align: center;">If Critical < 1:</p> \[Damage_{Normal} = Attack_{Attacker} - Defense_{Defender}\] <p style="text-align: center">(Multiplied by a random number between .75 to 1.25, Minimum of 10% of attack)</p><br><br>
+<p style="text-align: center;">If Critical ≥ 1:</p> \[Damage_{Critical} = \text{ (Previous function, but attack and minimum multiplied by critical + 1)}\]<br><br>
 Debuff (debuff is applied if number is positive, auto apply on 100 and auto fail on 1, denominator can't go below 20):<br>
-\[Debuff = \frac{Presence_{Attacker} + Focus_{Attacker}}{200-(Presence_{Attacker} + Focus_{Attacker}) + (Presence_{Defender} + Resist_{Defender})} + Roll - DebuffSpecificConstant\]
+\[Debuff = Roll\frac{Presence_{Attacker} + Focus_{Attacker}}{(Presence_{Defender} + 2Resist_{Defender})} - DebuffSpecificConstant\]
 </body>
 <script type="module">
     import { Electric } from './unit/electric.js';

@@ -165,7 +165,7 @@ function combatRound(attacker, hex) {
             defenseBonuses: {},
             duration: 1
         },
-        (vars) => { logAction(`${attacker.name} initiated combat with ${defender.name}`); },
+        function(vars) { logAction(`${attacker.name} initiated combat with ${defender.name}`); },
         (vars, unit) => { if (unit === attacker) { resolveCombat(vars); return true; } }
     );
 }

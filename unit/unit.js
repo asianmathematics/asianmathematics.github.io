@@ -5,45 +5,43 @@ export class Unit {
             hp: stat[0],
             attack: stat[1],
             defense: stat[2],
-            lethality: stat[3],
-            accuracy: stat[4],
-            evasion: stat[5],
-            focus: stat[6],
-            resist: stat[7],
-            speed: stat[8],
-            presence: stat[9],
-            position: stat[10],
+            accuracy: stat[3],
+            evasion: stat[4],
+            focus: stat[5],
+            resist: stat[6],
+            speed: stat[7],
+            presence: stat[8],
+            position: stat[9],
             elements: elements,
             resource: {
-                healFactor: stat[11],
-                stamina: stat[12],
-                staminaRegen: stat[13],
+                healFactor: stat[10],
+                stamina: stat[11],
+                staminaRegen: stat[12],
             }
         };
         this.mult = {
-            attack: 1,
-            defense: 1,
-            lethality: 1,
-            accuracy: 1,
-            evasion: 1,
-            focus: 1,
-            resist: 1,
-            speed: 1,
-            presence: 1,
+            attack: 0,
+            defense: 0,
+            accuracy: 0,
+            evasion: 0,
+            focus: 0,
+            resist: 0,
+            speed: 0,
+            presence: 0,
             resource: {
-                healFactor: 1,
-                staminaRegen: 1,
+                healFactor: 0,
+                staminaRegen: 0,
             }
         };
-        if (stat[14]) { 
-            this.base.resource.mana = stat[14];
-            this.base.resource.manaRegen = stat[15];
-            this.mult.resource.manaRegen = 1;
+        if (stat[13]) { 
+            this.base.resource.mana = stat[13];
+            this.base.resource.manaRegen = stat[14];
+            this.mult.resource.manaRegen = 0;
         }
-        if (stat[16]) { 
-            this.base.resource.energy = stat[16];
-            this.base.resource.energyRegen = stat[17];
-            this.mult.resource.energyRegen = 1;
+        if (stat[15]) { 
+            this.base.resource.energy = stat[15];
+            this.base.resource.energyRegen = stat[16];
+            this.mult.resource.energyRegen = 0;
         }
         this.elements = this.base.elements;
         this.hp = this.base.hp;

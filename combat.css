@@ -1,11 +1,11 @@
 .battle-display,.game-layout,.left-column{gap:20px;display:flex}
 #battle-container,#selection{background-color:#0a0a0a;box-shadow:0 0 15px rgba(0,255,136,0.2);padding:20px;border:1px solid #00ff88}
-body{font-family:'Courier Prime',monospace;max-width:1200px;margin:0 auto;padding:20px;background:#0a0a0a;color:#00ff88;position:relative}
+body{font-family:'Courier Prime',monospace;font-size:18px;max-width:1200px;margin:0 auto;padding:20px;background:#0a0a0a;color:#00ff88;position:relative}
 body::after{content:"";position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 2px);pointer-events:none;opacity:0.1}
 .hit-entry,h1,h2,h3{color:#00ff88;font-family:'Courier Prime',monospace;text-shadow:0 0 8px rgba(0,255,136,0.3);border-bottom:2px solid #ff0055}
 .game-layout{flex-direction:row;margin-top:20px}
-.left-column{flex:1;max-width:350px;flex-direction:column}
-.right-column{flex:2}
+.left-column{flex:2;max-width:350px;flex-direction:column}
+.right-column{flex:1}
 #battle-container{border-radius:0;margin-bottom:20px;border:1px solid #00aaff}
 .battle-display{justify-content:space-between}
 .team{flex:1;padding:15px;border-radius:0;background:#111}
@@ -18,17 +18,17 @@ body::after{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backgr
 .unit.back{border-left:4px solid #ff0055;background-color:#1a0a14}
 .unit.back .unit-name{color:#ff0055}
 .unit-roster, .selected-units{display:flex;flex-wrap:wrap;gap:10px;margin:15px 0}
-.unit-card{width:120px;padding:10px;border:1px solid #00ff88;cursor:pointer; transition:all 0.2s}
+.unit-card{width:240px;padding:10px;border:1px solid #00ff88;cursor:pointer; transition:all 0.2s}
 .unit-card:hover{background-color: #002233}
 .unit-card.selected{border-color:#ff0055;box-shadow:0 0 10px rgba(255, 0, 85, 0.5)}
 .unit-card .tooltip{position:relative;display:inline-block;}
-.unit-card .tooltip .tooltiptext{visibility:hidden;width:auto;min-width:150px;max-width:500px;background-color:#0a0a0a;color:#00ff88;padding:8px 12px;position:absolute;z-index:1000;bottom:125%;left:0%;transform:translateX(-0%);opacity:0;transition:opacity 0.3s;box-shadow:0 0 15px rgba(0,255,136,0.3);border:1px solid #00ff88;font-family:'Courier Prime', monospace;font-size:14px;white-space:normal;line-height:1.4;border-radius:0;text-align:left;}
+.unit-card .tooltip .tooltiptext{visibility:hidden;width:auto;min-width:250px;max-width:1000px;background-color:#0a0a0a;color:#00ff88;padding:8px 12px;position:absolute;z-index:1000;bottom:125%;left:0%;transform:translateX(-0%);opacity:0;transition:opacity 0.3s;box-shadow:0 0 15px rgba(0,255,136,0.3);border:1px solid #00ff88;font-family:'Courier Prime', monospace;font-size:18px;white-space:normal;line-height:1.4;border-radius:0;text-align:left;}
 .unit-card .tooltip:hover .tooltiptext{visibility:visible;opacity:1;}
 .selected-units .unit-card{width:100px;opacity:0.9}
 .position-indicator{font-size:.6em;color:#ff0055;font-style:italic;margin-bottom:5px}
 .action-button,button#back{color:#fff;padding:10px 15px;cursor:pointer;font-family:'Courier Prime',monospace}
 #selection{border-radius:0;color:#00ff88;border:1px solid #00aaff}
-.action-button{background:#1a1a1a;border:2px solid #00aaff;margin:5px;border-radius:0;font-size:14px;position:relative;letter-spacing:1px;text-transform:uppercase}
+.action-button{background:#1a1a1a;border:2px solid #00aaff;margin:5px;border-radius:0;font-size:18px;position:relative;letter-spacing:1px;text-transform:uppercase}
 .action-button:hover{background:#002233;text-shadow:0 0 8px #00aaff}
 .action-button.disabled{background-color:#333;cursor:not-allowed}
 form#targetSelection{margin-bottom:15px}
@@ -65,7 +65,7 @@ button#back{border:1px solid #ff0055;border-radius:0;background-color:#0a0a0a;pa
 li.modifier-item{display:flex;align-items:center;gap:0.5em;flex-wrap:nowrap;}
 li.modifier-item > *{display:inline-block;}
 .action-button[data-tooltip]:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background-color:#0a0a0a;color:#00ff88;padding:5px 10px;border-radius:0;white-space:pre-line;z-index:1000;width:max-content;max-width:300px;box-shadow:0 0 15px rgba(0,255,136,0.3);border:1px solid #00ff88}
-#action-log-container{width:100%}#action-log{background-color:#000;color:#00ff88;font-family:'Courier Prime',monospace;border:1px solid #00ff88;padding:10px;height:350px;overflow-y:auto;font-size:14px;line-height:1.4;border-radius:0;width:100%}
+#action-log-container{width:100%}#action-log{background-color:#000;color:#00ff88;font-family:'Courier Prime',monospace;border:1px solid #00ff88;padding:10px;height:150px;overflow-y:auto;font-size:14px;line-height:1.4;border-radius:0;width:100%}
 .log-entry{margin-bottom:4px;padding:2px 5px;border-radius:0;word-wrap:break-word}
 .turn-entry{background-color:#002233;color:#00aaff;padding:5px;margin-top:5px;border-left:3px solid #00aaff}
 .action-entry{color:#00ff88}
@@ -75,9 +75,17 @@ li.modifier-item > *{display:inline-block;}
 .debuff-entry{color:#ff0055}
 .skip-entry{color:#555;font-style:italic}
 .warning-entry{color:#ffd740}
+.error-entry{background-color:white;color:darkred;}
 .info-entry{color:#00aaff}
+.info-display{display:flex;flex-direction:row;background-color:#0a0a0a;box-shadow:0 0 15px rgba(0, 255, 136, 0.2);padding:20px;border:1px solid #00ff88;color:#00ff88;max-height:400px;overflow-y:auto;}
+.info-display h4{color:#00aaff;border-bottom:1px solid #00aaff;padding-bottom:5px;margin-top:15px;margin-bottom:5px;}
+.stat-line{display:flex;justify-content:space-between;padding:2px 0;font-size:18px;}
+.action-info-box{margin-bottom:15px;border-left:3px solid #002233;padding-left:10px;}
+.action-name{font-weight:bold;color:#ffd740;margin-bottom:5px;}
+.action-info-box p{margin:3px 0;white-space:pre-wrap;}
 @media (max-width:900px){
     .game-layout{flex-direction:column}
+    .info-display{flex-direction:column}
     .left-column{max-width:100%;order:1}
     .right-column{order:2}
     #action-log{height:150px;}
@@ -90,5 +98,4 @@ li.modifier-item > *{display:inline-block;}
 /*
 .damage-entry{color:#e74c3c;}
 .defeat-entry{color:#c0392b;font-weight:bold;}
-.success-entry{color:#27ae60;font-weight:bold;}
-.error-entry{color:#c0392b;}*/
+.success-entry{color:#27ae60;font-weight:bold;}*/

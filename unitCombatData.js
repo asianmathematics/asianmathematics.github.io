@@ -55,7 +55,7 @@ const dodgeAction = {
         this.previousAction = [true, false, false];
         createMod("Dodge", "Evasion increased",
             { caster: this, targets: [this], duration: 1, stat: "evasion", value: 2 },
-            (vars) => {
+            function(vars) {
                     vars.caster.mult[vars.stat] += vars.value;
                     resetStat(vars.caster, [vars.stat]);
                 logAction(`${vars.caster.name} dodges.`, "buff");
@@ -79,7 +79,7 @@ const blockAction = {
     code: function() {
         createMod("Block", "Defense increased",
             { caster: this, targets: [this], duration: 1, stat: "defense", value: 1 },
-            (vars) => {
+            function(vars) {
                 vars.caster.mult[vars.stat] += vars.value;
                 resetStat(vars.caster, [vars.stat]);
                 logAction(`${vars.caster.name} blocks.`, "buff");
@@ -131,7 +131,7 @@ const darkActionsInit = function() {
             const self = this;
             const modifier = createMod("Shoot 'em Up Evasion", "Temporary evasion boost",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [1.5] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -175,7 +175,7 @@ const darkActionsInit = function() {
             const self = this;
             createMod("Evasion Penalty", "Evasion reduced during bullet hell",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -271,7 +271,7 @@ const electricActionsInit = function() {
             const self = this;
             createMod("Sick Beats Buff", "Rhythmic performance enhancement",
                 { caster: self, targets: target, duration: 3, stats: ["speed", "presence"], values: [0.5, 0.7] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -365,7 +365,7 @@ const servantActionsInit = function() {
             const self = this;
             createMod("Sneak Adjustment", "Combat focus modification",
                 { caster: self, targets: [self], duration: 1, stats: ["presence", "accuracy", "crit", "lethality"], values: [-0.5, 0.5, 0.9, 1] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -412,7 +412,7 @@ const classicJoyActionsInit = function() {
             const self = this;
             createMod("Rapid Fire Speed", "Temporary speed boost",
                 { caster: self, targets: [self], duration: 1, stats: ["speed"], values: [0.4] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -508,7 +508,7 @@ const classicJoyActionsInit = function() {
             const self = this;
             createMod("Joy", "Overall increase?",
                 { caster: self, targets: target, duration: 9, buffs: ["accuracy", "crit", "defense", "resist"], buffValues: [0.25, 0.4, 0.6, 0.4], debuffs: ["attack", "defense", "evasion", "speed", "accuracy"], debuffValues: [-0.25, -0.4, -0.25, -0.1, -0.25] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.buffs.forEach((stat, i) => {
                             unit.mult[stat] += vars.buffValues[i];
@@ -559,7 +559,7 @@ const dexSoldierActionsInit = function() {
             const self = this;
             createMod("Hammer Speed", "Temporary speed boost",
                 { caster: self, targets: [self], duration: 1, stat: "speed", value: .5 },
-                (vars) => {
+                function(vars) {
                         vars.caster.mult[vars.stat] += vars.value;
                         resetStat(vars.caster, [vars.stat]);
                 },
@@ -608,7 +608,7 @@ const dexSoldierActionsInit = function() {
             const self = this;
             createMod("Determination", "Healing over time",
                 { caster: self, targets: [self], duration: 2, stats: ["hp"], values: [60] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => { unit.hp += vars.values[0]; });
                     logAction(`${vars.caster.name} slowly regains hp!`, "buff");
                 },
@@ -628,7 +628,7 @@ const dexSoldierActionsInit = function() {
         code: function() {
             createMod("Guard", "Defense and presence increase",
                 { caster: this, targets: [this], duration: 1, stat: ["defense", "presence"], value: [1, 1] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -712,7 +712,7 @@ const dandelionActionsInit = function() {
             const self = this;
             createMod("Evasion Penalty", "Evasion reduced during danmaku",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion"], values: [-0.5] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -748,7 +748,7 @@ const dandelionActionsInit = function() {
             const will = resistDebuff(this, target)
             createMod("Feint", "Defense, evasion, and presence increase",
                 { caster: this, targets: [this], duration: 1, stat: ["defense", "evasion", "presence"], value: [.25, 2.5, .75] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -824,7 +824,7 @@ const fourArcherActionsInit = function() {
             const self = this;
             createMod("Lucky Aura", "Increased luck",
                 { caster: self, targets: [self], duration: 2, stats: ["accuracy", "crit", "evasion", "resist", "presence"], values: [0.75, 0.75, 0.25, 0.25, 0.25] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -865,7 +865,7 @@ const fourArcherActionsInit = function() {
             const self = this;
             createMod("Inpose Luck", "Increased accuracy and crit",
                 { caster: self, targets: [target], duration: 2, stats: ["accuracy", "crit"], values: [0.5, 0.5] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -898,7 +898,7 @@ const fourArcherActionsInit = function() {
             const self = this;
             createMod("Resting", "decresed evasion and speed",
                 { caster: self, targets: [self], duration: 1, stats: ["evasion", "speed"], values: [-0.5, -0.25] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -983,7 +983,7 @@ const mysticEnemyActionsInit = function() {
             const self = this;
             createMod("Curse Field", "Reduces accuracy and evasion",
                 { caster: self, targets: unitFilter("player", "front", false), duration: 'Indefinite', stats: ["accuracy", "evasion"], values: [-0.15, -0.15] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         if(resistDebuff(vars.caster, [unit]) > 50) {
                             vars.stats.forEach((stat, i) => {
@@ -1037,7 +1037,7 @@ const mysticEnemyActionsInit = function() {
             const self = this;
             createMod("Arcane Shield", "Enhanced defenses",
                 { caster: this, targets: [this], duration: 2, stats: ["defense", "resist"], values: [0.5, 0.3] },
-                    (vars) => {
+                    function(vars) {
                         vars.targets.forEach(unit => {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] += vars.values[i];
@@ -1045,7 +1045,7 @@ const mysticEnemyActionsInit = function() {
                             });
                         });
                     },
-                    (vars) => {
+                    function(vars) {
                         vars.duration--;
                         if(vars.duration <= 0) {
                             vars.targets.forEach(unit => {
@@ -1098,7 +1098,7 @@ const technoEnemyActionsInit = function() {
             const self = this;
             createMod("Shield Disruption", "Defense reduction",
                 { caster: self, targets: target, duration: 2, stats: ["defense", "resist"], values: [-0.3, -0.3] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -1106,7 +1106,7 @@ const technoEnemyActionsInit = function() {
                         });
                     });
                 },
-                (vars) => {
+                function(vars) {
                     vars.duration--;
                     if(vars.duration <= 0) {
                         vars.targets.forEach(unit => {
@@ -1148,7 +1148,7 @@ const technoEnemyActionsInit = function() {
             const self = this;
             createMod("Overcharge Boost", "Power surge",
                 { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.4, 0.3] },
-                (vars) => {
+                function(vars) {
                     vars.targets.forEach(unit => {
                         vars.stats.forEach((stat, i) => {
                             unit.mult[stat] += vars.values[i];
@@ -1157,7 +1157,7 @@ const technoEnemyActionsInit = function() {
                     });
                     logAction(`${vars.caster.name}'s systems overcharge!`, "buff");
                 },
-                (vars) => {
+                function(vars) {
                     vars.duration--;
                     if(vars.duration <= 0) {
                         vars.targets.forEach(unit => {
@@ -1242,7 +1242,7 @@ const magitechEnemyActionsInit = function() {
                 logAction(`${this.name} shifts to fire element, becoming more aggressive!`, "buff");
                 createMod("Fire Element", "Offensive enhancement",
                     { caster: self, targets: [self], duration: 2, stats: ["attack", "speed"], values: [0.3, 0.2] },
-                    (vars) => {
+                    function(vars) {
                         vars.targets.forEach(unit => {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] += vars.values[i];
@@ -1250,7 +1250,7 @@ const magitechEnemyActionsInit = function() {
                             });
                         });
                     },
-                    (vars) => {
+                    function(vars) {
                         vars.duration--;
                         if(vars.duration <= 0) {
                             vars.targets.forEach(unit => {
@@ -1267,7 +1267,7 @@ const magitechEnemyActionsInit = function() {
                 logAction(`${this.name} shifts to ice element, becoming more defensive!`, "buff");
                 createMod("Ice Element", "Defensive enhancement",
                     { caster: self, targets: [self], duration: 2, stats: ["defense", "resist"], values: [0.3, 0.2] },
-                    (vars) => {
+                    function(vars) {
                         vars.targets.forEach(unit => {
                             vars.stats.forEach((stat, i) => {
                                 unit.mult[stat] += vars.values[i];
@@ -1275,7 +1275,7 @@ const magitechEnemyActionsInit = function() {
                             });
                         });
                     },
-                    (vars) => {
+                    function(vars) {
                         vars.duration--;
                         if(vars.duration <= 0) {
                             vars.targets.forEach(unit => {
@@ -1300,7 +1300,7 @@ const magitechEnemyActionsInit = function() {
             this.resource.energy -= 25;
             createMod("Magitech Barrier", "Defensive field",
             { caster: this, targets: unitFilter("enemy", "", false), duration: 1, stat: "defense", value: 0.25 },
-            (vars) => {
+            function(vars) {
                 vars.targets.forEach(unit => {
                     unit.mult[vars.stat] += vars.value;
                     resetStat(unit, [vars.stat]);
