@@ -11,23 +11,25 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
+import { Mannequin } from './unit/Mannequin.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
 
-const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001];
+const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin];
 let selectedUnits = [];
 
 Dark.description = "5 star mystic unit with high evasion, speed, and offensive capabilities";
 Electric.description = "4 star magitech unit with high versatility";
 Servant.description = "4 star unit with stealth and critical hit capabilities";
-ClassicJoy.description = "4 star techno backline unit with high attack, low speed, and healing";
-DexSoldier.description = "3 star unit with strong offensive and tank abilities and low speed";
+ClassicJoy.description = "4 star techno backline unit with high attack and healing capabilities";
+DexSoldier.description = "3 star unit with high tank abilities and low speed";
 Dandelion.description = "4 star mystic unit with decent evasion, speed, and offensive capabilities";
 FourArcher.description = "3 star mystic backline unit with high luck and low speed";
 Paragon.description = "5 star techno backline unit with low offensive capabilities and good healing";
 Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
+Mannequin.description = "3 star techno midline unit with stealth capabilities";
 
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
@@ -100,9 +102,7 @@ function renderSelectedUnits() {
 function startCombatWithSelected() {
     document.getElementById('unit-selection-panel').style.display = 'none';
     selectedUnits.forEach(unit => { createUnit(unit, 'player') });
-    createUnit(enemy, 'enemy');
-    createUnit(enemy, 'enemy');
-    createUnit(magitechEnemy, 'enemy');
+    for (const e of waveCalc(unitFilter("player", ""), .5)) { createUnit(eval(e), 'enemy') }
     updateBattleDisplay();
     combatTick();
 }
@@ -329,23 +329,33 @@ export function advanceWave(x = 0) {
     if (wave < 3) { allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))) }
     switch (wave) {
         case 2:
-            createUnit(enemy, 'enemy');
-            createUnit(mysticEnemy, 'enemy');
-            createUnit(technoEnemy, 'enemy');
+            for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(eval(e), 'enemy') }
+            break;
         case 1:
-            createUnit(enemy, 'enemy');
-            createUnit(enemy, 'enemy');
-            createUnit(magitechEnemy, 'enemy');
-            createUnit(mysticEnemy, 'enemy');
-            createUnit(technoEnemy, 'enemy');
-            currentTurn = allUnits.findIndex(unit => unit.name === turnId);
-            wave += 1;
-            if (eventState.waveChange.flag) { handleEvent('waveChange', {wave}) }
-            updateBattleDisplay();
+            for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(eval(e), 'enemy') }
             break;
         default:
             return true;
     }
+    currentTurn = allUnits.findIndex(unit => unit.name === turnId);
+    wave++;
+    if (eventState.waveChange.flag) { handleEvent('waveChange', {wave}) }
+    updateBattleDisplay();
+}
+
+function waveCalc(units, mult) {
+    const total = units.reduce((sum, u) => sum + ((+u.description[0]+10.5)**2)/2 - 75.125, 0) * mult;
+    const enemyPoints = {enemy: 16, mysticEnemy: 30, technoEnemy: 30, magitechEnemy: 45};
+    let enemies = [];
+    let points = 0;
+    while (points < total) {
+        const enemy = Object.keys(enemyPoints)[Math.floor(Math.random() * Object.keys(enemyPoints).length)];
+        if (points + enemyPoints[enemy] <= total || (Math.abs(total - points - enemyPoints[enemy]) < Math.abs(total - points))) {
+            enemies.push(enemy);
+            points += enemyPoints[enemy];
+        } else { break }
+    }
+    return enemies;
 }
 
 function frontTest() {

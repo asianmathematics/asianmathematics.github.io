@@ -7,6 +7,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
         properties: ["physical", "stamina", "techno", "energy", "attack", "light/illusion", "multitarget"],
         cost: { stamina: 20, energy: 35 },
         description: "Costs 20 stamina & 35 energy\nMakes 4 attacks against multiple targets with increased accuracy and crit chance, attacks per target decreases by number of targets",
+        points: 60,
         target: () => {
             if (this.resource.stamina < 20 || this.resource.energy < 35) {
                 showMessage("Not enough resources!", "error", "selection");
@@ -28,6 +29,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
         properties: ["physical", "stamina", "techno", "energy", "light/illusion", "attack"],
         cost: { position: "back", stamina: 10, energy: 20 },
         description: "Costs 10 stamina & 20 energy\nBackline only\nAttacks a single target with increased accuracy, crit chance, and crit damage, decrease speed and evasion for 1 turn, can target backline",
+        points: 60,
         target: () => {
             if (this.resource.stamina < 10 || this.resource.energy < 20) {
                 showMessage("Not enough resources!", "error", "selection");
@@ -51,6 +53,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
         properties: ["physical", "light/illusion", "attack"],
         cost: { position: "back" },
         description: `Backline only\nRegains some of energy (${this.resource.energyRegen * 2})`,
+        points: 60,
         code: () => {
             this.previousAction[0] = true;
             logAction(`${this.name} reloads instead of switching to his secondary!`, "heal");
@@ -64,6 +67,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
         properties: ["techno", "energy", "light/illusion", "debuff", "stun"],
         cost: { position: "front", energy: 30 },
         description: "Costs 30 energy\nFrontline only\nChance to reduce speed and evasion of a single target for 1 turn, smaller chance to also stun",
+        points: 60,
         target: () => {
             if (this.resource.energy < 30) {
                 showMessage("Not enough energy!", "error", "selection");
