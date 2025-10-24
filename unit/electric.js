@@ -86,8 +86,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
                     if (this.vars.cancel && this.vars.applied) {
                         resetStat(this.vars.caster, this.vars.stats, this.vars.values, false);
                         this.vars.applied = false;
-                    }
-                    else if (!this.vars.cancel && !this.vars.applied) {
+                    } else if (!this.vars.cancel && !this.vars.applied) {
                         resetStat(this.vars.caster, this.vars.stats, this.vars.values);
                         this.vars.applied = true;
                     }
@@ -105,7 +104,10 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
                         if (eventState.singleDamage.flag) { handleEvent('singleDamage', {attacker: this.vars.caster, defender: context.attacker, damageSingle}) }
                         context.attacker.hp = Math.max(context.attacker.hp - damageSingle, 0);
                         logAction(`${this.vars.caster.name} electricity shocks ${context.attacker.name} dealing ${damageSingle} ${doubleDamage ? "elemental " : ""}damage!`, "hit")
-                        if (context.attacker.hp === 0 && eventState.unitChange.flag) { handleEvent('unitChange', {type: 'downed', unit: context.attacker}) }
+                        if (defenders[i].hp === 0) {
+                            for (const mod of modifiers) { if (mod.caster === defenders[i] && mod.focus) { removeModifier(mod) } }
+                            if (eventState.unitChange.flag) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+                        }
                     }
                     if (this.vars.caster === context.unit) { this.vars.duration-- }
                     if (this.vars.duration === 0) { return true }

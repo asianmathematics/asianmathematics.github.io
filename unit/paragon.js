@@ -74,7 +74,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
                     if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.disableMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
                     target[0].resource.mana = 0;
                     target[0].previousAction[1] = true;
-                    for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars.targets === target))) { removeModifier(mod) }
+                    for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars.targets[0] === target[0]))) { removeModifier(mod) }
                     for (const mod of modifiers.filter(m => m.vars.targets.includes(target[0]) && m?.attributes?.includes("mystic"))) { 
                         if (mod.vars.applied) {
                             mod.vars.cancel++;

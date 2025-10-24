@@ -10,8 +10,23 @@
 <body>
     <h1>Welcome to the Squad Combat Tutorial</h1>
     <p>This tutorial will guide you through the basics of the mechanics for my squad combat prototype. This prototype is based of the manual squad mode for my game where you manually take control of units actions.<p><br><br>
-    <p>These are modifiers. For the current prototype, they just modify stats for a set duration, but in the future some modifiers can perform advanced abilities such as counterattacks or action/modifier nullification.</p>
+    <div id="game-controls">
+        <button class="action-button" id="combatStart">Show unit Selection</button>
+    </div>
+    <div id="unit-selection-panel" style="display:none;">
+        <h3>Select Your Team (max 4 units)</h3>
+        <p>This is the unit selection area. You can click on a unit to learn more about their stats and actions. Enemies here won't fight back so test out unit compositions without any risk!</p>
+        <div id="unit-roster" class="unit-roster">
+        </div>
+        <div id="selected-units" class="selected-units">
+            <h4>Selected Units (0/4)</h4>
+        </div>
+        <button id="start-with-selected" class="action-button">Start Combat</button>
+    </div>
+    <div class="info-display"></div>
+    <p>Above is the info display, this displays the current units information.</p>
     <div id="battle-container">
+        <p>Below are modifiers. Most of them just modify stats for a set duration, but certain modifiers can perform advanced abilities such as counterattacks or action/modifier nullification.</p>
         <div class='modifiers-container'>
             <h3>Active Modifiers</h3>
         </div>
@@ -25,15 +40,15 @@
                 <div class="unit-row"></div>
             </div>
         </div>
+        <p>These are units.</p>
+        <ul>
+            <li>All units have a name, HP, Stamina, and a timer. Some units can also have backline position, Mana, and Energy.</li>
+            <li>A backline unit can't be targeted most attacks and effects from the opposing team. The goal for each team is to defeat all frontline units (any non-backline unit) of the opposing team. There are some midline units able to move between the front and backlines.</li>
+            <li>A unit's HP represents how much damage it can take before being defeated. A unit can be healed after going down to 0 HP, but its hard to keep them alive afterwards</li>
+            <li>Stamina, Mana, and Energy are resources a unit can use to make certain actions. Resources will be fully explained later.</li>
+            <li>A unit's timer indicates when it can take its next action. Some units have different timer speed depending on its speed stat, having more turn frequency than others.</li>
+        </ul>
     </div>
-    <p>These are units.</p>
-    <ul>
-        <li>All units have a name, HP, Stamina, and a timer. Some units can also have backline position, Mana, and Energy.</li>
-        <li>A backline unit can't be targeted most attacks and effects from the opposing team. The goal for each team is to defeat all frontline units (any non-backline unit) of the opposing team. There are some midline units able to move between the front and backlines.</li>
-        <li>A unit's HP represents how much damage it can take before being defeated. A unit can be healed after going down to 0 HP, but its hard to keep them alive afterwards</li>
-        <li>Stamina, Mana, and Energy are resources a unit can use to make certain actions. Resources will be fully explained later.</li>
-        <li>A unit's timer indicates when it can take its next action. Some units have different timer speed depending on its speed stat, having more turn frequency than others.</li>
-    </ul>
     <div class="game-layout">
         <div class="left-column">
             <div id="action-log-container">
@@ -110,14 +125,16 @@ Debuff (debuff is applied if number is positive, auto apply on 100 and auto fail
 <script type="module">
     import { Electric } from './unit/electric.js';
     import { Unit } from './unit/unit.js';
-    import { createUnit, advanceWave, combatTick } from './combat.js';
+    import { createUnit, advanceWave, combatTick, startCombat } from './combat.js';
     document.addEventListener('DOMContentLoaded', function() {
-        createUnit(Electric, 'player');
-        createUnit(new Unit('Basic Dummy', [500, 40, 10, 25, 100, 20, 100, 35, 0, 100, "front", 100, 10], [], () => {}), 'enemy');
-        createUnit(new Unit('Mystic Dummy', [425, 35, 8, 35, 110, 30, 115, 25, 0, 100, "front", 80, 8, 180, 20], [], () => {}), 'enemy');
-        createUnit(new Unit('Techno-backline Dummy', [475, 40, 12, 20, 105, 20, 90, 40, 0, 110, "back", 60, 6, undefined, undefined, 150, 15], [], () => {}), 'enemy');
+        window.startCombat = startCombat;
+        const startButton = document.getElementById('combatStart');
+        if (startButton) { startButton.addEventListener('click', function() { window.startCombat() }) }
+        createUnit(new Unit('Basic Dummy', [1000, 36, 16, 100, 20, 100, 50, 0, 100, "front", 100, 100, 10], [], () => {}), 'enemy');
+        createUnit(new Unit('Mystic Dummy', [1000, 50, 20, 130, 30, 130, 50, 0, 90, "front", 100, 80, 8, 220, 24], [], () => {}), 'enemy');
+        createUnit(new Unit('Magitech-reinforced Dummy', [3000, 60, 45, 150, 20, 150, 100, 0, 260, "front", 300, 120, 12, 150, 15, 150, 15], [], () => {}), 'enemy');
+        createUnit(new Unit('Techno-backline Dummy', [950, 44, 15, 125, 20, 115, 65, 0, 90, "back", 90, 80, 8, undefined, undefined, 150, 12], [], () => {}), 'enemy');
         advanceWave(-1);
-        combatTick();
     });
 </script>
 </html>

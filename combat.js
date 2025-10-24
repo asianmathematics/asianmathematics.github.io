@@ -20,14 +20,14 @@ let wave = 1;
 const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin];
 let selectedUnits = [];
 
-Dark.description = "5 star mystic unit with high evasion, speed, and offensive capabilities";
+Dark.description = "5 star mystic unit with high evasion, speed, and crowd control capabilities";
 Electric.description = "4 star magitech unit with high versatility";
 Servant.description = "4 star unit with stealth and critical hit capabilities";
 ClassicJoy.description = "4 star techno backline unit with high attack and healing capabilities";
 DexSoldier.description = "3 star unit with high tank abilities and low speed";
-Dandelion.description = "4 star mystic unit with decent evasion, speed, and offensive capabilities";
-FourArcher.description = "3 star mystic backline unit with high luck and low speed";
-Paragon.description = "5 star techno backline unit with low offensive capabilities and good healing";
+Dandelion.description = "4 star mystic unit with decent evasion, speed, and crowd control capabilities";
+FourArcher.description = "3 star mystic backline unit with increased luck and low speed";
+Paragon.description = "5 star techno backline unit with good healing";
 Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
 Mannequin.description = "3 star techno midline unit with stealth capabilities";
 
@@ -102,7 +102,7 @@ function renderSelectedUnits() {
 function startCombatWithSelected() {
     document.getElementById('unit-selection-panel').style.display = 'none';
     selectedUnits.forEach(unit => { createUnit(unit, 'player') });
-    for (const e of waveCalc(unitFilter("player", ""), .5)) { createUnit(eval(e), 'enemy') }
+    if (wave > 0) { for (const e of waveCalc(unitFilter("player", ""), .5)) { createUnit(e, 'enemy') } }
     updateBattleDisplay();
     combatTick();
 }
@@ -329,10 +329,10 @@ export function advanceWave(x = 0) {
     if (wave < 3) { allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))) }
     switch (wave) {
         case 2:
-            for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(eval(e), 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(e, 'enemy') }
             break;
         case 1:
-            for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(eval(e), 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(e, 'enemy') }
             break;
         default:
             return true;
@@ -345,15 +345,15 @@ export function advanceWave(x = 0) {
 
 function waveCalc(units, mult) {
     const total = units.reduce((sum, u) => sum + ((+u.description[0]+10.5)**2)/2 - 75.125, 0) * mult;
-    const enemyPoints = {enemy: 16, mysticEnemy: 30, technoEnemy: 30, magitechEnemy: 45};
-    if (!units.some(u => u.description.includes("5 star")) && wave < 3) { delete enemyPoints['magitechEnemy'] }
+    const enemyPoints = new Map([ [enemy, 16], [mysticEnemy, 30], [technoEnemy, 30], [magitechEnemy, 45] ]);
+    if (!units.some(u => u.description.includes("5 star")) && wave < 3) { enemyPoints.delete(magitechEnemy) }
     let enemies = [];
     let points = 0;
     while (points < total) {
-        const enemy = Object.keys(enemyPoints)[Math.floor(Math.random() * Object.keys(enemyPoints).length)];
-        if (points + enemyPoints[enemy] <= total || (Math.abs(total - points - enemyPoints[enemy]) < Math.abs(total - points))) {
+        const enemy = Array.from(enemyPoints.keys())[Math.floor(Math.random() * enemyPoints.size)];
+        if (points + enemyPoints.get(enemy) <= total || (Math.abs(total - points - enemyPoints.get(enemy)) < Math.abs(total - points))) {
             enemies.push(enemy);
-            points += enemyPoints[enemy];
+            points += enemyPoints.get(enemy);
         } else { break }
     }
     return enemies;

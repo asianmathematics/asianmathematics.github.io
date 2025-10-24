@@ -129,11 +129,11 @@ function resetStat(unit, statList, values = [], add = true) {
         }
     }
     for (const stat of statList) {
-    if (stat.includes('.')) {
-        const [parent, child] = stat.split('.');
-        unit[parent][child] = unit.base[parent][child] + Math.max(-0.8 * unit.base[parent][child], unit.mult[parent][child]);
-    } else { unit[stat] = unit.base[stat] + Math.max(-0.8 * unit.base[stat], unit.mult[stat]) }
-}
+        if (stat.includes('.')) {
+            const [parent, child] = stat.split('.');
+            unit[parent][child] = unit.base[parent][child] + Math.max(-0.8 * unit.base[parent][child], unit.mult[parent][child]);
+        } else { unit[stat] = unit.base[stat] + Math.max(-0.8 * unit.base[stat], unit.mult[stat]) }
+    }
 }
 
 function enemyTurn(unit) {
@@ -435,7 +435,10 @@ function damage(attacker, defenders, critical, calcMods = {}) {
         }
         if (total > 0) {
             defenders[i].hp = Math.max(defenders[i].hp - total, 0);
-            if (defenders[i].hp === 0 && eventState.unitChange.flag) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+            if (defenders[i].hp === 0) {
+                for (const mod of modifiers) { if (mod.caster === defenders[i] && mod.focus) { removeModifier(mod) } }
+                if (eventState.unitChange.flag) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+            }
             if (critical[i].length > 1) { logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} ${doubleDamage ? "elemental " : ""}damage!`, "hit") }
             else { logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} ${doubleDamage ? "elemental " : ""}damage!`, "hit") }
         } else { logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss") }
