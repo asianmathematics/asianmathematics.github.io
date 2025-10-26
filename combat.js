@@ -8,6 +8,7 @@ import { FourArcher } from './unit/fourArcher.js';
 import { Paragon } from './unit/paragon.js';
 import { Righty001 } from './unit/righty001.js';
 import { Mannequin } from './unit/mannequin.js';
+import { Idol } from './unit/idol.js';
 import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
@@ -17,7 +18,7 @@ let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
 
-const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin];
+const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin, Idol];
 let selectedUnits = [];
 
 Dark.description = "5 star mystic unit with high evasion, speed, and crowd control capabilities";
@@ -30,6 +31,7 @@ FourArcher.description = "3 star mystic backline unit with increased luck and lo
 Paragon.description = "5 star techno backline unit with good healing";
 Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
 Mannequin.description = "3 star techno midline unit with stealth capabilities";
+Idol.description = "4 star magitech backline unit with powerful healing, buffs and debuffs";
 
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
@@ -303,7 +305,7 @@ function cloneUnit(unit) {
         actions: {},
         elements: [...unit.base.elements],
         absorb: [],
-        shield: (unit.base.elements || []).filter(e => baseElements.includes(e.toLowerCase())),
+        shield: (unit.base.elements || []).filter(e => baseElements.includes(e)),
         stun: false,
         cancel: false
     };
@@ -419,14 +421,13 @@ export async function combatTick() {
         setUnit(turn)
         regenerateResources(turn);
         turn.absorb = [];
-        turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e.toLowerCase()));
+        turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e));
         updateBattleDisplay();
         if (turn.team === "player") {
-            playerTurn(turn);
             updateInfoDisplay(turn);
+            playerTurn(turn);
         }
         if (turn.team === "enemy") { enemyTurn(turn) }
-        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
         if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }

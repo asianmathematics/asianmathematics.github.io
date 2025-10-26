@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160, 60, "front", 200, 160, 17], ["Death/Darkness", "Knowledge/Memory", "Anomaly/Synthetic"], function() {
+export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160, 60, "front", 200, 160, 17], ["death/darkness", "knowledge/memory", "anomaly/synthetic"], function() {
     this.actions.meleeAttack = {
         name: "Melee Attack",
         properties: ["attack"],

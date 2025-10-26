@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, "front", 160, 120, 15, 200, 20], ["Death/Darkness", "Inertia/Cold", "Independence/Loneliness"], function() {
+export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, "front", 160, 120, 15, 200, 20], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
     this.actions.iceshock = {
         name: "Iceshock [mystic]",
         properties: ["mystic", "intertia/cold", "attack"],

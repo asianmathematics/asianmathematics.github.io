@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementInteraction, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 100, 100, "front", 125, 100, 10, 50, 10, 200, 20], ["Light/Illusion", "Harmonic/Change", "Radiance/Purity", "Anomaly/Synthetic"], function() {
+export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 100, 100, "front", 125, 100, 10, 50, 10, 200, 20], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.electricDischarge = {
         name: "Electric Discharge [mystic, energy]",
         properties: ["mystic", "techno", "energy", "harmonic/change", "attack"],
@@ -17,7 +17,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         },
         code: (target) => {
             this.resource.energy -= 60;
-            this.previousAction[2] = true;
+            this.previousAction[1] = this.previousAction[2] = true;
             logAction(`${this.name} channels a powerful electric discharge into ${target[0].name}!`, "action");
             attack(this, target, 5, { attacker: { focus: this.focus + 50, attack: this.attack + 28 } });
         }
@@ -38,6 +38,8 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         },
         code: (target) => {
             const statIncrease = [20, 10, 100];
+            const bonus = elementBonus(target[0], this.actions.sickBeats)
+            if (bonus) { statIncrease.forEach(val => val *= 2 ** bonus) }
             this.resource.energy -= 50;
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
@@ -99,7 +101,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
                         if (eventState.singleDamage.listeners.length === 0) { eventState.singleDamage.flag = false }
                     }
                     if (this.vars.caster === context?.defender && context?.damageSingle > 0) {
-                        const doubleDamage = elementInteraction(this.vars.caster, context.attacker, this);
+                        const doubleDamage = elementDamage(this.vars.caster, context.attacker, this);
                         const damageSingle = (doubleDamage + 1) * ( Math.ceil(Math.max(((Math.random() / 2) + .75) * (2 * this.vars.caster.attack - context.attacker.defense), .2 * this.vars.caster.attack)));
                         if (eventState.singleDamage.flag) { handleEvent('singleDamage', {attacker: this.vars.caster, defender: context.attacker, damageSingle}) }
                         context.attacker.hp = Math.max(context.attacker.hp - damageSingle, 0);

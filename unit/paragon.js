@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175, 140, "back", 260, 120, 15, undefined, undefined, 250, 35], ["Light/Illusion", "Knowledge/Memory", "Entropy/Goner", "Radiance/Purity", "Anomaly/Synthetic", "Nature/Life", "Precision/Perfection", "Independence/Loneliness", "Passion/Hatred", "Ingenuity/Insanity"], function() {
+export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175, 140, "back", 260, 120, 15, undefined, undefined, 250, 35], ["light/illusion", "knowledge/memory", "entropy/goner", "radiance/purity", "anomaly/synthetic", "nature/life", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.gun = {
         name: "Gun [stamina, energy]",
         properties: ["physical", "stamina", "techno", "energy", "attack", "buff"],
@@ -17,7 +17,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
         },
         code: (target) => {
             const statDecrease = [-10];
-            this.resource.energy -= 10;
+            this.resource.stamina -= 10;
             this.resource.energy -= 10;
             this.previousAction[0] = this.previousAction[2] = true;
             logAction(`I'm a healer but...`, "action");

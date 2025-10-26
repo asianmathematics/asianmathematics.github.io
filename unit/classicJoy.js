@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 170, 50, 120, 124, "back", 120, 120, 20, undefined, undefined, 140, 15], ["Death/Darkness", "Goner/Entropy", "Anomaly/Synthetic", "Independence/Loneliness", "Ingenuity/Insanity"], function() {
+export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 170, 50, 120, 124, "back", 120, 120, 20, undefined, undefined, 140, 15], ["death/darkness", "goner/entropy", "anomaly/synthetic", "independence/loneliness", "ingenuity/insanity"], function() {
     this.actions.rapidFire = {
         name: "Rapid Fire [physical, energy]",
         properties: ["physical", "techno", "energy", "attack", "buff"],
@@ -27,7 +27,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 17
 
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
-        properties: ["techno", "energy", "attack"],
+        properties: ["techno", "energy", "radiance/purity", "attack"],
         cost: { energy: 20 },
         description: "Costs 20 energy\nAttacks a single target 4 times with increased accuracy and damage",
         points: 60,
@@ -82,13 +82,11 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 17
         target: () => { selectTarget(this.actions.synthesizeMedicine, () => { playerTurn(this) }, [1, true, unitFilter("player", "")]) },
         code: (target) => {
             this.previousAction[2] = true;
-            let elementBonus = 0;
-            if (target[0].elements.includes("Anomaly/Synthetic")) { elementBonus++ }
-            if (target[0].elements.includes("Radiance/Purity") || target[0].elements.includes("Nature/Life")) { elementBonus-- }
-            if (eventState.elementEffect.flag) { handleEvent('elementEffect', { effect: this.actions.synthesizeMedicine, target: target[0], elementBonus }) }
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.synthesizeMedicine, unit: target[0], resource: ['hp'], value: [Math.floor(((2 ** elementBonus) * .8 * target[0].resource.healFactor) + Number.EPSILON)] }) }
-            target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor(((2 ** elementBonus) * .8 * target[0].resource.healFactor) + Number.EPSILON));
-            logAction(`${this.name} heals ${target[0].name} for ${Math.floor(((2 ** elementBonus) * .8 * target[0].resource.healFactor) + Number.EPSILON)} HP!`, "heal");
+            const bonus = elementBonus(target[0], this.actions.synthesizeMedicine);
+            console.log(bonus);
+            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.synthesizeMedicine, unit: target[0], resource: ['hp'], value: [Math.floor(((2 ** bonus) * .8 * target[0].resource.healFactor) + Number.EPSILON)] }) }
+            target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor(((2 ** bonus) * .8 * target[0].resource.healFactor) + Number.EPSILON));
+            logAction(`${this.name} heals ${target[0].name} for ${Math.floor(((2 ** bonus) * .8 * target[0].resource.healFactor) + Number.EPSILON)} HP!`, "heal");
         }
     };
 
@@ -108,7 +106,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 17
         name: "Joy [stamina]",
         properties: ["physical", "stamina", "death/darkness", "goner/entropy", "harmonic/change", "anomaly/synthetic", "ingenuity/insanity", "buff", "debuff"],
         cost: { stamina: 10 },
-        description: `Costs ${this.base.hp/5} HP & 10 stamina\nDelayed consequences`,
+        description: `Costs ${this.base.hp/5} HP & 10 stamina\nStrong buffs and delayed consequences`,
         points: 60,
         target: () => { selectTarget(this.actions.joy, () => { playerTurn(this) }, [1, true, unitFilter("player", "", false)]) },
         code: (target) => {
@@ -119,7 +117,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 17
             this.resource.stamina -= 10;
             const statIncrease = [80, 100, 32, 100];
             const statDecrease = [-30, -8, -12, -60, -80, -70];
-            const mod = modifiers.find(m => m.name === "Joy" && m.vars.targets.includes(target[0]));
+            const mod = modifiers.find(m => m.vars.name === "Joy" && m.vars.targets.includes(target[0]));
             if (mod) {
                 logAction(`${this.name} reapplies Joy on ${target[0].name}!`, "buff");
                 removeModifier(mod);
@@ -127,16 +125,10 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 17
             new Modifier("Joy", "Overall increase?",
                 { caster: this, targets: target, duration: 20, elements: ["death/darkness", "goner/entropy", "harmonic/change", "anomaly/synthetic", "ingenuity/insanity"], buffs: ["accuracy", "focus", "defense", "resist"], buffValues: statIncrease, debuffs: ["attack", "defense", "evasion", "speed", "accuracy", "presence"], debuffValues: statDecrease, listeners: { turnStart: true, actionStart: false }, cancel: false, applied: true, focus: false, penality: false },
                 function() {
-                    let elementBonus = 0;
-                    if (this.vars.targets[0].elements.includes("Death/Darkness")) { elementBonus++ }
-                    if (this.vars.targets[0].elements.includes("Anomaly/Synthetic")) { elementBonus++ }
-                    if (this.vars.targets[0].elements.includes("Light/Illusion") || this.vars.targets[0].elements.includes("Radiance/Purity")) { elementBonus-- }
-                    if (this.vars.targets[0].elements.includes("Radiance/Purity") || this.vars.targets[0].elements.includes("Nature/Life")) { elementBonus-- }
-                    if (this.vars.targets[0].elements.includes("Ingenuity/Insanity")) { elementBonus += 2 }
-                    if (eventState.elementEffect.flag) { handleEvent('elementEffect', { effect: this, target: this.vars.targets[0], elementBonus }) }
-                    if (elementBonus !== 0) {
-                        for (let i = 0; i < this.vars.buffValues.length; i++) { this.vars.buffValues[i] = Math.floor(this.vars.buffValues[i] * (1.5 ** elementBonus) + Number.EPSILON) }
-                        for (let i = 0; i < this.vars.debuffValues.length; i++) { this.vars.debuffValues[i] = Math.floor(this.vars.debuffValues[i] * (1.5 ** elementBonus) + Number.EPSILON) }
+                    const bonus = elementBonus(this.vars.targets[0], this, { "ingenuity/insanity": 2 });
+                    if (bonus !== 0) {
+                        for (let i = 0; i < this.vars.buffValues.length; i++) { this.vars.buffValues[i] = Math.floor(this.vars.buffValues[i] * (1.5 ** bonus) + Number.EPSILON) }
+                        for (let i = 0; i < this.vars.debuffValues.length; i++) { this.vars.debuffValues[i] = Math.floor(this.vars.debuffValues[i] * (1.5 ** bonus) + Number.EPSILON) }
                     }
                     resetStat(this.vars.targets[0], this.vars.buffs, this.vars.buffValues);
                 },

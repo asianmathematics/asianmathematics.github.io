@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60, 200, 140, "mid", 175, 130, 14, undefined, undefined, 90, 10], ["Light/Illusion", "Anomaly/Synthetic", "Independence/Loneliness", "Ingenuity/Insanity"], function() {
+export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60, 200, 140, "mid", 175, 130, 14, undefined, undefined, 90, 10], ["light/illusion", "anomaly/synthetic", "independence/loneliness", "ingenuity/insanity"], function() {
     this.actions.trickShot = {
         name: "Trick Shot [stamina, energy]",
         properties: ["physical", "stamina", "techno", "energy", "attack", "light/illusion", "multitarget"],

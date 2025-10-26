@@ -3,17 +3,18 @@ const modifiers = [];
 let currentUnit = null;
 let currentAction = null;
 let currentMod = [];
+const specialElements = ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"];
 const baseElements = ["death/darkness", "light/illusion", "knowledge/memory", "goner/entropy", "harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic", "nature/life"]
 const elementCombo = {
-    "Death/Darkness": ["light/illusion", "nature/life"],
-    "Light/Illusion": ["death/darkness", "knowledge/memory"],
-    "Knowledge/Memory": ["light/illusion", "goner/entropy"],
-    "Goner/Entropy": ["knowledge/memory", "harmonic/change"],
-    "Harmonic/Change": ["goner/entropy", "inertia/cold"],
-    "Inertia/Cold": ["harmonic/change", "radiance/purity"],
-    "Radiance/Purity": ["inertia/cold", "anomaly/synthetic"],
-    "Anomaly/Synthetic": ["radiance/purity", "nature/life"],
-    "Nature/Life": ["anomaly/synthetic", "death/darkness"]
+    "death/darkness": ["light/illusion", "nature/life"],
+    "light/illusion": ["death/darkness", "knowledge/memory"],
+    "knowledge/memory": ["light/illusion", "goner/entropy"],
+    "goner/entropy": ["knowledge/memory", "harmonic/change"],
+    "harmonic/change": ["goner/entropy", "inertia/cold"],
+    "inertia/cold": ["harmonic/change", "radiance/purity"],
+    "radiance/purity": ["inertia/cold", "anomaly/synthetic"],
+    "anomaly/synthetic": ["radiance/purity", "nature/life"],
+    "nature/life": ["anomaly/synthetic", "death/darkness"]
 };
 const eventState = {};
 const events = [
@@ -170,6 +171,7 @@ function enemyTurn(unit) {
             break;
         }
     }
+    if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
     setTimeout(window.combatTick, 1000);
 }
 
@@ -243,6 +245,7 @@ function playerTurn(unit) {
                 logAction(`${name} skips their turn`, "skip");
                 document.getElementById("selection").innerHTML = "";
                 cleanupGlobalHandlers();
+                if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
                 setTimeout(window.combatTick, 500);
             } else {
                 currentAction = unit.actions[action];
@@ -252,10 +255,14 @@ function playerTurn(unit) {
                     unit.actions[action].code();
                     document.getElementById("selection").innerHTML = "";
                     cleanupGlobalHandlers();
+                    if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
                     setTimeout(window.combatTick, 500);
                 }
             }
-        } else { setTimeout(window.combatTick, 500) }
+        } else {
+            setTimeout(window.combatTick, 500);
+            if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
+        }
     };
 }
 
@@ -336,6 +343,7 @@ function selectTarget(action, back, target, targetType = 'unit') {
         }
         document.getElementById("selection").innerHTML = "";
         cleanupGlobalHandlers();
+        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: currentUnit }) }
         setTimeout(window.combatTick, 500);
     }
 
@@ -423,7 +431,7 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     if (eventState.damageStart.flag) { handleEvent('damageStart', {attacker, defenders, critical, calcMods}) }
     const attackMods = { ...attacker, ...calcMods.attacker };
     for (let i = 0; i < defenders.length; i++) {
-        const doubleDamage = elementInteraction(attacker, defenders[i], calcMods?.actionOverride || null);
+        const doubleDamage = elementDamage(attacker, defenders[i], calcMods?.actionOverride || null);
         const defendMods = { ...defenders[i], ...calcMods.defender };
         const hit = [];
         let total = 0;
@@ -445,28 +453,25 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     }
 }
 
-function elementInteraction(attacker, defender, actionOverride = null) {
-    let elementSource = null;
-    if (actionOverride) { elementSource = actionOverride }
-    else if (currentMod.length > 0) { elementSource = currentMod[currentMod.length - 1] }
-    else { elementSource = currentAction }
-    const properties = elementSource?.properties || elementSource?.vars?.elements || [];
+function elementDamage(attacker, defender, actionOverride = null) {
+   const elementSource = actionOverride ?? (currentMod.length > 0 ? currentMod[currentMod.length - 1] : currentAction);
+    const properties = elementSource?.vars?.elements || elementSource?.properties || [];
     if (properties.length === 0) { return false }
     for (const prop of properties) {
-        if (baseElements.includes(prop.toLowerCase())) {
-            if (defender.shield.includes(prop.toLowerCase())) { defender.shield.splice(defender.shield.indexOf(prop.toLowerCase()), 1) }
-            else if (!defender.absorb.includes(prop.toLowerCase())) { defender.absorb.push(prop.toLowerCase()) }
+        if (baseElements.includes(prop)) {
+            if (defender.shield.includes(prop)) { defender.shield.splice(defender.shield.indexOf(prop), 1) }
+            else if (!defender.absorb.includes(prop)) { defender.absorb.push(prop) }
         }
     }
     let doubleDamage = false;
     let comboElement = null;
     const comboKeys = Object.keys(elementCombo);
     for (const unitElement of defender.elements || []) {
-        const comboKey = comboKeys.find(key => key.toLowerCase() === unitElement.toLowerCase());
+        const comboKey = comboKeys.find(key => key === unitElement);
         if (comboKey && properties) {
             for (const actionElement of properties) {
-                if (elementCombo[comboKey].includes(actionElement.toLowerCase())) {
-                    if (elementCombo[comboKey].every(e => defender.absorb.map(a => a.toLowerCase()).includes(e))) {
+                if (elementCombo[comboKey].includes(actionElement)) {
+                    if (elementCombo[comboKey].every(e => defender.absorb.map(a => a).includes(e))) {
                         doubleDamage = true;
                         comboElement = comboKey;
                         if (eventState.elementDamage.flag) { handleEvent('elementDamage', { attacker, unit: defender, comboElement, doubleDamage }) }
@@ -477,6 +482,33 @@ function elementInteraction(attacker, defender, actionOverride = null) {
         } if (doubleDamage) { break }
     }
     return doubleDamage;
+}
+
+function elementBonus(unit, actionOverride = null, weightOverrides = null) {
+    const elementSource = actionOverride ?? (currentMod.length > 0 ? currentMod[currentMod.length - 1] : currentAction);
+    const elements = elementSource?.properties || elementSource?.vars?.elements || [];
+    if (elements.length === 0) { return 0 }
+    const rawWeights = (weightOverrides && typeof weightOverrides === 'object') ? weightOverrides : (elementSource?.vars?.elementWeights && typeof elementSource.vars.elementWeights === 'object') ? elementSource.vars.elementWeights : {};
+    const normalizedWeights = {};
+    for (const key in rawWeights) {
+        if (typeof rawWeights[key] === 'number') { normalizedWeights[key] = { match: Number(rawWeights[key]), opposite: -Math.abs(Number(rawWeights[key])) } }
+        else if (typeof rawWeights[key] === 'object') { normalizedWeights[key] = { match: Number(rawWeights[key].match ?? 1), opposite: Number(rawWeights[key].opposite ?? -1) } }
+    }
+    for (const wKey in normalizedWeights) { if (!elements.find(e => String(e) === wKey)) { elements.push(wKey) } }
+    if (elements.length === 0) { return 0 }
+    const targetElems = (unit.elements || []);
+    let bonus = 0;
+    for (const eff of elements) {
+        const comboKey = Object.keys(elementCombo).find(k => k === eff);
+        const w = normalizedWeights[eff] || { match: 1, opposite: -1 };
+        if (comboKey) {
+            if (targetElems.includes(comboKey)) { bonus += w.match }
+            for (const opp of elementCombo[comboKey]) { if (targetElems.includes(opp)) { bonus += w.opposite } }
+        }
+        else if (normalizedWeights[eff] && targetElems.includes(eff)) { bonus += w.match }
+    }
+    if (eventState.elementEffect.flag) { handleEvent('elementEffect', { effect: elementSource, target: unit, elementBonus: bonus }) }
+    return bonus;
 }
 
 function basicModifier(name, description, vari) {
@@ -519,4 +551,4 @@ function basicModifier(name, description, vari) {
     }
 }
 
-export { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementInteraction, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState };
+export { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState };

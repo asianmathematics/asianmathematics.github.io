@@ -1,10 +1,10 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80, 65, "mid", 75, 80, 10, undefined, undefined, 120, 15], [], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
-        properties: ["techno", "energy", "attack"],
+        properties: ["techno", "energy", "radiance/purity", "attack"],
         cost: { energy: 20 },
         description: "Costs 20 energy\nAttacks a single target 4 times with increased accuracy and damage",
         points: 60,
@@ -25,7 +25,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
 
     this.actions.dualWield = {
         name: "Dual Wield [stamina, energy]",
-        properties: ["physical", "stamina", "techno", "energy", "attack", "light/illusion", "multitarget"],
+        properties: ["physical", "stamina", "techno", "energy", "attack", "multitarget"],
         cost: { position: "front", stamina: 20, energy: 15 },
         description: "Costs 20 stamina & 15 energy\nFrontline only\nMakes either 2 attacks against 1 target or 1 attack against 2 targets each with increased accuracy and crit chance",
         points: 60,
@@ -47,7 +47,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
 
     this.actions.snipe = {
         name: "Snipe [stamina, energy]",
-        properties: ["physical", "stamina", "techno", "energy", "light/illusion", "attack"],
+        properties: ["physical", "stamina", "techno", "energy", "attack"],
         cost: { position: "back", stamina: 10, energy: 20 },
         description: "Costs 10 stamina & 20 energy\nBackline only\nAttacks a single target with increased accuracy, crit chance, and crit damage, decrease speed and evasion for 1 turn, can target backline",
         points: 60,

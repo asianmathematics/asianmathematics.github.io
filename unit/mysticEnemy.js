@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130, 50, 140, 90, "front", 100, 80, 8, 220, 24], ["Death/Darkness", "Anomaly/Synthetic"], function() {
+export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130, 50, 140, 90, "front", 100, 80, 8, 220, 24], ["death/darkness", "anomaly/synthetic"], function() {
     this.actions.manaBolt = {
         name: "Mana Bolt [mystic]",
         properties: ["mystic", "attack"],
