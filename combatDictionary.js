@@ -1,5 +1,5 @@
 const allUnits = [];
-const modifiers = [];
+let modifiers = [];
 let currentUnit = null;
 let currentAction = null;
 let currentMod = [];
@@ -56,11 +56,18 @@ function handleEvent(eventType, context) {
     for (let i = eventState[eventType].listeners.length - 1; i >= 0; i--) {
         if (!eventState[eventType].listeners[i].vars.start) { continue }
         currentMod.push(eventState[eventType].listeners[i]);
-        try { if (eventState[eventType].listeners[i].onTurn(context)) { removeModifier(eventState[eventType].listeners[i]) } }
+        try { if (eventState[eventType].listeners[i].onTurn({ ...context, event: eventType })) { removeModifier(eventState[eventType].listeners[i]) } }
         catch (e) {
             console.error(`Error in ${eventType} listener (${eventState[eventType].listeners[i]?.name}):`, e);
-            removeModifier(eventState[eventType].listeners[i]);
-            logAction(`An error occurred with a modifier.`, "error");
+            try {
+                removeModifier(eventState[eventType].listeners[i]);
+                logAction(`An error occurred with a modifier.`, "error");
+            }
+            catch (err) {
+                logAction('A major error occurred with a modifier, event list has been purged', "error")
+                modifiers = modifiers.filter(mod => mod !== eventState[eventType].listeners[i])
+                for (const event of events) { if (eventState[event].listeners.length) { eventState[event].listeners.filter(mod => mod !== eventState[eventType].listeners[i]) } }
+            }
         }
         currentMod.pop();
     }

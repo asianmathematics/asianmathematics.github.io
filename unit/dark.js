@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, "front", 160, 120, 15, 200, 20], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
+export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, "front", 160, 120, 15, 200, 20], ["death/darkness", "inertia/cold", "radiance/purity", "independence/loneliness"], function() {
     this.actions.iceshock = {
         name: "Iceshock [mystic]",
         properties: ["mystic", "intertia/cold", "attack"],
@@ -153,4 +153,16 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
             basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
-});
+}/*, function() {
+    this.passives.avatarOfLoneliness = {
+        name: "Avatar of Loneliness [passive]",
+        properties: ["passive", "independence/loneliness", "buff", "debuff"],
+        description: "Strong Independence/Loneliness boosts, self penalty when others present",
+        code: () => {
+            new Modifier("Avatar of Loneliness", "Strong Independence/Loneliness boosts, self penalty when others present", 
+                { caster: this, targets: unitFilter(this.team, "").filter(unit => unit.elements.includes("independence/loneliness") && unit !== this), elements: ["radiance/purity", "independence/loneliness"], listeners: { unitChange: true }, self: false, cancel: false, applied: true, focus: true},
+                function() {}
+            )
+        }
+    }
+}*/);

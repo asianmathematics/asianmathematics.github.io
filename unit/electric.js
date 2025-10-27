@@ -39,7 +39,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         code: (target) => {
             const statIncrease = [20, 10, 100];
             const bonus = elementBonus(target[0], this.actions.sickBeats)
-            if (bonus) { statIncrease.forEach(val => val *= 2 ** bonus) }
+            if (bonus) { statIncrease.forEach((_, i) => statIncrease[i] *= 2 ** bonus) }
             this.resource.energy -= 50;
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");

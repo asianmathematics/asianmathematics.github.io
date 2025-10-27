@@ -17,7 +17,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         },
         code: (target) => {
             const statIncrease = [16, 16, 12, 20];
-            const mod = modifiers.find(m => m.vars.name === "Soothing Melody" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.name === "Soothing Melody" && m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.stamina -= 10;
@@ -29,6 +29,9 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
             }
             new Modifier("Soothing Melody", "Heal and increase defensive stats and presence", { caster: this, targets: target, duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["presence", "defense", "evasion", "resist"], values: statIncrease, elementBonus: 0, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
                 function() {
+                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', {unit: this.vars.targets[0], resource: ['hp'], amount: [Math.floor(this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus))]}) }
+                    this.vars.targets[0].hp = Math.min(this.vars.targets[0].hp + Math.floor(this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus)), this.vars.targets[0].base.hp);
+                    logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.targets[0].name} for ${Math.floor(this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus))} HP!`, "heal");
                     this.vars.elementBonus = elementBonus(this.vars.targets[0], this)
                     this.vars.values = this.vars.values.map(val => val *= (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus));
                     resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
@@ -41,15 +44,8 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                         resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
                         this.vars.applied = true;
                     }
-                    if (context.unit === this.vars.caster) {
-                        this.vars.duration--;
-                        if (this.vars.duration === 0) { return true }
-                        if (this.vars.applied) {
-                            if (eventState.resourceChange.flag) { handleEvent('resourceChange', {unit: this.vars.targets[0], resource: ['hp'], amount: [this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus)]}) }
-                            this.vars.targets[0].hp = Math.min(this.vars.targets[0].hp + (this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus)), this.vars.targets[0].base.hp);
-                            logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.targets[0].name} for ${this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus)} HP!`, "heal");
-                        }
-                    }
+                    if (context.unit === this.vars.caster) { this.vars.duration-- }
+                    if (this.vars.duration === 0) { return true }
                 }
             );
         }
@@ -67,7 +63,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 return;
             }
             const statIncrease = [8, 4, 20];
-            const mod = modifiers.find(m => m.vars.name === "Rhythmic Frenzy" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.name === "Rhythmic Frenzy" && m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.stamina -= 20;
@@ -76,9 +72,9 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 effect += mod.vars.effect;
                 removeModifier(mod);
             }
-            new Modifier("Rhythmic Frenzy", "Offensive stat increase", { caster: this, targets: unitFilter("player", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "accuracy", "focus"], values: statIncrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Rhythmic Frenzy", "Offensive stat increase", { caster: this, targets: unitFilter("player", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "accuracy", "focus"], values: statIncrease, effect: effect, listeners: { turnEnd: true, positionChange: true }, cancel: false, applied: true, focus: true },
                 function() {
-                    if (this.vars.effect > 1) { for (val of this.vars.values) { val *= (3 + this.vars.effect)/4} }
+                    if (this.vars.effect > 1) { this.vars.values = this.vars.values.map(v => Math.floor(v * ((3 + this.vars.effect) / 4))) }
                     for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values) }
                 },
                 function(context) {
@@ -90,6 +86,15 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                         this.vars.applied = true;
                     }
                     if (context.unit === this.vars.caster) { this.vars.duration-- }
+                    if (context.position && context.unit.team === "player") {
+                        if (context.position === "front") {
+                            this.vars.targets.push(context.unit);
+                            resetStat(context.unit, this.vars.stats, this.vars.values)
+                        } else {
+                            this.vars.targets.splice(this.vars.targets.findIndex(unit => unit === context.unit), 1);
+                            resetStat(context.unit, this.vars.stats, this.vars.values, false)
+                        }
+                    }
                     if (this.vars.duration === 0) { return true }
                 }
             );
@@ -108,7 +113,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 return;
             }
             const statDecrease = [-17, -15, -15];
-            const mod = modifiers.find(m => m.vars.name === "Rebellious Discord" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.name === "Rebellious Discord" && m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.mana -= 10;
@@ -117,11 +122,11 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 effect += mod.vars.effect;
                 removeModifier(mod);
             }
-            new Modifier("Rebellious Discord", "Defensive stat decrease", { caster: this, targets: unitFilter("enemy", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["defense", "evasion", "resist"], values: statDecrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Rebellious Discord", "Defensive stat decrease", { caster: this, targets: unitFilter("enemy", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["defense", "evasion", "resist"], values: statDecrease, effect: effect, listeners: { turnEnd: true, positionChange: true, waveChange: true }, cancel: false, applied: true, focus: true },
                 function() {
-                    for (const unit of this.vars.targets ) {
-                        if (resistDebuff(this.vars.caster, [unit]) > 75 - (6.25 * (this.vars.effect - 1))) { resetStat(unit, this.vars.stats, this.vars.values) }
-                        else { this.vars.targets.splice(this.vars.targets.indexOf(unit), 1) }
+                    for (let i = this.vars.target.length-1; i > -1; i--) {
+                        if (resistDebuff(this.vars.caster, [this.vars.target[i]]) > 75 - (6.25 * (this.vars.effect - 1))) { resetStat(this.vars.target[i], this.vars.stats, this.vars.values) }
+                        else { this.vars.targets.splice(i, 1) }
                     }
                 },
                 function(context) {
@@ -131,6 +136,22 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                     } else if (!this.vars.cancel && !this.vars.applied) {
                         for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values) }
                         this.vars.applied = true;
+                    }
+                    if (context.position && context.unit.team === "enemy") {
+                        if (context.position === "back") {
+                            this.vars.targets.splice(this.vars.targets.findIndex(unit => unit === context.unit), 1);
+                            resetStat(context.unit, this.vars.stats, this.vars.values, false);
+                        } else if (resistDebuff(this.vars.caster, [unit]) > 75 - (6.25 * (this.vars.effect - 1))) {
+                            this.vars.targets.push(context.unit);
+                            resetStat(context.unit, this.vars.stats, this.vars.values);
+                        }
+                    }
+                    if (context.wave) {
+                        this.vars.targets = unitFilter("enemy", "front");
+                        for (let i = this.vars.target.length-1; i > -1; i--) {
+                            if (resistDebuff(this.vars.caster, [this.vars.target[i]]) > 75 - (6.25 * (this.vars.effect - 1))) { resetStat(this.vars.target[i], this.vars.stats, this.vars.values) }
+                            else { this.vars.targets.splice(i, 1) }
+                        }
                     }
                     if (context.unit === this.vars.caster) { this.vars.duration-- }
                     if (this.vars.duration === 0) { return true }
@@ -154,7 +175,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         },
         code: (target) => {
             const statIncrease = target[0].team === "player" ? .33 : -.33;
-            const mod = modifiers.find(m => m.vars.name === "Personal Request" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.name === "Personal Request" && m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.stamina -= 10;
@@ -203,7 +224,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         points: 60,
         code: () => {
             const statIncrease = [.5];
-            const mod = modifiers.find(m => m.vars.name === "Retune" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.name === "Retune" && m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             if (mod) {
@@ -217,9 +238,10 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                         this.vars.duration--;
                         if (this.vars.duration === 0) { return true }
                         if (this.vars.applied) {
-                            this.vars.caster.resource.stamina = Math.min(this.vars.caster.base.resource.stamina, this.vars.caster.resource.stamina + this.vars.caster.resource.staminaRegen * this.vars.values[0] * (this.vars.effect + 3)/4);
-                            this.vars.caster.resource.mana = Math.min(this.vars.caster.base.resource.mana, this.vars.caster.resource.mana + this.vars.caster.resource.manaRegen * this.vars.values[0] * (this.vars.effect + 3)/4);
-                            this.vars.caster.resource.energy = Math.min(this.vars.caster.base.resource.energy, this.vars.caster.resource.energy + this.vars.caster.resource.energyRegen * this.vars.values[0] * (this.vars.effect + 3)/4);
+                            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this, unit: this.vars.caster, resource: ['stamina' ,'mana', 'energy'], value: [Math.floor(this.resource.staminaRegen * this.vars.values[0] * (this.vars.effect + 3)/4), Math.floor(this.resource.manaRegen * this.vars.values[0] * (this.vars.effect + 3)/4), Math.floor(this.resource.energyRegen * this.vars.values[0] * (this.vars.effect + 3)/4)] }) }
+                            this.vars.caster.resource.stamina = Math.min(this.vars.caster.base.resource.stamina, this.vars.caster.resource.stamina + Math.floor(this.vars.caster.resource.staminaRegen * this.vars.values[0] * (this.vars.effect + 3)/4));
+                            this.vars.caster.resource.mana = Math.min(this.vars.caster.base.resource.mana, this.vars.caster.resource.mana + Math.floor(this.vars.caster.resource.manaRegen * this.vars.values[0] * (this.vars.effect + 3)/4));
+                            this.vars.caster.resource.energy = Math.min(this.vars.caster.base.resource.energy, this.vars.caster.resource.energy + Math.floor(this.vars.caster.resource.energyRegen * this.vars.values[0] * (this.vars.effect + 3)/4));
                         }
                     }
                 }

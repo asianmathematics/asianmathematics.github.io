@@ -29,10 +29,10 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
             new Modifier("Curse Field", "Reduces accuracy and evasion",
                 { caster: this, targets: unitFilter("player", "front", false), duration: 'Indefinite', attributes: ["mystic"], elements: ["anomaly/synthetic"], stats: ["accuracy", "evasion"], values: statDecrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true },
                 function() {
-                    this.vars.targets.forEach(unit => {
-                        if (resistDebuff(this.vars.caster, [unit]) > 66.7) { resetStat(unit, this.vars.stats, this.vars.values) }
-                        else { this.vars.targets.splice(this.vars.targets.indexOf(unit), 1) }
-                    });
+                    for (let i = this.vars.target.length-1; i > -1; i--) {
+                        if (resistDebuff(this.vars.caster, [this.vars.target[i]]) > 75 - (6.25 * (this.vars.effect - 1))) { resetStat(this.vars.target[i], this.vars.stats, this.vars.values) }
+                        else { this.vars.targets.splice(i, 1) }
+                    }
                 },
                 function(context) {
                     if (this.vars.cancel && this.vars.applied) {

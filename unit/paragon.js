@@ -45,9 +45,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
             this.resource.energy -= 25;
             this.previousAction[0] = this.previousAction[2] = true;
             if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.healingPills, units: targets, resource: ['hp'], value: targets.map(u => u.resource.healFactor) }) }
-            for (const unit of targets) { 
-                unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor);
-            }
+            for (const unit of targets) { unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor) }
             logAction(`${this.name} heals ${targets.map(u => u.name).join(", ")} for ${targets.map(u => u.resource.healFactor).join(", ")} HP!`, "heal");
         }
     };

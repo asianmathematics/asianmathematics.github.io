@@ -117,7 +117,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 17
             this.resource.stamina -= 10;
             const statIncrease = [80, 100, 32, 100];
             const statDecrease = [-30, -8, -12, -60, -80, -70];
-            const mod = modifiers.find(m => m.vars.name === "Joy" && m.vars.targets.includes(target[0]));
+            const mod = modifiers.find(m => m.name === "Joy" && m.vars.targets.includes(target[0]));
             if (mod) {
                 logAction(`${this.name} reapplies Joy on ${target[0].name}!`, "buff");
                 removeModifier(mod);

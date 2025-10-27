@@ -344,7 +344,7 @@ export function advanceWave(x = 0) {
     }
     currentTurn = allUnits.findIndex(unit => unit.name === turnId);
     wave++;
-    if (eventState.waveChange.flag) { handleEvent('waveChange', {wave}) }
+    if (eventState.waveChange.flag) { handleEvent('waveChange', { wave }) }
     updateBattleDisplay();
 }
 
