@@ -9,6 +9,7 @@ import { Paragon } from './unit/paragon.js';
 import { Righty001 } from './unit/righty001.js';
 import { Mannequin } from './unit/mannequin.js';
 import { Idol } from './unit/idol.js';
+import { Silhouette } from './unit/silhouette.js';
 import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
@@ -18,7 +19,7 @@ let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
 
-const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin, Idol];
+const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin, Idol, Silhouette];
 let selectedUnits = [];
 
 Dark.description = "5 star mystic unit with high evasion, speed, and crowd control capabilities";
@@ -32,6 +33,7 @@ Paragon.description = "5 star techno backline unit with good healing";
 Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
 Mannequin.description = "3 star techno midline unit with stealth capabilities";
 Idol.description = "4 star magitech backline unit with powerful healing, buffs and debuffs";
+Silhouette.description = "3 star mystic midline unit with decent versatility"
 
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
@@ -114,6 +116,7 @@ function updateInfoDisplay(unit) {
     if (!infoDisplay || !unit) return;
     let html = `<div class="left-column">
             <h3>${unit.name}</h3>
+            <p>${unit.description}</p>
             <h4>Stats (Current)</h4>`;
     for (const statName of ['hp', 'attack', 'defense', 'accuracy', 'evasion', 'focus', 'resist', 'speed', 'presence']) {
         if (statName === 'hp') { html += `<div class="stat-line"><span><strong>HP</strong></span><span>${Math.max(0, unit.hp).toFixed(0)} / ${unit.base.hp.toFixed(0)}</span></div>` }

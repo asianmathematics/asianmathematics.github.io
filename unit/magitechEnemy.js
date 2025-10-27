@@ -30,10 +30,10 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
             this.resource.stamina -= 30;
             if (Math.random() < .5) {
                 logAction(`${this.name} shifts to fire stance, becoming more aggressive!`, "buff");
-                basicModifier("Fire Stance", "Offensive enhancement", { caster: this, targets: [this], duration: 3, attributes: ["mystic"], elements: ["radiance/purity"], stats: ["attack", "focus"], values: offensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+                basicModifier("Fire Stance", "Offensive enhancement", { caster: this, targets: [this], duration: 3, attributes: ["physical", "mystic"], elements: ["radiance/purity"], stats: ["attack", "focus"], values: offensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
             } else {
                 logAction(`${this.name} shifts to ice stance, becoming more defensive!`, "buff");
-                basicModifier("Ice Stance", "Defensive enhancement", { caster: this, targets: [this], duration: 3, attributes: ["mystic"], elements: ["inertia/cold"], stats: ["defense", "resist"], values: defensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+                basicModifier("Ice Stance", "Defensive enhancement", { caster: this, targets: [this], duration: 3, attributes: ["physical", "mystic"], elements: ["inertia/cold"], stats: ["defense", "resist"], values: defensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
             }
         }
     };

@@ -95,16 +95,37 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
         }
     };
 
-    this.actions.meditate = {
-        name: "Meditate [physical]",
-        properties: ["physical", "harmonic/change", "resource"],
-        description: `Recovers some mana (${this.resource.manaRegen * 2})`,
+    this.actions.dispelMagic = {
+        name: "Dispel Magic [mana]",
+        properties: ["mystic", "mana", "intertia/cold", "debuff", "resource"],
+        cost: { mana: 40 },
+        description: "Costs 40 mana\nChance to set target&#39;s mana to 0, disable mana regeneration for next turn, and end all mystic modifiers it focuses or cast on it",
         points: 60,
         code: () => {
-            this.previousAction[0] = true;
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.meditate, unit: this, resource: ['mana'], value: [this.resource.manaRegen * 2] }) }
-            this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + (this.resource.manaRegen * 2));
-            logAction(`${this.name} meditates and recovers mana!`, "heal");
+            this.resource.mana -= 40;
+            this.previousAction[1] = true;
+            const target = randTarget(unitFilter("player", "front", false).filter(u => u.base.resource.mana))
+            if (target.length) {
+                if (resistDebuff(this, target)[0] > 25) {
+                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.dispelMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
+                    target[0].resource.mana = 0;
+                    target[0].previousAction[1] = true;
+                    for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars.targets[0] === target[0]))) { removeModifier(mod) }
+                    for (const mod of modifiers.filter(m => m.vars.targets.includes(target[0]) && m?.attributes?.includes("mystic"))) {
+                        if (mod.vars.applied) {
+                            mod.vars.cancel++;
+                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.dispelMagic, target: mod, cancel: true }) }
+                            mod.onTurn.call(mod.vars, {})
+                            mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1);
+                            mod.vars.cancel--;
+                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.dispelMagic, target: mod, cancel: false }) }
+                            mod.onTurn.call(mod.vars, {})
+                        } else { mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1) }
+                     }
+                    window.updateModifiers();
+                    logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
+                } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
+            } else { this.actions.drainLife.code() }
         }
     };
 
@@ -113,6 +134,6 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
         curseField: 0.25, 
         drainLife: 0.2, 
         arcaneShield: 0.15, 
-        meditate: 0.1 
+        dispelMagic: 0.1 
     };
 });
