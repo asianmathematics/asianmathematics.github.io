@@ -22,28 +22,49 @@ const events = [
     'turnEnd', 'singleResist', 'singleAttack', 'singleCrit', 'singleDamage', 'modifierEnd', 'elementDamage', 'cancel',
     'actionStart', 'targets', 'positionChange', 'waveChange', 'unitChange', 'resourceChange', 'statChange'
 ];
-events.forEach(type => eventState[type] = { flag: false, listeners: [] });
+events.forEach(type => eventState[type] = []);
 
 function refreshState() { currentUnit = currentAction = null }
 function setUnit(unit) { currentUnit = unit }
 
 class Modifier {
-    constructor(name, description, vars, initFunc, onTurnFunc) {
+    constructor(name, description, vars, initFunc, onTurnFunc, cancelFunc, changeTargetFunc) {
         this.name = name;
         this.description = description;
         this.vars = vars;
         this.init = initFunc;
         this.onTurn = onTurnFunc;
-        modifiers.push(this);
-        if (this.vars.listeners) {
-            for (const eventType in this.vars.listeners) {
-                if (this.vars.listeners[eventType]) {
-                    eventState[eventType].flag = true;
-                    eventState[eventType].listeners.push(this);
+        this.cancel = (cancel = true, temp = false) => {
+            if (eventState.cancel.length && !temp) { handleEvent('cancel', { modifier: this }) }
+            cancel ? this.vars.cancel++ : this.vars.cancel--;
+            cancelFunc.apply(this, [cancel, temp])
+        }
+        this.changeTarget = changeTargetFunc || this.vars.targets ? ((remove = [], add = []) => {
+            if (remove.length - add.length >= this.vars.targets.length) { removeModifier(this) }
+            else {
+                if (this.vars.applied) {
+                    this.cancel(true, true);
+                    for (let i = this.vars.targets.length - 1; i >= 0; i--) { if (remove.includes(this.vars.targets[i])) { this.vars.targets.splice(i, 1)} }
+                    this.vars.targets.push(...add);
+                    this.cancel(false, true);
+                } else {
+                    for (let i = this.vars.targets.length - 1; i >= 0; i--) { if (remove.includes(this.vars.targets[i])) { this.vars.targets.splice(i, 1)} }
+                    this.vars.targets.push(...add);
                 }
             }
-        }
-        if (eventState.modifierStart.flag) { handleEvent('modifierStart', { modifier: this }) }
+        }) : ((unit) => {
+            if (unit === this.vars.target) { removeModifier(this) }
+            else {
+                if (this.vars.applied) {
+                    this.cancel(true, true);
+                    this.vars.target = unit;
+                    this.cancel(false, true);
+                } else { this.vars.target = unit }
+            }
+        }),
+        modifiers.push(this);
+        if (this.vars.listeners) { for (const eventType in this.vars.listeners) { if (this.vars.listeners[eventType]) { eventState[eventType].push(this) } } }
+        if (eventState.modifierStart.length) { handleEvent('modifierStart', { modifier: this }) }
         currentMod.push(this);
         this.init();
         currentMod.pop();
@@ -53,20 +74,25 @@ class Modifier {
 }
 
 function handleEvent(eventType, context) {
-    for (let i = eventState[eventType].listeners.length - 1; i >= 0; i--) {
-        if (!eventState[eventType].listeners[i].vars.start) { continue }
-        currentMod.push(eventState[eventType].listeners[i]);
-        try { if (eventState[eventType].listeners[i].onTurn({ ...context, event: eventType })) { removeModifier(eventState[eventType].listeners[i]) } }
-        catch (e) {
-            console.error(`Error in ${eventType} listener (${eventState[eventType].listeners[i]?.name}):`, e);
-            try {
-                removeModifier(eventState[eventType].listeners[i]);
-                logAction(`An error occurred with a modifier.`, "error");
+    for (let i = eventState[eventType].length - 1; i >= 0; i--) {
+        if (!eventState[eventType][i].vars.start) { continue }
+        currentMod.push(eventState[eventType][i]);
+        try {
+            if (eventState[eventType][i] === currentMod[currentMod.length - 2] && eventState[eventType][i] === currentMod[currentMod.length - 3] && eventState[eventType][i] === currentMod[currentMod.length - 4]) {
+                logAction(`Modifier ${eventState[eventType][i]?.name} was called too many times in one event!`, "error");
+                currentMod.pop();
+                continue;
             }
-            catch (err) {
+            if (eventState[eventType][i].onTurn({ ...context, event: eventType })) { removeModifier(eventState[eventType][i]) }
+        } catch (e) {
+            console.error(`Error in ${eventType} listener (${eventState[eventType][i]?.name}):`, e);
+            try {
+                removeModifier(eventState[eventType][i]);
+                logAction(`An error occurred with a modifier.`, "error");
+            } catch (err) {
                 logAction('A major error occurred with a modifier, event list has been purged', "error")
-                modifiers = modifiers.filter(mod => mod !== eventState[eventType].listeners[i])
-                for (const event of events) { if (eventState[event].listeners.length) { eventState[event].listeners.filter(mod => mod !== eventState[eventType].listeners[i]) } }
+                modifiers.splice(0, modifiers.length, ...modifiers.filter(mod => mod !== eventState[eventType][i]))
+                for (const event of events) { if (eventState[event].length) { eventState[event].filter(mod => mod !== eventState[eventType][i]) } }
             }
         }
         currentMod.pop();
@@ -75,27 +101,14 @@ function handleEvent(eventType, context) {
 }
 
 function removeModifier(modifier) {
+    if (eventState.modifierEnd.length) { handleEvent('modifierEnd', { modifier }) }
     if (modifier.vars.applied) {
-        modifier.vars.cancel = true;
-        if (eventState.cancel.flag) {handleEvent('cancel', { effect: removeModifier, target: modifier, cancel: true }) }
-        currentMod.push(modifier)
-        modifier.onTurn({})
+        currentMod.push(modifier);
+        modifier.cancel();
         currentMod.pop();
     }
-    if (eventState.modifierEnd.flag) { handleEvent('modifierEnd', { modifier }) }
-    if (modifier.vars && modifier.vars.listeners) {
-        for (const event in modifier.vars.listeners) {
-            if (modifier.vars.listeners[event]) {
-                const index = eventState[event].listeners.indexOf(modifier);
-                if (index !== -1) {
-                    eventState[event].listeners.splice(index, 1);
-                    if (eventState[event].listeners.length === 0) { eventState[event].flag = false }
-                }
-            }
-        }
-    }
-    const index = modifiers.indexOf(modifier);
-    if (index !== -1) { modifiers.splice(index, 1) }
+    if (modifier.vars && modifier.vars.listeners) { for (const event in modifier.vars.listeners) { if (modifier.vars.listeners[event]) { eventState[event].splice(eventState[event].indexOf(modifier), 1) } } }
+    modifiers.splice(modifiers.indexOf(modifier), 1);
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
@@ -108,19 +121,19 @@ function logAction(message, type = 'info') {
     logEntry.className = `log-entry ${type}-entry`;
     logEntry.innerHTML = message;
     logContainer.appendChild(logEntry);
-    const entries = logContainer.children;
-    /*const maxEntries = window.innerWidth < 800 ? 100 : 250;
+    /*const entries = logContainer.children;
+    const maxEntries = window.innerWidth < 800 ? 100 : 250;
     while (entries.length > maxEntries) { logContainer.removeChild(entries[0]); }*/
     logContainer.scrollTop = logContainer.scrollHeight;
 }
 
 function resistDebuff(attacker, defenders) {
-    if (eventState.resistStart.flag) { handleEvent('resistStart', {attacker, defenders}) }
+    if (eventState.resistStart.length) { handleEvent('resistStart', {attacker, defenders}) }
     const will = []
     for (const unit of defenders) {
         const roll = Math.floor(Math.random() * 100 + 1);
         const resistSingle = roll === 1 || roll === 100 ? roll : roll * ((attacker.presence + attacker.focus) / (unit.presence + (2 * unit.resist)));
-        if (eventState.singleResist.flag) { handleEvent('singleResist', {attacker, defender: unit, resistSingle}) }
+        if (eventState.singleResist.length) { handleEvent('singleResist', {attacker, defender: unit, resistSingle}) }
         will.push(resistSingle);
     }
     return will;
@@ -128,8 +141,17 @@ function resistDebuff(attacker, defenders) {
 
 function resetStat(unit, statList, values = [], add = true) {
     if (values.length > 0) {
-        if (eventState.statChange.flag) { handleEvent('statChange', { unit, statList, values, add }) }
+        /*console.log(values);*/
+        if (eventState.statChange.length) { handleEvent('statChange', { unit, statList, values, add }) }
+        let nullCheck;
         for (let i = 0; i < Math.min(statList.length, values.length); i++) {
+            if (values[i] !== values[i] || values[i] === undefined) {
+                if (!nullCheck) {
+                    logAction("Stat change has null values!", "error");
+                    nullCheck = true;
+                }
+                continue;
+            }
             if (statList[i].includes('.')) {
                 const [parent, child] = statList[i].split('.');
                 unit.mult[parent][child] += add ? values[i] : -values[i];
@@ -151,6 +173,7 @@ function enemyTurn(unit) {
         let useable = true;
         if (unit.actions[action].cost) {
             for (const resource in unit.actions[action].cost) {
+                if (resource === "position") { continue }
                 if (unit.resource[resource] < unit.actions[action].cost[resource]) {
                     useable = false;
                     break;
@@ -173,36 +196,36 @@ function enemyTurn(unit) {
         cumulativeWeight += unit.actions.actionWeight[action];
         if (randChoice <= cumulativeWeight) {
             currentAction = unit.actions[action];
-            if (eventState.actionStart.flag) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
-            if (!unit.cancel) { unit.actions[action].code() }
+            if (eventState.actionStart.length) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
+            if (!unit.cancel) { unit.actions[action].target ? unit.actions[action].target() : unit.actions[action].code() }
             break;
         }
     }
-    if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
+    if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
     setTimeout(window.combatTick, 1000);
 }
 
 function randTarget(unitList = allUnits, count = 1, trueRand = false) {
     if (count >= unitList.length) {
-        if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: unitList}) }
+        if (eventState.targets.length) { handleEvent('targets', { selectedTargets: unitList }) }
         return unitList;
     }
     if (count === 1) {
         if (trueRand) {
-            if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: unitList}) }
+            if (eventState.targets.length) { handleEvent('targets', { selectedTargets: unitList }) }
             return [unitList[Math.floor(Math.random() * unitList.length)]];
         }
         const randChoice = Math.random() * unitList.reduce((sum, obj) => sum + obj.presence, 0);
         let cumulativePresence = 0;
-        for (const obj of unitList) {
+        for (let obj of unitList) {
             cumulativePresence += obj.presence;
             if (randChoice <= cumulativePresence) {
-                if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets: [obj]}) }
+                if (eventState.targets.length) { handleEvent('targets', { selectedTargets: [obj] }) }
                 return [obj];
             }
         }
     }
-    const selectedTargets = [];
+    let selectedTargets = [];
     const availableUnits = [ ...unitList];
     for (let i = 0; i < count && availableUnits.length > 0; i++) {
         let selectedUnit;
@@ -224,7 +247,7 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
             }
         } if (selectedUnit) { selectedTargets.push(selectedUnit) }
     }
-    if (eventState.targets.flag) { handleEvent('targets', {action: currentAction, selectedTargets}) }
+    if (eventState.targets.length) { handleEvent('targets', { selectedTargets }) }
     return selectedTargets;
 }
 
@@ -232,6 +255,7 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
 function playerTurn(unit) {
     let actionButton = `<h3 style="text-align:center;font-size:48px;margin:10px;"><b>${unit.name}'s turn</b></h3><div>`;
     for (const actionKey in unit.actions) {
+        if (actionKey === "actionWeight") { continue }
         const action = unit.actions[actionKey];
         let disabled = '';
         if (action.cost) {
@@ -246,29 +270,29 @@ function playerTurn(unit) {
     </div>`;
     window.handleActionClick = function(action, name) {
         const unit = allUnits.find(u => u.name === name);
-        if (eventState.actionStart.flag) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
+        if (eventState.actionStart.length) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
         if (!unit.cancel) {
             if (action === "Skip") {
-                logAction(`${name} skips their turn`, "skip");
+                logAction(`${name}'s turn is skipped`, "skip");
                 document.getElementById("selection").innerHTML = "";
                 cleanupGlobalHandlers();
-                if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
+                if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
                 setTimeout(window.combatTick, 500);
             } else {
                 currentAction = unit.actions[action];
                 if (unit.actions[action].target !== undefined) { unit.actions[action].target() }
                 else {
-                    if (unit.actions[action].cost && eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: unit.actions[action], unit, resource: null }) }
+                    if (unit.actions[action].cost && eventState.resourceChange.length) { handleEvent('resourceChange', { effect: unit.actions[action], unit, resource: null }) }
                     unit.actions[action].code();
                     document.getElementById("selection").innerHTML = "";
                     cleanupGlobalHandlers();
-                    if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
+                    if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
                     setTimeout(window.combatTick, 500);
                 }
             }
         } else {
             setTimeout(window.combatTick, 500);
-            if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit }) }
+            if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
         }
     };
 }
@@ -343,14 +367,14 @@ function selectTarget(action, back, target, targetType = 'unit') {
                 if (targetUnit) { selectedTargets.push(targetUnit) }
             }
         }
-        if (eventState.targets.flag) { handleEvent('targets', {action, selectedTargets}) }
+        if (eventState.targets.length) { handleEvent('targets', {action, selectedTargets}) }
         if (!currentUnit.cancel) {
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: action, currentUnit, resource: null }) }
+            if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: action, currentUnit, resource: null }) }
             action.code(selectedTargets);
         }
         document.getElementById("selection").innerHTML = "";
         cleanupGlobalHandlers();
-        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: currentUnit }) }
+        if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit: currentUnit }) }
         setTimeout(window.combatTick, 500);
     }
 
@@ -384,7 +408,7 @@ function cleanupGlobalHandlers() {
 }
 
 function attack(attacker, defenders, num = 1, calcMods = {}) {
-    if (eventState.attackStart.flag) { handleEvent('attackStart', {attacker, defenders, num, calcMods}) }
+    if (eventState.attackStart.length) { handleEvent('attackStart', {attacker, defenders, num, calcMods}) }
     const attackMods = { ...attacker, ...calcMods.attacker };
     const array = [];
     for (const unit of defenders) {
@@ -394,7 +418,7 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
             const roll = Math.floor(Math.random() * 100 + 1);
             let hitSingle = roll === 1 ? 0 : 10 * ((roll === 100 ? 2 * attackMods.accuracy : attackMods.accuracy) / defendMods.evasion ) + roll - 85;
             if (roll === 100) { hitSingle = Math.min(-hitSingle, -100) }
-            if (eventState.singleAttack.flag) { handleEvent('singleAttack', {attacker, defender: unit, hitSingle}) }
+            if (eventState.singleAttack.length) { handleEvent('singleAttack', {attacker, defender: unit, hitSingle}) }
              if (attacker.cancel) {
                 hitSingle = 0; 
                 attacker.cancel = false;
@@ -408,7 +432,7 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
 
 function crit(attacker, defenders, hit, calcMods = {}) {
     if (hit.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and hit (${hit}) array lengths are not equal`)}
-    if (eventState.critStart.flag) { handleEvent('critStart', {attacker, defenders, hit, calcMods}) }
+    if (eventState.critStart.length) { handleEvent('critStart', {attacker, defenders, hit, calcMods}) }
     const attackMods = { ...attacker, ...calcMods.attacker };
     const array = [];
     for (let i = 0; i < defenders.length; i++) {
@@ -421,7 +445,7 @@ function crit(attacker, defenders, hit, calcMods = {}) {
                 max = true;
             }
             let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (Math.max((3 * defendMods.resist) - attackMods.focus, 10)), max);
-            if (eventState.singleCrit.flag) { handleEvent('singleCrit', {attacker, defender: defenders[i], critSingle}) }
+            if (eventState.singleCrit.length) { handleEvent('singleCrit', {attacker, defender: defenders[i], critSingle}) }
             if (attacker.cancel) {
                 critSingle = 0; 
                 attacker.cancel = false;
@@ -435,7 +459,7 @@ function crit(attacker, defenders, hit, calcMods = {}) {
 
 function damage(attacker, defenders, critical, calcMods = {}) {
     if (critical.length !== defenders.length) { throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`) }
-    if (eventState.damageStart.flag) { handleEvent('damageStart', {attacker, defenders, critical, calcMods}) }
+    if (eventState.damageStart.length) { handleEvent('damageStart', {attacker, defenders, critical, calcMods}) }
     const attackMods = { ...attacker, ...calcMods.attacker };
     for (let i = 0; i < defenders.length; i++) {
         const doubleDamage = elementDamage(attacker, defenders[i], calcMods?.actionOverride || null);
@@ -444,15 +468,15 @@ function damage(attacker, defenders, critical, calcMods = {}) {
         let total = 0;
         for (let j = 0; j < critical[i].length; j++) {
             let damageSingle = (doubleDamage + 1) * (critical[i][j] <= 0 ? 0 : Math.ceil(Math.max(((Math.random() / 2) + .75) * ((critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1)) - defendMods.defense), .1 * (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1)))));
-            if (eventState.singleDamage.flag) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
+            if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
             hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
             total += damageSingle;
         }
         if (total > 0) {
             defenders[i].hp = Math.max(defenders[i].hp - total, 0);
             if (defenders[i].hp === 0) {
-                for (const mod of modifiers) { if (mod.caster === defenders[i] && mod.focus) { removeModifier(mod) } }
-                if (eventState.unitChange.flag) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+                if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+                if (defenders[i].hp === 0) { for (const mod of modifiers) { if (mod.caster === defenders[i] && (mod.vars.focus || mod.vars.penalty)) { removeModifier(mod) } } }
             }
             if (critical[i].length > 1) { logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} ${doubleDamage ? "elemental " : ""}damage!`, "hit") }
             else { logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} ${doubleDamage ? "elemental " : ""}damage!`, "hit") }
@@ -481,7 +505,7 @@ function elementDamage(attacker, defender, actionOverride = null) {
                     if (elementCombo[comboKey].every(e => defender.absorb.map(a => a).includes(e))) {
                         doubleDamage = true;
                         comboElement = comboKey;
-                        if (eventState.elementDamage.flag) { handleEvent('elementDamage', { attacker, unit: defender, comboElement, doubleDamage }) }
+                        if (eventState.elementDamage.length) { handleEvent('elementDamage', { attacker, unit: defender, comboElement, doubleDamage }) }
                         break;
                     }
                 }
@@ -514,45 +538,45 @@ function elementBonus(unit, actionOverride = null, weightOverrides = null) {
         }
         else if (normalizedWeights[eff] && targetElems.includes(eff)) { bonus += w.match }
     }
-    if (eventState.elementEffect.flag) { handleEvent('elementEffect', { effect: elementSource, target: unit, elementBonus: bonus }) }
+    if (eventState.elementEffect.length) { handleEvent('elementEffect', { effect: elementSource, target: unit, elementBonus: bonus }) }
     return bonus;
 }
 
 function basicModifier(name, description, vari) {
-    if (vari.targets.length === 1) {
+    if (vari.target) {
         return new Modifier(name, description, vari,
-            function() { resetStat(this.vars.targets[0], this.vars.stats, this.vars.values) },
+            function() { resetStat(this.vars.target, this.vars.stats, this.vars.values) },
             function(context) {
+                if (this.vars.target === context.unit) { this.vars.duration-- }
+                if (this.vars.duration <= 0) { return true }
+            },
+            function() {
                 if (this.vars.cancel && this.vars.applied) {
-                    resetStat(this.vars.targets[0], this.vars.stats, this.vars.values, false);
+                    resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
                     this.vars.applied = false;
                 }
                 else if (!this.vars.cancel && !this.vars.applied) {
-                    resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
+                    resetStat(this.vars.target, this.vars.stats, this.vars.values);
                     this.vars.applied = true;
                 }
-                if (this.vars.targets[0] === context.unit) { this.vars.duration-- }
-                if (this.vars.duration <= 0) { return true }
             }
         );
     } else {
         return new Modifier(name, description, vari,
             function() { for (const unit of this.vars.targets) { resetStat(unit, this.vars.stats, this.vars.values) } },
             function(context) {
-                if (this.vars.cancel && this.vars.applied) {
-                    for (const unit of this.vars.targets) {
-                        resetStat(unit, this.vars.stats, this.vars.values, false);
-                        this.vars.applied = false;
-                    }
-                }
-                else if (!this.vars.cancel && !this.vars.applied) {
-                    for (const unit of this.vars.targets) {
-                        resetStat(unit, this.vars.stats, this.vars.values);
-                        this.vars.applied = true;
-                    }
-                }
                 if (this.vars.caster === context.unit) { this.vars.duration-- }
                 if (this.vars.duration <= 0) { return true }
+            },
+            function() {
+                if (this.vars.cancel && this.vars.applied) {
+                    for (const unit of this.vars.targets) { resetStat(unit, this.vars.stats, this.vars.values, false) }
+                    this.vars.applied = false;
+                }
+                else if (!this.vars.cancel && !this.vars.applied) {
+                    for (const unit of this.vars.targets) { resetStat(unit, this.vars.stats, this.vars.values) }
+                    this.vars.applied = true;
+                }
             }
         );
     }

@@ -8,7 +8,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
         cost: { position: "front" },
         description: "Attacks a single target twice with increased damage.",
         points: 60,
-        target: () => { selectTarget(this.actions.shadowBlade, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.shadowBlade, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.shadowBlade.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             logAction(`${this.name} deals with ${target[0].name}`, "action");
             attack(this, target, 2, { attacker: { attack: this.attack + 8, accuracy: this.accuracy + 22, focus: this.focus + 10 } });
@@ -23,7 +23,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
         points: 60,
         code: () => {
             this.previousAction[0] = true;
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.meditate, unit: this, resource: ['mana'], value: [this.resource.manaRegen * 2] }) }
+            if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.meditate, unit: this, resource: ['mana'], value: [this.resource.manaRegen * 2] }) }
             this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + (this.resource.manaRegen * 2));
             logAction(`${this.name} meditates and recovers mana!`, "heal");
         }
@@ -44,7 +44,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -59,32 +59,24 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.dispelMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.dispelMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.dispelMagic.code(randTarget(unitFilter("player", "front", false).filter(u => u.base.resource.mana)));
         },
         code: (target) => {
-            this.resource.mana -= 40;
-            this.previousAction[1] = true;
-            if (target[0].resource.mana !== undefined) {
-                if (resistDebuff(this, target)[0] > 25) {
-                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.dispelMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
-                    target[0].resource.mana = 0;
-                    target[0].previousAction[1] = true;
-                    for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars.targets[0] === target[0]))) { removeModifier(mod) }
-                    for (const mod of modifiers.filter(m => m.vars.targets.includes(target[0]) && m?.attributes?.includes("mystic"))) {
-                        if (mod.vars.applied) {
-                            mod.vars.cancel++;
-                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.dispelMagic, target: mod, cancel: true }) }
-                            mod.onTurn.call(mod.vars, {})
-                            mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1);
-                            mod.vars.cancel--;
-                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.dispelMagic, target: mod, cancel: false }) }
-                            mod.onTurn.call(mod.vars, {})
-                        } else { mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1) }
-                     }
-                    window.updateModifiers();
-                    logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
-                } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
-            } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
+            if (target.length) {
+                this.resource.mana -= 40;
+                this.previousAction[1] = true;
+                if (target[0].resource.mana !== undefined) {
+                    if (resistDebuff(this, target)[0] > 50 - (25 * 2 ** (elementBonus(this, this.actions.dispelMagic) - elementBonus(target[0], this.actions.dispelMagic)))) {
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.dispelMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
+                        target[0].resource.mana = 0;
+                        target[0].previousAction[1] = true;
+                        for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars?.target === target[0]))) { removeModifier(mod) }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(target[0]) && m?.attributes?.includes("mystic"))) { mod.changeTarget(target) }
+                        window.updateModifiers();
+                        logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
+                    } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
+                } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
+            } else { tthis.actions.iceshock.target() }
         }
     };
 
@@ -94,7 +86,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
         description: "Switch between front and back line positions",
         code: () => {
             this.previousAction[0] = true;
-            if (eventState.positionChange.flag) {handleEvent('positionChange', { unit: this, position: this.position === "back" ? "front" : "back" }) }
+            if (eventState.positionChange.length) {handleEvent('positionChange', { unit: this, position: this.position === "back" ? "front" : "back" }) }
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} teleports to the frontline.`, "info");
@@ -106,6 +98,13 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 this.base.resist = 40;
                 this.base.speed = 86;
                 this.base.presence = 100;
+                this.actions.actionWeight = { 
+                    shadowBlade: 0.4,
+                    meditate: 0,
+                    sneak: 0.2,
+                    dispelMagic: 0.2,
+                    switchPosition: 0.2
+                };
             } else {
                 this.position = "back";
                 logAction(`${this.name} teleports to the backline.`, "info");
@@ -117,8 +116,23 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 this.base.resist = 50;
                 this.base.speed = 65;
                 this.base.presence = 77;
+                this.actions.actionWeight = { 
+                    shadowBlade: 0,
+                    meditate: 0.4,
+                    sneak: 0.2,
+                    dispelMagic: 0.2,
+                    switchPosition: 0.2
+                };
             }
             resetStat(this, ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"]);
         }
+    };
+
+    this.actions.actionWeight = { 
+        shadowBlade: 0,
+        meditate: 0.4,
+        sneak: 0.2,
+        dispelMagic: 0.2,
+        switchPosition: 0.2
     };
 })

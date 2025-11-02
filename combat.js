@@ -40,7 +40,7 @@ function initUnitSelection() {
     const selectedContainer = document.getElementById('selected-units');
     const countDisplay = selectedContainer.querySelector('h4');
     roster.innerHTML = '';
-    selectedContainer.innerHTML = '<h4>Selected Units (max of 4)</h4>';
+    selectedContainer.innerHTML = '<h4>Selected Units (max of 6, 4 recommened)</h4>';
     selectedUnits = [];
     availableUnits.forEach(unit => {
         const card = document.createElement('div');
@@ -59,14 +59,14 @@ function initUnitSelection() {
         card.addEventListener('click', () => {
             unit.actionsInit();
             updateInfoDisplay(unit);
-            if (selectedUnits.length >= 4 && !card.classList.contains('selected')) {
-                showMessage('Maximum 4 units allowed!', 'warning', 'selection');
+            if (selectedUnits.length >= 6 && !card.classList.contains('selected')) {
+                showMessage('Maximum 6 units allowed!', 'warning', 'selection');
                 return;
             }
             card.classList.toggle('selected');
             if (card.classList.contains('selected')) { selectedUnits.push(unit) }
             else { selectedUnits = selectedUnits.filter(u => u.name !== unit.name) }
-            countDisplay.textContent = `Selected Units (${selectedUnits.length}/4)`;
+            countDisplay.textContent = `Selected Units (${selectedUnits.length}/6)`;
             renderSelectedUnits();
         });
         roster.appendChild(card);
@@ -166,7 +166,7 @@ function updateModifiers() {
                 <!-- <img class="modifier-icon" src="icons/${modifier.vars.icon}" alt="${modifier.name} icon"> -->
                 <span class="modifier-caster">${modifier.vars.caster?.name || "System"}'s</span>
                 <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
-                <div class="modifier-targets">Targets: ${modifier.vars.targets.map(u => u.name).join(", ")}</div>
+                <div class="modifier-targets">Targets: ${modifier.vars?.target?.name || modifier.vars.targets.map(u => u.name).join(", ")}</div>
                 <div class="modifier-duration">${modifier.vars.duration} turn(s) left</div>
             </li>`;
         }
@@ -321,7 +321,7 @@ function cloneUnit(unit) {
 }
 
 function regenerateResources(unit) {
-    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: regenerateResources, unit, resource: [] }) }
+    if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: regenerateResources, unit, resource: [] }) }
     if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + unit.resource.staminaRegen + Number.EPSILON)) }
     if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + unit.resource.manaRegen + Number.EPSILON)) }
     if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + unit.resource.energyRegen + Number.EPSILON)) }
@@ -344,7 +344,7 @@ export function advanceWave(x = 0) {
     }
     currentTurn = allUnits.findIndex(unit => unit.name === turnId);
     wave++;
-    if (eventState.waveChange.flag) { handleEvent('waveChange', { wave }) }
+    if (eventState.waveChange.length) { handleEvent('waveChange', { wave }) }
     updateBattleDisplay();
 }
 
@@ -413,12 +413,12 @@ export async function combatTick() {
                 currentTurn = (currentTurn + i) % allUnits.length;
                 break;
             }
-            updateBattleDisplay();
             await sleep(0);
         }
+        updateBattleDisplay();
     }
     logAction(`<strong>Turn ${turnCounter++}: ${turn.name}'s turn</strong>`, "turn");
-    if (eventState.turnStart.flag) { handleEvent('turnStart', { unit: turn }) }
+    if (eventState.turnStart.length) { handleEvent('turnStart', { unit: turn }) }
     turn.timer += 1000;
     if (!turn.stun) {
         setUnit(turn)
@@ -433,7 +433,7 @@ export async function combatTick() {
         if (turn.team === "enemy") { enemyTurn(turn) }
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
-        if (eventState.turnEnd.flag) { handleEvent('turnEnd', { unit: turn }) }
+        if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit: turn }) }
         setTimeout(combatTick, 500);
     }
 }

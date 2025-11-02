@@ -13,7 +13,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.energyRifle, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.energyRifle, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.energyRifle.code(randTarget(unitFilter("player", "front", false)));
         },
         code: (target) => {
             this.resource.energy -= 20;
@@ -34,7 +34,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 showMessage("Not enough resources!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.dualWield, () => { playerTurn(this) }, [2, false, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.dualWield, () => { playerTurn(this) }, [2, false, unitFilter("enemy", "front", false)]) : this.actions.dualWield.code(randTarget(unitFilter("player", "front", false), Math.random() < .5 ? 1 : 2));
         },
         code: (targets) => {
             this.resource.stamina -= 20;
@@ -56,7 +56,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 showMessage("Not enough resources!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.snipe, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "", false)]);
+            this.team === "player" ? selectTarget(this.actions.snipe, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "", false)]) : this.actions.snipe.code(randTarget(unitFilter("player", "", false)));
         },
         code: (target) => {
             const statDecrease = [5, 10]
@@ -65,7 +65,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
             this.previousAction[0] = this.previousAction[2] = true;
             logAction(`${this.name} headshots ${target[0].name}!`, "action");
             attack(this, target, 1, { attacker: { attack: this.attack + 38, accuracy: this.accuracy + 60, focus: this.focus + 70 } });
-            basicModifier("Snipe cooldown", "decreased evasion and speed", { caster: this, targets: [this], duration: 1, stats: ["evasion", "speed"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
+            basicModifier("Snipe cooldown", "decreased evasion and speed", { caster: this, target: this, duration: 1, stats: ["evasion", "speed"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
 
@@ -84,7 +84,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -94,7 +94,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
         description: "Switch between front and back line positions",
         code: () => {
             this.previousAction[0] = true;
-            if (eventState.positionChange.flag) {handleEvent('positionChange', { unit: this, position: this.position === "back" ? "front" : "back" }) }
+            if (eventState.positionChange.length) {handleEvent('positionChange', { unit: this, position: this.position === "back" ? "front" : "back" }) }
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
@@ -106,6 +106,13 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 this.base.resist = 20;
                 this.base.speed = 95;
                 this.base.presence = 75;
+                this.actions.actionWeight = { 
+                    energyRifle: 0.2,
+                    dualWield: 0.4,
+                    snipe: 0,
+                    sneak: 0.2,
+                    switchPosition: 0.2
+                };
             } else {
                 this.position = "back";
                 logAction(`${this.name} moves to the backline.`, "info");
@@ -117,8 +124,23 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 this.base.resist = 25;
                 this.base.speed = 80;
                 this.base.presence = 65;
+                this.actions.actionWeight = { 
+                    energyRifle: 0.35,
+                    dualWield: 0,
+                    snipe: 0.35,
+                    sneak: 0.1,
+                    switchPosition: 0.2
+                };
             }
             resetStat(this, ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"]);
         }
+    };
+
+    this.actions.actionWeight = { 
+        energyRifle: 0.35,
+        dualWield: 0,
+        snipe: 0.35,
+        sneak: 0.1,
+        switchPosition: 0.2
     };
 })

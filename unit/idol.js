@@ -13,39 +13,55 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 showMessage("Not enough resources!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.soothingMelody, () => { playerTurn(this) }, [1, true, unitFilter("player", "")]);
+            this.team === "player" ? selectTarget(this.actions.soothingMelody, () => { playerTurn(this) }, [1, true, unitFilter("player", "")]) : this.actions.soothingMelody.code(randTarget(unitFilter("enemy", "")));
         },
         code: (target) => {
-            const statIncrease = [16, 16, 12, 20];
-            const mod = modifiers.find(m => m.name === "Soothing Melody" && m.vars.caster === this);
+            const bonus = this === target[0] ? 1 : 1.5 ** elementBonus(target[0], this.actions.soothingMelody);
+            const statIncrease = [16 * bonus, 16 * bonus, 12 * bonus, 20 * bonus];
+            const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.stamina -= 10;
             this.resource.mana -= 20;
             if (mod) {
-                if (mod.vars.targets[0] !== target[0]) { effect = Math.max(mod.vars.effect - 1, 1) }
-                else { effect += mod.vars.effect }
+                if (mod.name === "Soothing Melody") {
+                    if (mod.vars.target !== target[0]) { effect = Math.max(mod.vars.effect - 1, 1) }
+                    else { effect += mod.vars.effect }
+                }
                 removeModifier(mod);
             }
-            new Modifier("Soothing Melody", "Heal and increase defensive stats and presence", { caster: this, targets: target, duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["presence", "defense", "evasion", "resist"], values: statIncrease, elementBonus: 0, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Soothing Melody", "Heal and increase defensive stats and presence", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["presence", "defense", "evasion", "resist"], values: statIncrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
                 function() {
-                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', {unit: this.vars.targets[0], resource: ['hp'], amount: [Math.floor(this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus))]}) }
-                    this.vars.targets[0].hp = Math.min(this.vars.targets[0].hp + Math.floor(this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus)), this.vars.targets[0].base.hp);
-                    logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.targets[0].name} for ${Math.floor(this.vars.targets[0].resource.healFactor * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus))} HP!`, "heal");
-                    this.vars.elementBonus = elementBonus(this.vars.targets[0], this)
-                    this.vars.values = this.vars.values.map(val => val *= (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus));
-                    resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
+                    if (eventState.resourceChange.length) { handleEvent('resourceChange', {unit: this.vars.target, resource: ['hp'], value: [Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)]}) }
+                    this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON), this.vars.target.base.hp);
+                    logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.target.name} for ${Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)} HP!`, "heal");
+                    this.vars.values = this.vars.values.map(val => val *= (3 + this.vars.effect)/4);
+                    resetStat(this.vars.target, this.vars.stats, this.vars.values);
                 },
                 function(context) {
-                    if (this.vars.cancel && this.vars.applied) {
-                        resetStat(this.vars.targets[0], this.vars.stats, this.vars.values, false);
-                        this.vars.applied = false;
-                    } else if (!this.vars.cancel && !this.vars.applied) {
-                        resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
-                        this.vars.applied = true;
-                    }
                     if (context.unit === this.vars.caster) { this.vars.duration-- }
                     if (this.vars.duration === 0) { return true }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
+                        this.vars.applied = false;
+                    } else if (!this.vars.cancel && !this.vars.applied) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values);
+                        this.vars.applied = true;
+                    }
+                },
+                function(unit) {
+                    if (unit === this.vars.target) {
+                        if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
+                        this.vars.target = null;
+                    } else {
+                        if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
+                        const bonus = (2 ** elementBonus(unit, this)) * (3 + this.vars.effect)/4;
+                        this.vars.target = unit;
+                        this.vars.values = [16 * bonus, 16 * bonus, 12 * bonus, 20 * bonus];
+                        if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+                    }
                 }
             );
         }
@@ -63,39 +79,67 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 return;
             }
             const statIncrease = [8, 4, 20];
-            const mod = modifiers.find(m => m.name === "Rhythmic Frenzy" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.stamina -= 20;
             this.resource.energy -= 10;
             if (mod) {
-                effect += mod.vars.effect;
+                if (mod.name === "Rhythmic Frenzy") { effect += mod.vars.effect }
                 removeModifier(mod);
             }
-            new Modifier("Rhythmic Frenzy", "Offensive stat increase", { caster: this, targets: unitFilter("player", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "accuracy", "focus"], values: statIncrease, effect: effect, listeners: { turnEnd: true, positionChange: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Rhythmic Frenzy", "Offensive stat increase", { caster: this, targets: unitFilter(this.team, "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "accuracy", "focus"], values: statIncrease, bonusArray: [], effect: effect, listeners: { turnEnd: true, positionChange: true }, cancel: false, applied: true, focus: true },
                 function() {
-                    if (this.vars.effect > 1) { this.vars.values = this.vars.values.map(v => Math.floor(v * ((3 + this.vars.effect) / 4))) }
-                    for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values) }
+                    logAction(`${this.vars.caster.name} is exciting the frontlines!`, "buff");
+                    if (this.vars.effect > 1) { this.vars.values = this.vars.values.map(v => Math.floor(v * ((3 + this.vars.effect) / 4) + Number.EPSILON)) }
+                    for (let i = 0; i < this.vars.targets.length; i++) {
+                        this.vars.bonusArray[i] = elementBonus(this.vars.targets[i], this);
+                        resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON)));
+                    }
                 },
                 function(context) {
-                    if (this.vars.cancel && this.vars.applied) {
-                        for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values, false) }
-                        this.vars.applied = false;
-                    } else if (!this.vars.cancel && !this.vars.applied) {
-                        for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values) }
-                        this.vars.applied = true;
-                    }
                     if (context.unit === this.vars.caster) { this.vars.duration-- }
-                    if (context.position && context.unit.team === "player") {
+                    if (context.position && context.unit.team === this.vars.caster.team) {
                         if (context.position === "front") {
+                            this.vars.bonusArray[this.vars.bonusArray.length] = elementBonus(context.unit, this);
                             this.vars.targets.push(context.unit);
-                            resetStat(context.unit, this.vars.stats, this.vars.values)
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.bonusArray.length - 1] + Number.EPSILON)))
                         } else {
-                            this.vars.targets.splice(this.vars.targets.findIndex(unit => unit === context.unit), 1);
-                            resetStat(context.unit, this.vars.stats, this.vars.values, false)
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.targets.indexOf(context.unit)] + Number.EPSILON)), false)
+                            this.vars.bonusArray.splice(this.vars.targets.indexOf(context.unit), 1);
+                            this.vars.targets.splice(this.vars.targets.indexOf(context.unit), 1);
                         }
                     }
                     if (this.vars.duration === 0) { return true }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) }
+                        this.vars.applied = false;
+                    }
+                    else if (!this.vars.cancel && !this.vars.applied) {
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
+                        this.vars.applied = true;
+                    }
+                },
+                function(remove = [], add = []) {
+                    if (remove.length - add.length >= this.vars.targets.length) {
+                        if (this.vars.applied) { for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) } }
+                        this.vars.targets = this.vars.bonusArray = [];
+                    } else {
+                        if (this.vars.applied) { for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) } }
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) {
+                            if (remove.includes(this.vars.targets[i])) {
+                                if (this.vars.applied) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) }
+                                this.vars.targets.splice(i, 1);
+                                this.vars.bonusArray.splice(i, 1);
+                            }
+                        }
+                        let index = this.vars.targets.length;
+                        this.vars.targets.push(...add);
+                        this.vars.bonusArray.push(...add.map(unit => elementBonus(unit, this)));
+                        if (this.vars.applied) { for (let i = index; i < this.vars.targets.length; i++) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) } }
+                    }
                 }
             );
         }
@@ -113,48 +157,83 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 return;
             }
             const statDecrease = [-17, -15, -15];
-            const mod = modifiers.find(m => m.name === "Rebellious Discord" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.mana -= 10;
             this.resource.energy -= 20;
             if (mod) {
-                effect += mod.vars.effect;
+                if (mod.name === "Rebellious Discord") { effect += mod.vars.effect }
                 removeModifier(mod);
             }
-            new Modifier("Rebellious Discord", "Defensive stat decrease", { caster: this, targets: unitFilter("enemy", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["defense", "evasion", "resist"], values: statDecrease, effect: effect, listeners: { turnEnd: true, positionChange: true, waveChange: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Rebellious Discord", "Defensive stat decrease", { caster: this, targets: unitFilter(this.team === "player" ? "enemy" : "player", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["defense", "evasion", "resist"], values: statDecrease, bonusArray: [], effect: effect, listeners: { turnEnd: true, positionChange: true, waveChange: this.team === "player" }, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, unit) > 75 - (6.25 * (this.vars.effect - 1)) * (4 ** (elementBonus(this.vars.caster, this) - elementBonus(unit, this))) } },
                 function() {
-                    for (let i = this.vars.target.length-1; i > -1; i--) {
-                        if (resistDebuff(this.vars.caster, [this.vars.target[i]]) > 75 - (6.25 * (this.vars.effect - 1))) { resetStat(this.vars.target[i], this.vars.stats, this.vars.values) }
-                        else { this.vars.targets.splice(i, 1) }
+                    logAction(`${this.vars.caster.name} is riling up the otherside!`, "debuff");
+                    this.vars.bonusArray.length = this.vars.targets.length;
+                    for (let i = this.vars.targets.length - 1; i > -1; i--) {
+                        this.vars.bonusArray[i] = 2 ** (elementBonus(this.vars.caster, this) - elementBonus(this.vars.targets[i], this));
+                        if (resistDebuff(this.vars.caster, [this.vars.targets[i]]) > 75 - (6.25 * (this.vars.effect - 1) * this.vars.bonusArray[i])) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
+                        else {
+                            this.vars.targets.splice(i, 1);
+                            this.vars.bonusArray.splice(i, 1)
+                        }
                     }
                 },
                 function(context) {
-                    if (this.vars.cancel && this.vars.applied) {
-                        for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values, false) }
-                        this.vars.applied = false;
-                    } else if (!this.vars.cancel && !this.vars.applied) {
-                        for (const unit of this.vars.targets ) { resetStat(unit, this.vars.stats, this.vars.values) }
-                        this.vars.applied = true;
-                    }
-                    if (context.position && context.unit.team === "enemy") {
+                    if (context.position && context.unit.team === (this.vars.caster.team === "player" ? "enemy" : "player")) {
                         if (context.position === "back") {
-                            this.vars.targets.splice(this.vars.targets.findIndex(unit => unit === context.unit), 1);
-                            resetStat(context.unit, this.vars.stats, this.vars.values, false);
-                        } else if (resistDebuff(this.vars.caster, [unit]) > 75 - (6.25 * (this.vars.effect - 1))) {
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.targets.indexOf(context.unit)] + Number.EPSILON)), false)
+                            this.vars.bonusArray.splice(this.vars.targets.indexOf(context.unit), 1);
+                            this.vars.targets.splice(this.vars.targets.indexOf(context.unit), 1);
+                        } else if (resistDebuff(this.vars.caster, [context.unit]) > 75 - (6.25 * (this.vars.effect - 1))) {
+                            this.vars.bonusArray[this.vars.bonusArray.length] = elementBonus(context.unit, this);
                             this.vars.targets.push(context.unit);
-                            resetStat(context.unit, this.vars.stats, this.vars.values);
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.bonusArray.length - 1] + Number.EPSILON)))
                         }
                     }
                     if (context.wave) {
                         this.vars.targets = unitFilter("enemy", "front");
-                        for (let i = this.vars.target.length-1; i > -1; i--) {
-                            if (resistDebuff(this.vars.caster, [this.vars.target[i]]) > 75 - (6.25 * (this.vars.effect - 1))) { resetStat(this.vars.target[i], this.vars.stats, this.vars.values) }
-                            else { this.vars.targets.splice(i, 1) }
+                        this.vars.bonusArray.length = this.vars.targets.length;
+                        for (let i = this.vars.targets.length - 1; i > -1; i--) {
+                            this.vars.bonusArray[i] = 2 ** (elementBonus(this.vars.caster, this) - elementBonus(this.vars.targets[i], this));
+                            if (resistDebuff(this.vars.caster, [this.vars.targets[i]]) > 75 - (6.25 * (this.vars.effect - 1) * this.vars.bonusArray[i])) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
+                            else {
+                                this.vars.targets.splice(i, 1);
+                                this.vars.bonusArray.splice(i, 1)
+                            }
                         }
                     }
                     if (context.unit === this.vars.caster) { this.vars.duration-- }
                     if (this.vars.duration === 0) { return true }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) }
+                        this.vars.applied = false;
+                    }
+                    else if (!this.vars.cancel && !this.vars.applied) {
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
+                        this.vars.applied = true;
+                    }
+                },
+                function(remove = [], add = []) {
+                    if (remove.length - add.length >= this.vars.targets.length) {
+                        if (this.vars.applied) { for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) } }
+                        this.vars.targets = this.vars.bonusArray = [];
+                    } else {
+                        if (this.vars.applied) { for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) } }
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) {
+                            if (remove.includes(this.vars.targets[i])) {
+                                if (this.vars.applied) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) }
+                                this.vars.targets.splice(i, 1);
+                                this.vars.bonusArray.splice(i, 1);
+                            }
+                        }
+                        let index = this.vars.targets.length;
+                        this.vars.targets.push(...add);
+                        this.vars.bonusArray.push(...add.map(unit => elementBonus(unit, this)));
+                        if (this.vars.applied) { for (let i = index; i < this.vars.targets.length; i++) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) } }
+                    }
                 }
             );
         }
@@ -171,47 +250,65 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 showMessage("Not enough resources!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.personalRequest, () => { playerTurn(this) }, [1, true, unitFilter("", "", false).filter(unit => unit !== this)]);
+            this.team === "player" ? selectTarget(this.actions.personalRequest, () => { playerTurn(this) }, [1, true, unitFilter("", "", false).filter(unit => unit !== this)]) : this.actions.personalRequest.code(randTarget(unitFilter("", "", false).filter(unit => unit !== this)));
         },
         code: (target) => {
-            const statIncrease = target[0].team === "player" ? .33 : -.33;
-            const mod = modifiers.find(m => m.name === "Personal Request" && m.vars.caster === this);
+            const statIncrease = target[0].team === this.team ? .33 * (1.5 ** elementBonus(target[0], this.actions.personalRequest)): -.33 * (1.5 ** (elementBonus(this, this.actions.personalRequest) - elementBonus(target[0], this.actions.personalRequest)));
+            const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             this.resource.stamina -= 10;
             this.resource.mana -= 10;
             this.resource.energy -= 10;
             if (mod) {
-                if (mod.vars.targets[0] !== target[0]) { effect = Math.max(mod.vars.effect - 1, 1) }
-                else { effect += mod.vars.effect }
+                if (mod.name === "Personal Request") {
+                    if (mod.vars.target !== target[0]) { effect = Math.max(mod.vars.effect - 1, 1) }
+                    else { effect += mod.vars.effect }
+                }
                 removeModifier(mod);
             }
-            new Modifier("Personal Request", "Changes stats", { caster: this, targets: target, duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"], values: [], elementBonus: 0, effect: effect, baseVal: statIncrease, changeStat: false, listeners: { turnEnd: true, statChange: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Personal Request", "Changes stats", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"], values: [], effect: effect, baseVal: statIncrease, changeStat: false, listeners: { turnEnd: true, statChange: true }, cancel: false, applied: true, focus: true },
                 function() {
-                    this.vars.elementBonus = elementBonus(this.vars.targets[0], this)
-                    for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus))) }
-                    resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
+                    logAction(`${this.vars.caster.name} sings a song just for ${this.vars.target.name}!`, "action");
+                    for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 + Number.EPSILON)) }
+                    resetStat(this.vars.target, this.vars.stats, this.vars.values);
                 },
                 function(context) {
-                    if (this.vars.cancel && this.vars.applied) {
-                        resetStat(this.vars.targets[0], this.vars.stats, this.vars.values, false);
-                        this.vars.applied = false;
-                    } else if (!this.vars.cancel && !this.vars.applied) {
-                        resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
-                        this.vars.applied = true;
-                    }
                     if (!this.vars.changeStat && context.statList && context.unit === this.vars.caster && context.statList.filter(s => this.vars.stats.includes(s)).length > 0) { this.vars.changeStat = true }
                     else if (!context?.statList) {
                         if (this.vars.changeStat) {
-                            resetStat(this.vars.targets[0], this.vars.stats, this.vars.values, false);
+                            if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
                             this.vars.values.length = 0;
-                            for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 * (1.5 ** this.vars.elementBonus))) }
-                            resetStat(this.vars.targets[0], this.vars.stats, this.vars.values);
+                            for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 + Number.EPSILON)) }
+                            if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values) }
                             this.vars.changeStat = false;
                         }
                         if (context.unit === this.vars.caster) { this.vars.duration-- }
                     }
                     if (this.vars.duration === 0) { return true }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
+                        this.vars.applied = false;
+                    } else if (!this.vars.cancel && !this.vars.applied) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values);
+                        this.vars.applied = true;
+                    }
+                },
+                function(unit) {
+                    if (unit === this.vars.target) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
+                        this.vars.target = null;
+                    }
+                    else {
+                        if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
+                        this.vars.target = unit;
+                        this.vars.values.length = 0;
+                        this.vars.baseVal =  this.vars.baseVal > 0 ? .33 * (1.5 ** elementBonus(unit, this)) : -.33 * (1.5 ** (elementBonus(this.vars.caster, this) - elementBonus(unit, this)));
+                        for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 + Number.EPSILON)) }
+                        if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+                    }
                 }
             );
         }
@@ -224,28 +321,42 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         points: 60,
         code: () => {
             const statIncrease = [.5];
-            const mod = modifiers.find(m => m.name === "Retune" && m.vars.caster === this);
+            const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
             if (mod) {
-                effect += mod.vars.effect;
+                if (mod.name === "Retune") { effect += mod.vars.effect }
                 removeModifier(mod);
             }
-            new Modifier("Retune", "Increased resource regen", { caster: this, targets: [this], duration: 4, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], values: statIncrease, effect: effect, listeners: { turnStart: true, turnEnd: true }, cancel: false, applied: true, focus: true },
-                function() {},
+            new Modifier("Retune", "Increased resource regen", { caster: this, target: this, duration: 4, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], values: statIncrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
+                function() { logAction(`${this.vars.caster.name} is preparing for the next performance!`, "action") },
                 function(context) {
-                    if (context.unit === this.vars.caster) {
+                    if (context.unit === this.vars.target) {
                         this.vars.duration--;
                         if (this.vars.duration === 0) { return true }
                         if (this.vars.applied) {
-                            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this, unit: this.vars.caster, resource: ['stamina' ,'mana', 'energy'], value: [Math.floor(this.resource.staminaRegen * this.vars.values[0] * (this.vars.effect + 3)/4), Math.floor(this.resource.manaRegen * this.vars.values[0] * (this.vars.effect + 3)/4), Math.floor(this.resource.energyRegen * this.vars.values[0] * (this.vars.effect + 3)/4)] }) }
-                            this.vars.caster.resource.stamina = Math.min(this.vars.caster.base.resource.stamina, this.vars.caster.resource.stamina + Math.floor(this.vars.caster.resource.staminaRegen * this.vars.values[0] * (this.vars.effect + 3)/4));
-                            this.vars.caster.resource.mana = Math.min(this.vars.caster.base.resource.mana, this.vars.caster.resource.mana + Math.floor(this.vars.caster.resource.manaRegen * this.vars.values[0] * (this.vars.effect + 3)/4));
-                            this.vars.caster.resource.energy = Math.min(this.vars.caster.base.resource.energy, this.vars.caster.resource.energy + Math.floor(this.vars.caster.resource.energyRegen * this.vars.values[0] * (this.vars.effect + 3)/4));
+                            if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['stamina' ,'mana', 'energy'], value: [Math.floor(this.vars.target.resource.staminaRegen * (1 + (this.vars.values[0] * (this.vars.effect + 3)/4)) + Number.EPSILON), Math.floor(this.vars.target.resource.manaRegen * (1 + (this.vars.values[0] * (this.vars.effect + 3)/4)) + Number.EPSILON), Math.floor(this.vars.target.resource.energyRegen * (1 + (this.vars.values[0] * (this.vars.effect + 3)/4)) + Number.EPSILON)] }) }
+                            this.vars.target.resource.stamina = Math.min(this.vars.target.base.resource.stamina, this.vars.target.resource.stamina + Math.floor(this.vars.target.resource.staminaRegen * (1 + (this.vars.values[0] * (this.vars.effect + 3)/4)) + Number.EPSILON));
+                            this.vars.target.resource.mana = Math.min(this.vars.target.base.resource.mana, this.vars.target.resource.mana + Math.floor(this.vars.target.resource.manaRegen * (1 + (this.vars.values[0] * (this.vars.effect + 3)/4)) + Number.EPSILON));
+                            this.vars.target.resource.energy = Math.min(this.vars.target.base.resource.energy, this.vars.target.resource.energy + Math.floor(this.vars.target.resource.energyRegen * (1 + (this.vars.values[0] * (this.vars.effect + 3)/4)) + Number.EPSILON));
                         }
+                    }
+                },
+                function(cancel, temp) {
+                    if (!temp) {
+                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
+                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
                     }
                 }
             );
         }
+    };
+    
+    this.actions.actionWeight = { 
+        soothingMelody: 0.25,
+        rhythmicFrenzy: 0.2,
+        rebelliousDiscord: 0.2,
+        personalRequest: 0.1,
+        retune: 0.25
     };
 })

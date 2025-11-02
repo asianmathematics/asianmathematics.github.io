@@ -13,7 +13,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
                 showMessage("Not enough resources!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.gun, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.gun, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.gun.code(randTarget(unitFilter("player", "front", false)));
         },
         code: (target) => {
             const statDecrease = [-10];
@@ -22,7 +22,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
             this.previousAction[0] = this.previousAction[2] = true;
             logAction(`I'm a healer but...`, "action");
             attack(this, target, 4, { accuracy: this.accuracy + 65, focus: this.focus + 30 });
-            basicModifier("Speed Penalty", "Speed reduced during gun", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["speed"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
+            basicModifier("Speed Penalty", "Speed reduced during gun", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["speed"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
     
@@ -38,15 +38,16 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
                 return;
             }
             const healable = unitFilter("player", "").filter(u => !u.resource.mana);
-            if (healable.length > 0) { showMessage("No available targets", "error", "selection") }
-            selectTarget(this.actions.healingPills, () => { playerTurn(this) }, [3, false, healable]);
+            this.team === "player" ? selectTarget(this.actions.healingPills, () => { playerTurn(this) }, [3, false, healable]) : this.actions.healingPills.code(randTarget(unitFilter("enemy", "").filter(u => !u.resource.mana && u.hp < u.base.hp), 3));
         },
         code: (targets) => {
-            this.resource.energy -= 25;
-            this.previousAction[0] = this.previousAction[2] = true;
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.healingPills, units: targets, resource: ['hp'], value: targets.map(u => u.resource.healFactor) }) }
-            for (const unit of targets) { unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor) }
-            logAction(`${this.name} heals ${targets.map(u => u.name).join(", ")} for ${targets.map(u => u.resource.healFactor).join(", ")} HP!`, "heal");
+            if (targets.length) {
+                this.resource.energy -= 25;
+                this.previousAction[0] = this.previousAction[2] = true;
+                if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.healingPills, units: targets, resource: ['hp'], value: targets.map(u => u.resource.healFactor) }) }
+                for (const unit of targets) { unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor) }
+                logAction(`${this.name} heals ${targets.map(u => u.name).join(", ")} for ${targets.map(u => u.resource.healFactor).join(", ")} HP!`, "heal");
+            } else { this.resource.energy >= 35 ? this.actions.healingDrone.code() : this.actions.backupPower.code() }
         }
     };
 
@@ -61,33 +62,24 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.disableMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.disableMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.disableMagic.code(randTarget(unitFilter("player", "front", false).filter(u => u.base.resource.mana)));
         },
         code: (target) => {
-            this.resource.energy -= 40;
-            this.previousAction[2] = true;
-            const will = resistDebuff(this, target);
-            if (target[0].resource.mana !== undefined) {
-                if (will[0] > 25) {
-                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.disableMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
-                    target[0].resource.mana = 0;
-                    target[0].previousAction[1] = true;
-                    for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars.targets[0] === target[0]))) { removeModifier(mod) }
-                    for (const mod of modifiers.filter(m => m.vars.targets.includes(target[0]) && m?.attributes?.includes("mystic"))) { 
-                        if (mod.vars.applied) {
-                            mod.vars.cancel++;
-                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.disableMagic, target: mod, cancel: true }) }
-                            mod.onTurn.call(mod.vars, {})
-                            mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1);
-                            mod.vars.cancel--;
-                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.disableMagic, target: mod, cancel: false }) }
-                            mod.onTurn.call(mod.vars, {})
-                        } else { mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1) }
-                     }
-                    window.updateModifiers();
-                    logAction(`${this.name} disables ${target[0].name}'s magic!`, "action");
-                } else { logAction(`${target[0].name} resists disable magic`, "miss") }
-            } else { logAction(`${target[0].name} has no magic to disable!`, "warning") }
+            if (target.length) {
+                this.resource.energy -= 40;
+                this.previousAction[2] = true;
+                if (target[0].resource.mana !== undefined) {
+                    if (resistDebuff(this, target)[0] > 50 - (25 * (2 ** (elementBonus(this, this.actions.disableMagic) - elementBonus(target[0], this.actions.disableMagic))))) {
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.disableMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
+                        target[0].resource.mana = 0;
+                        target[0].previousAction[1] = true;
+                        for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars?.target === target[0]))) { removeModifier(mod) }
+                        for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && m.vars?.targets?.includes(target[0]))) { mod.changetarget(target) }
+                        window.updateModifiers();
+                        logAction(`${this.name} disables ${target[0].name}'s magic!`, "action");
+                    } else { logAction(`${target[0].name} resists disable magic`, "miss") }
+                } else { logAction(`${target[0].name} has no magic to disable!`, "warning") }
+            } else { this.actions.healingDrone.code() }
         }
     };
 
@@ -104,28 +96,34 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
             }
             this.resource.energy -= 35;
             this.previousAction[2] = true;
-            logAction(`${this.name} activate his healing drone!`, "action");
+            logAction(`${this.name} activates the healing drone!`, "action");
             new Modifier("Healing Drone", "Heals the lowest hp ally",
-                { caster: this, targets: unitFilter("player", "").filter(u => !u.base.resource.mana), duration: 3, attributes: ["techno"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
+                { caster: this, targets: unitFilter(this.team, "").filter(u => !u.base.resource.mana), duration: 3, attributes: ["techno"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
                 function() {
                     const heal = this.vars.targets.filter(u => u.hp < u.base.hp).reduce((min, unit) => { if (!min || unit.hp < min.hp) { return unit } return min }, null);
                     if (heal) {
-                        if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.vars.mod, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.vars.mod, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
                         heal.hp = Math.min(heal.hp + heal.resource.healFactor, heal.base.hp);
                         logAction(`Healing Drone heals ${heal.name} for ${heal.resource.healFactor} HP!`, "heal");
                     } else { logAction("Healing Drone has no targets to heal!", "warning") }
                 },
                 function(context) {
-                    if (this.vars.caster === context?.unit) {
+                    if (this.vars.applied && this.vars.caster === context?.unit) {
                         const heal = this.vars.targets.filter(u => u.hp < u.base.hp).reduce((min, unit) => { if (!min || unit.hp < min.hp) { return unit } return min }, null);
                         if (heal) {
-                            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.vars.mod, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
+                            if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
                             heal.hp = Math.min(heal.hp + heal.resource.healFactor, heal.base.hp);
                             logAction(`Healing Drone heals ${heal.name} for ${heal.resource.healFactor} HP!`, "heal");
                         } else { logAction("Healing Drone has no targets to heal!", "warning") }
                         this.vars.duration--;
                     }
                     if (this.vars.duration === 0) { return true }
+                },
+                function(cancel, temp) {
+                    if (!temp) {
+                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
+                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
+                    }
                 }
             );
         }
@@ -140,9 +138,17 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
         code: () => {
             this.previousAction[0] = true;
             this.resource.stamina -= 20;
-            if (eventState.resourceChange.flag) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
+            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON));
             logAction(`${this.name} activates the backup power generation and recovers ${Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)} energy!`, "heal");
         }
+    };
+
+    this.actions.actionWeight = { 
+        gun: 0.3,
+        healingPills: 0.2,
+        disableMagic: 0.15,
+        healingDrone: 0.2,
+        backupPower: 0.15
     };
 });

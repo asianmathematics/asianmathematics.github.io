@@ -7,13 +7,13 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 50, 5
         properties: ["physical", "attack", "buff"],
         description: "Attacks a single target with increased accuracy and increases speed for 1 turn.",
         points: 60,
-        target: () => { selectTarget(this.actions.hammer, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.hammer, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.hammer.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             const statIncrease = [20];
             this.previousAction[0] = true;
             logAction(`${this.name} swings a hammer at ${target[0].name}`, "action");
             attack(this, target, 1, { attacker: { accuracy: this.accuracy + 31 } });
-            basicModifier("Hammer Speed", "Temporary speed boost", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["speed"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Hammer Speed", "Temporary speed boost", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["speed"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -31,7 +31,7 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 50, 5
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
             logAction(`${this.name} hits the ground to create a tremor!`, "action");
-            attack(this, unitFilter("enemy", "front", false), 1, { attacker: { attack: this.attack + 4, accuracy: this.accuracy + 10 } });
+            attack(this, unitFilter(this.team === "player" ? "enemy" : "player", "front", false), 1, { attacker: { attack: this.attack + 4, accuracy: this.accuracy + 10 } });
         }
     };
 
@@ -50,21 +50,27 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 50, 5
             this.previousAction[0] = true;
             logAction(`${this.name} held onto hope!`, "heal");
             new Modifier("Determination", "Healing over time",
-                { caster: this, targets: [this], duration: 3, attributes: ["physical"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: true },
+                { caster: this, target: this, duration: 3, attributes: ["physical"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: true },
                 function() {
-                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this, unit: this.vars.caster, resource: ['hp'], value: [Math.floor(0.5 * this.vars.caster.resource.healFactor + Number.EPSILON)] }) }
-                    this.vars.caster.hp = Math.min(this.vars.caster.hp + Math.floor(0.5 * this.vars.caster.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
+                    if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
+                    this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.target.base.hp);
                 },
                 function(context) {
-                    if (this.vars.caster === context?.unit) {
-                        if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this, unit: this.vars.caster, resource: ['hp'], value: [Math.floor(0.5 * this.vars.caster.resource.healFactor + Number.EPSILON)] }) }
+                    if (this.vars.target === context?.unit) {
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
                         if (this.vars.applied) {
-                            this.vars.caster.hp = Math.min(this.vars.caster.hp + Math.floor(0.5 * this.vars.caster.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
-                            logAction(`${this.vars.caster.name} held onto hope!`, "heal");
+                            this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
+                            logAction(`${this.vars.target.name} held onto hope!`, "heal");
                         }
                         this.vars.duration--;
                     }
                     if (this.vars.duration === 0) { return true }
+                },
+                function(cancel, temp) {
+                    if (!temp) {
+                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
+                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
+                    }
                 }
             );
         }
@@ -79,7 +85,14 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 50, 5
             const statIncrease = [12, 10, 100];
             this.previousAction[0] = true;
             logAction(`${this.name} protects the team!`, "action");
-            basicModifier("Guard", "Defense, resist, and presence increase", { caster: this, targets: [this], duration: 1, attributes: ["physical"], elements: ["inertia/cold"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Guard", "Defense, resist, and presence increase", { caster: this, target: this, duration: 1, attributes: ["physical"], elements: ["inertia/cold"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
+    };
+
+    this.actions.actionWeight = { 
+        hammer: 0.35,
+        quake: 0.25,
+        determination: 0.2,
+        guard: 0.1
     };
 });

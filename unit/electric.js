@@ -13,7 +13,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.electricDischarge, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.electricDischarge, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.electricDischarge.code(randTarget(unitFilter("player", "front", false)));
         },
         code: (target) => {
             this.resource.energy -= 60;
@@ -34,16 +34,25 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.sickBeats, () => { playerTurn(this) }, [1, true, unitFilter("player", "", false)]);
+            this.team === "player" ? selectTarget(this.actions.sickBeats, () => { playerTurn(this) }, [1, true, unitFilter("player", "", false)]) : this.actions.sickBeats.code(randTarget(unitFilter("enemy", "", false)));
         },
         code: (target) => {
-            const statIncrease = [20, 10, 100];
-            const bonus = elementBonus(target[0], this.actions.sickBeats)
-            if (bonus) { statIncrease.forEach((_, i) => statIncrease[i] *= 2 ** bonus) }
+            const bonus = 2 ** elementBonus(target[0], this.actions.sickBeats);
+            const statIncrease = [Math.floor(20 * bonus + Number.EPSILON), Math.floor(10 * bonus + Number.EPSILON), Math.floor(100 * bonus + Number.EPSILON)];
             this.resource.energy -= 50;
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
-            basicModifier("Sick Beats Buff", "Rhythmic performance enhancement", { caster: this, targets: target, duration: 2, attributes: ["techno"], elements: ["harmonic/change"], stats: ["speed", "evasion", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            const mod = basicModifier("Sick Beats Buff", "Rhythmic performance enhancement", { caster: this, target: target[0], duration: 2, attributes: ["techno"], elements: ["harmonic/change"], stats: ["speed", "evasion", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            mod.changeTarget = function(unit) {
+                if (unit === this.vars.target) { removeModifier(this) }
+                else {
+                    if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
+                    const bonus = 2 ** elementBonus(unit, this);
+                    this.vars.target = unit;
+                    this.vars.values = [Math.floor(20 * bonus + Number.EPSILON), Math.floor(10 * bonus + Number.EPSILON), Math.floor(100 * bonus + Number.EPSILON)];
+                    if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+                }
+            }
         }
     };
 
@@ -61,7 +70,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
             this.resource.mana -= 20;
             this.previousAction[1] = true;
             logAction(`${this.name} generates electricity!`, "heal");
-            if (eventState.resourceChange.flag) {handleEvent('resourceChange', { effect: this.actions.recharge, unit: this, resource: ['energy'], value: [this.resource.energyRegen * 3.5] }) }
+            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.recharge, unit: this, resource: ['energy'], value: [this.resource.energyRegen * 3.5] }) }
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + this.resource.energyRegen * 3.5);
         }
     };
@@ -82,37 +91,38 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
             this.previousAction[1] = this.previousAction[2] = true;
             logAction(`${this.name} covers himself in electricity.`, "buff");
             new Modifier("Electrify", "Counter attack",
-                { caster: this, targets: [this], duration: 1, attributes: ["mystic", "techno"], elements:["harmonic/change", "radiance/purity"], stats: ["resist", "presence"], values: statIncrease, listeners: {turnStart: true, damageStart: true, singleDamage: false}, cancel: false, applied: true, focus: true },
-                function() { resetStat(this.vars.caster, this.vars.stats, this.vars.values) },
+                { caster: this, target: this, duration: 1, attributes: ["mystic", "techno"], elements:["harmonic/change", "radiance/purity"], stats: ["resist", "presence"], values: statIncrease, listeners: {turnStart: true, damageStart: true, singleDamage: false}, cancel: false, applied: true, focus: true },
+                function() { resetStat(this.vars.target, this.vars.stats, this.vars.values) },
                 function(context) {
-                    if (this.vars.cancel && this.vars.applied) {
-                        resetStat(this.vars.caster, this.vars.stats, this.vars.values, false);
-                        this.vars.applied = false;
-                    } else if (!this.vars.cancel && !this.vars.applied) {
-                        resetStat(this.vars.caster, this.vars.stats, this.vars.values);
-                        this.vars.applied = true;
-                    }
-                    if (this.vars.applied && !this.vars.listeners.singleDamage && context?.defenders?.includes(this.vars.caster) && context?.attacker.position === "front") {
-                        this.vars.listeners.singleDamage = eventState.singleDamage.flag = true;
-                        eventState.singleDamage.listeners.push(this);
-                    } else if ((!this.vars.applied || !context?.defenders || !context.defenders.includes(this.vars.caster) || context.attacker.position !== "front") && this.vars.listeners.singleDamage) {
+                    if (this.vars.applied && !this.vars.listeners.singleDamage && context?.defenders?.includes(this.vars.target) && context?.attacker.position === "front") {
+                        this.vars.listeners.singleDamage = true;
+                        eventState.singleDamage.push(this);
+                    } else if ((!this.vars.applied || !context?.defenders || !context.defenders.includes(this.vars.target) || context.attacker.position !== "front") && this.vars.listeners.singleDamage) {
                         this.vars.listeners.singleDamage = false;
-                        eventState.singleDamage.listeners.splice(eventState.singleDamage.listeners.indexOf(this), 1)
-                        if (eventState.singleDamage.listeners.length === 0) { eventState.singleDamage.flag = false }
+                        eventState.singleDamage.splice(eventState.singleDamage.indexOf(this), 1)
                     }
-                    if (this.vars.caster === context?.defender && context?.damageSingle > 0) {
-                        const doubleDamage = elementDamage(this.vars.caster, context.attacker, this);
-                        const damageSingle = (doubleDamage + 1) * ( Math.ceil(Math.max(((Math.random() / 2) + .75) * (2 * this.vars.caster.attack - context.attacker.defense), .2 * this.vars.caster.attack)));
-                        if (eventState.singleDamage.flag) { handleEvent('singleDamage', {attacker: this.vars.caster, defender: context.attacker, damageSingle}) }
+                    if (this.vars.target === context?.defender && context?.damageSingle > 0) {
+                        const doubleDamage = elementDamage(this.vars.target, context.attacker, this);
+                        const damageSingle = (doubleDamage + 1) * ( Math.ceil(Math.max(((Math.random() / 2) + .75) * (2 * this.vars.target.attack - context.attacker.defense), .2 * this.vars.target.attack)));
+                        if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker: this.vars.target, defender: context.attacker, damageSingle}) }
                         context.attacker.hp = Math.max(context.attacker.hp - damageSingle, 0);
-                        logAction(`${this.vars.caster.name} electricity shocks ${context.attacker.name} dealing ${damageSingle} ${doubleDamage ? "elemental " : ""}damage!`, "hit")
-                        if (defenders[i].hp === 0) {
-                            for (const mod of modifiers) { if (mod.caster === defenders[i] && mod.focus) { removeModifier(mod) } }
-                            if (eventState.unitChange.flag) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+                        logAction(`${this.vars.target.name} electricity shocks ${context.attacker.name} dealing ${damageSingle} ${doubleDamage ? "elemental " : ""}damage!`, "hit")
+                        if (context.attacker.hp === 0) {
+                            for (const mod of modifiers) { if (mod.target === context.attacker && mod.focus) { removeModifier(mod) } }
+                            if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: context.attacker}) }
                         }
                     }
                     if (this.vars.caster === context.unit) { this.vars.duration-- }
                     if (this.vars.duration === 0) { return true }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
+                        this.vars.applied = false;
+                    } else if (!this.vars.cancel && !this.vars.applied) {
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values);
+                        this.vars.applied = true;
+                    }
                 }
             );
         }
@@ -127,7 +137,15 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
+    };
+
+    this.actions.actionWeight = { 
+        electricDischarge: 0.3,
+        sickBeats: 0.2,
+        recharge: 0.15,
+        electrify: 0.25,
+        dodge: 0.1
     };
 });

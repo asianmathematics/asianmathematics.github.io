@@ -7,7 +7,7 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
         properties: ["mystic", "intertia/cold", "attack"],
         description: "Attacks a single target 4 times.",
         points: 60,
-        target: () => { selectTarget(this.actions.iceshock, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.iceshock, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.iceshock.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             this.previousAction[1] = true;
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
@@ -26,55 +26,57 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.perfectFreeze, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.perfectFreeze, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.perfectFreeze.code(randTarget(unitFilter("player", "front", false)));
         },
         code: (target) => {
             this.resource.mana -= 50;
             this.previousAction[1] = true;
-            if (resistDebuff(this, target)[0] > 1) {
+            if (resistDebuff(this, target)[0] * (2 ** (elementBonus(this, this.actions.perfectFreeze) - elementBonus(target[0], this.actions.perfectFreeze))) > 1) {
                 logAction(`${this.name} freezes ${target[0].name}!`, "action");
                 new Modifier("Perfect Freeze", "stun effect",
-                    { caster: this, targets: target, duration: 1, attributes: ["mystic"], elements: ["inertia/cold"], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, modlist: null },
+                    { caster: this, target: target[0], duration: 1, attributes: ["mystic"], elements: ["inertia/cold"], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this, unit)[0] * (2 ** (elementBonus(this.vars.caster, this.vars.caster.actions.perfectFreeze) - elementBonus(unit, this.vars.caster.actions.perfectFreeze))) > 1}, modlist: null },
                     function() {
-                        this.vars.targets[0].stun = true;
-                        if (eventState.stun.flag) {handleEvent('stun', { effect: this, unit: this.vars.targets[0], stun: true }) }
-                        if (this.vars.targets[0].stun) {
-                            this.vars.modlist = modifiers.filter( m => m.vars.caster === this.vars.targets[0] && m.vars.focus === true);
+                        this.vars.target.stun++;
+                        if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
+                        if (this.vars.target.stun) {
+                            this.vars.modlist = modifiers.filter( m => m.vars.caster === this.vars.target && m.vars.focus === true);
                             for (const mod of this.vars.modlist) {
-                                mod.vars.cancel++;
-                                if (eventState.cancel.flag) {handleEvent('cancel', { effect: this, target: mod, cancel: true }) }
-                                mod.onTurn({})
+                                modifiers.push(mod);
+                                mod.cancel();
+                                modifiers.pop();
                             }
                         }
                     },
                     function(context) {
+                        if (this.vars.target === context?.unit) { this.vars.duration-- }
+                        if (this.vars.duration === 0) { return true }
+                    },
+                    function() {
                         if (this.vars.cancel && this.vars.applied) {
-                            this.vars.targets[0].stun = false;
+                            this.vars.target.stun--;
                             this.vars.applied = false;
-                            if (eventState.stun.flag) {handleEvent('stun', { effect: this, unit: this.vars.targets[0], stun: false }) }
-                            if (!this.vars.targets[0].stun) {
+                            if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: false }) }
+                            if (!this.vars.target.stun) {
                                 for (const mod of this.vars.modlist) {
-                                    mod.vars.cancel--;
-                                    if (eventState.cancel.flag) {handleEvent('cancel', { effect: this, target: mod, cancel: false }) }
-                                    mod.onTurn({})
+                                    modifiers.push(mod);
+                                    mod.cancel(false);
+                                    modifiers.pop();
                                 }
                             }
                         }
                         else if (!this.vars.cancel && !this.vars.applied) {
-                            this.vars.targets[0].stun = true;
+                            this.vars.target.stun++;
                             this.vars.applied = true;
-                            if (eventState.stun.flag) {handleEvent('stun', { effect: this, unit: this.vars.targets[0], stun: true }) }
-                            if (this.vars.targets[0].stun) {
-                                this.vars.modlist = modifiers.filter( m => m.vars.caster === this.vars.targets[0] && m.vars.focus === true);
+                            if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
+                            if (this.vars.target.stun) {
+                                this.vars.modlist = modifiers.filter( m => m.vars.caster === this.vars.target && m.vars.focus === true);
                                 for (const mod of this.vars.modlist) {
-                                    mod.vars.cancel++;
-                                    if (eventState.cancel.flag) {handleEvent('cancel', { effect: this, target: mod, cancel: true }) }
-                                    mod.onTurn({})
+                                    modifiers.push(mod);
+                                    mod.cancel();
+                                    modifiers.pop();
                                 }
                             }
                         }
-                        if (this.vars.targets[0] === context?.unit) { this.vars.duration-- }
-                        if (this.vars.duration === 0) { return true }
                     }
                 );
             } else { logAction(`${target[0].name} resists the freeze!`, "miss") }
@@ -96,8 +98,8 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
             this.resource.mana -= 50;
             this.previousAction[1] = true;
             logAction(`${this.name} shoots some danmaku!`, "action");
-            attack(this, randTarget(unitFilter("enemy", "front", false), 4, true), 6, { attacker: { accuracy: this.accuracy - 36, attack: this.attack - 20, focus: this.focus - 50 } });
-            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
+            attack(this, randTarget(unitFilter(this.team === "player" ? "enemy" : "player", "front", false), 4, true), 6, { attacker: { accuracy: this.accuracy - 36, attack: this.attack - 20, focus: this.focus - 50 } });
+            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
 
@@ -112,32 +114,24 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.dispelMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.dispelMagic, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.dispelMagic.code(randTarget(unitFilter("player", "front", false).filter(u => u.base.resource.mana)));
         },
         code: (target) => {
-            this.resource.mana -= 40;
-            this.previousAction[1] = true;
-            if (target[0].resource.mana !== undefined) {
-                if (resistDebuff(this, target)[0] > 25) {
-                    if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.dispelMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
-                    target[0].resource.mana = 0;
-                    target[0].previousAction[1] = true;
-                    for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars.targets[0] === target[0]))) { removeModifier(mod) }
-                    for (const mod of modifiers.filter(m => m.vars.targets.includes(target[0]) && m?.attributes?.includes("mystic"))) {
-                        if (mod.vars.applied) {
-                            mod.vars.cancel++;
-                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.dispelMagic, target: mod, cancel: true }) }
-                            mod.onTurn.call(mod.vars, {})
-                            mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1);
-                            mod.vars.cancel--;
-                            if (eventState.cancel.flag) {handleEvent('cancel', { effect: this.actions.dispelMagic, target: mod, cancel: false }) }
-                            mod.onTurn.call(mod.vars, {})
-                        } else { mod.vars.targets.splice(mod.vars.targets.indexOf(target[0]), 1) }
-                     }
-                    window.updateModifiers();
-                    logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
-                } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
-            } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
+            if (target.length) {
+                this.resource.mana -= 40;
+                this.previousAction[1] = true;
+                if (target[0].resource.mana !== undefined) {
+                    if (resistDebuff(this, target)[0] > 50 - (25 * 2 ** (elementBonus(this, this.actions.dispelMagic) - elementBonus(target[0], this.actions.dispelMagic)))) {
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.dispelMagic, unit: target[0], resource: ['mana'], value: [-target[0].resource.mana] }) }
+                        target[0].resource.mana = 0;
+                        target[0].previousAction[1] = true;
+                        for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars?.target === target[0]))) { removeModifier(mod) }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(target[0]) && m?.attributes?.includes("mystic"))) { mod.changeTarget(target) }
+                        window.updateModifiers();
+                        logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
+                    } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
+                } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
+            } else { this.actions.iceshock.target() }
         }
     };
 
@@ -150,8 +144,16 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
+    };
+
+    this.actions.actionWeight = { 
+        iceshock: 0.3,
+        perfectFreeze: 0.2,
+        danmaku: 0.15,
+        dispelMagic: 0.25,
+        dodge: 0.1
     };
 }/*, function() {
     this.passives.avatarOfLoneliness = {

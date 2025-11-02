@@ -7,7 +7,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
         properties: ["attack"],
         description: "Attacks a single target twice with increased damage.",
         points: 60,
-        target: () => { selectTarget(this.actions.meleeAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.meleeAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.meleeAttack.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             logAction(`${this.name} deals with ${target[0].name}`, "action");
             attack(this, target, 2, { attacker: { attack: this.attack + 8 } });
@@ -25,7 +25,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
                 showMessage("Not enough stamina!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.takingOutTrash, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.takingOutTrash, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.takingOutTrash.code(randTarget(unitFilter("player", "front", false)));
         },
         code: (target) => {
             this.resource.stamina -= 50;
@@ -50,7 +50,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -63,7 +63,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -75,7 +75,15 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
         code: () => {
             const statIncrease = [13, 7, -8];
             logAction(`${this.name} blocks.`, "buff");
-            basicModifier("Block", "Defense and resist increased, presence decreased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Block", "Defense and resist increased, presence decreased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
+    };
+
+    this.actions.actionWeight = { 
+        meleeAttack: 0.3,
+        takingOutTrash: 0.2,
+        sneak: 0.2,
+        dodge: 0.15,
+        block: 0.15
     };
 });

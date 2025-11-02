@@ -6,12 +6,12 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
         name: "Arcane Cannon [physical, mana]",
         properties: ["physical", "mystic", "mana", "attack"],
         cost: { mana: 20 },
-        description: "Costs 20 mana\nAttacks a single target six times with increased damage",
+        description: "Costs 20 mana\nAttacks a single target six times with increased damage, can target backline",
         points: 60,
-        code: () => {
+        target: () => { this.actions.arcaneCannon.code(randTarget(unitFilter("player", "", false))) },
+        code: (target) => {
             this.previousAction[0] = this.previousAction[1] = true;
             this.resource.mana -= 20;
-            const target = randTarget(unitFilter("player", "", false));
             logAction(`${this.name} fires an arcane cannon at ${target[0].name}!`, "action");
             attack(this, target, 6, { attacker: { attack: this.attack + 24 } });
         }
@@ -30,10 +30,10 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
             this.resource.stamina -= 30;
             if (Math.random() < .5) {
                 logAction(`${this.name} shifts to fire stance, becoming more aggressive!`, "buff");
-                basicModifier("Fire Stance", "Offensive enhancement", { caster: this, targets: [this], duration: 3, attributes: ["physical", "mystic"], elements: ["radiance/purity"], stats: ["attack", "focus"], values: offensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+                basicModifier("Fire Stance", "Offensive enhancement", { caster: this, target: this, duration: 3, attributes: ["physical", "mystic"], elements: ["radiance/purity"], stats: ["attack", "focus"], values: offensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
             } else {
                 logAction(`${this.name} shifts to ice stance, becoming more defensive!`, "buff");
-                basicModifier("Ice Stance", "Defensive enhancement", { caster: this, targets: [this], duration: 3, attributes: ["physical", "mystic"], elements: ["inertia/cold"], stats: ["defense", "resist"], values: defensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+                basicModifier("Ice Stance", "Defensive enhancement", { caster: this, target: this, duration: 3, attributes: ["physical", "mystic"], elements: ["inertia/cold"], stats: ["defense", "resist"], values: defensiveIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
             }
         }
     };
@@ -51,7 +51,46 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
             this.resource.mana -= 30;
             this.resource.energy -= 30;
             logAction(`${this.name} creates a protective barrier!`, "buff");
-            basicModifier("Magitech Barrier", "Defensive field", { caster: this, targets: unitFilter("enemy", "front", false).filter(unit => unit !== this), duration: 1, attributes: ["physical", "mystic", "techno"], elements: ["inertia/cold", "anomaly/synthetic"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            new Modifier("Magitech Barrier", "Defensive field",
+                { caster: this, targets: unitFilter("enemy", "front", false).filter(unit => unit !== this), duration: 1, attributes: ["physical", "mystic", "techno"], elements: ["inertia/cold", "anomaly/synthetic"], stats: ["defense", "resist", "presence"], values: statIncrease, bonusArray: [], listeners: {turnStart: true}, cancel: false, applied: true, focus: true },
+                function() {
+                    for (let i = 0; i < this.vars.targets.length; i++) {
+                        this.vars.bonusArray[i] = elementBonus(this.vars.targets[i], this);
+                        resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i]));
+                    }
+                },
+                function(context) {
+                    if (this.vars.caster === context.unit) { this.vars.duration-- }
+                    if (this.vars.duration <= 0) { return true }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i], false)) }
+                        this.vars.applied = false;
+                    }
+                    else if (!this.vars.cancel && !this.vars.applied) {
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i])) }
+                        this.vars.applied = true;
+                    }
+                },
+                function(remove = [], add = []) {
+                    if (remove.length - add.length >= this.vars.targets.length) { removeModifier(this) }
+                    else {
+                        if (this.vars.applied) { for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i], false)) } }
+                        for (let i = this.vars.targets.length - 1; i >= 0; i--) {
+                            if (remove.includes(this.vars.targets[i])) {
+                                if (this.vars.applied) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i], false)) }
+                                this.vars.targets.splice(i, 1);
+                                this.vars.bonusArray.splice(i, 1);
+                            }
+                        }
+                        let index = this.vars.targets.length;
+                        this.vars.targets.push(...add);
+                        this.vars.bonusArray.push(...add.map(unit => elementBonus(unit, this)));
+                        if (this.vars.applied) { for (let i = index; i < this.vars.targets.length; i++) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i])) } }
+                    }
+                }
+            );
         }
     };
 
@@ -61,7 +100,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
         description: `Recovers moderate amounts of mana (${this.resource.manaRegen * .75}) and energy (${this.resource.energyRegen * .75})`,
         points: 60,
         code: () => {
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.essenceAbsorption, unit: this, resource: ['mana', 'energy'], value: [this.resource.manaRegen * .75, this.resource.energyRegen * .75] }) }
+            if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.essenceAbsorption, unit: this, resource: ['mana', 'energy'], value: [this.resource.manaRegen * .75, this.resource.energyRegen * .75] }) }
             this.resource.mana = Math.min(this.base.resource.mana, this.resource.mana + (this.resource.manaRegen * .75) );
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + (this.resource.energyRegen * .75) );
             logAction(`${this.name} absorbs ambient essence, replenishing resources!`, "heal");

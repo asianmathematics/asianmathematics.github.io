@@ -7,8 +7,8 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
         properties: ["attack"],
         description: "Attacks a single target three times.",
         points: 60,
-        code: () => {
-            const target = randTarget(unitFilter("player", "front", false));
+        target: () => { this.actions.basicAttack.code(randTarget(unitFilter("player", "front", false))) },
+        code: (target) => {
             logAction(`${this.name} attacks ${target[0].name}`, "action");
             attack(this, target, 3);
         }
@@ -20,10 +20,10 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
         cost: { stamina: 20 },
         description: "Costs 20 stamina\nAttacks a single target 4 times with increased damage",
         points: 60,
-        code: () => {
+        target: () => { this.actions.strongAttack.code(randTarget(unitFilter("player", "front", false))) },
+        code: (target) => {
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
-            const target = randTarget(unitFilter("player", "front", false));
             logAction(`${this.name} unleashes four powerful strikes against ${target[0].name}!`, "action");
             attack(this, target, 4, { attacker: { attack: this.attack + 24 } });
         }
@@ -38,7 +38,7 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -50,7 +50,7 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
         code: () => {
             const statIncrease = [13, 7, -8];
             logAction(`${this.name} blocks.`, "buff");
-            basicModifier("Block", "Defense and resist increased, presence decreased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Block", "Defense and resist increased, presence decreased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 

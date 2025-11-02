@@ -7,7 +7,7 @@ export const FourArcher = new Unit("4 (Archer)", [800, 33, 12, 90, 25, 100, 50, 
         properties: ["mystic", "radiance/purity", "attack"],
         description: "Attacks a single target with increased accuracy and crit chance",
         points: 60,
-        target: () => { selectTarget(this.actions.perfectShot, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.perfectShot, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.perfectShot.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             this.previousAction[1] = true;
             logAction(`${this.name} shoots a mystic arrow!`, "action");
@@ -26,7 +26,7 @@ export const FourArcher = new Unit("4 (Archer)", [800, 33, 12, 90, 25, 100, 50, 
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.multishot, () => { playerTurn(this) }, [4, false, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.multishot, () => { playerTurn(this) }, [4, false, unitFilter("enemy", "front", false)]) : this.actions.multishot.code(randTarget(unitFilter("player", "front", false), 4));
         },
         code: (targets) => {
             this.resource.mana -= 10;
@@ -51,7 +51,7 @@ export const FourArcher = new Unit("4 (Archer)", [800, 33, 12, 90, 25, 100, 50, 
             this.resource.mana -= 50;
             this.previousAction[1] = true;
             logAction(`${this.name} becomes luckier!`, "buff");
-			basicModifier("Lucky Aura", "Increased luck", { caster: this, targets: [this], duration: 5, attributes: ["mystic"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["accuracy", "focus", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+			basicModifier("Lucky Aura", "Increased luck", { caster: this, target: this, duration: 5, attributes: ["mystic"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["accuracy", "focus", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -62,10 +62,17 @@ export const FourArcher = new Unit("4 (Archer)", [800, 33, 12, 90, 25, 100, 50, 
         points: 60,
         code: () => {
             const statDecrease = [-30, -50, -4, -10, -10];
-            if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.laze, unit: this, resource: ['mana'], value: [this.resource.manaRegen * 5] }) }
+            if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.laze, unit: this, resource: ['mana'], value: [this.resource.manaRegen * 5] }) }
             this.resource.mana = Math.min(this.resource.mana + (this.resource.manaRegen * 5), this.base.resource.mana);
             logAction(`${this.name} layed down lazily.`, "action");
-            basicModifier("Resting", "Decreased speed, presence, and defensive stats", { caster: this, targets: [this], duration: 1, stats: ["speed", "presence", "defense", "evasion", "resist"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
+            basicModifier("Resting", "Decreased speed, presence, and defensive stats", { caster: this, target: this, duration: 1, stats: ["speed", "presence", "defense", "evasion", "resist"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
+    };
+
+    this.actions.actionWeight = { 
+        perfectShot: 0.3,
+        multishot: 0.25,
+        luckyAura: 0.2,
+        laze: 0.25
     };
 });

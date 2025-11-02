@@ -7,7 +7,7 @@ export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 
         properties: ["mystic", "attack"],
         description: "Attacks a single target 4 times.",
         points: 60,
-        target: () => { selectTarget(this.actions.spellAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.spellAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.spellAttack.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             this.previousAction[1] = true;
             logAction(`${this.name} fires magic projectiles at ${target[0].name}`, "action");
@@ -26,7 +26,7 @@ export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 
                 showMessage("Not enough mana!", "error", "selection");
                 return;
             }
-            selectTarget(this.actions.focusFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
+            this.team === "player" ? selectTarget(this.actions.focusFire, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.focusFire.code(randTarget(unitFilter("player", "front", false)));
         },
         code: (target) => {
             this.resource.mana -= 10;
@@ -51,8 +51,8 @@ export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 
             this.resource.mana -= 50;
             this.previousAction[1] = true;
             logAction(`${this.name} shoots some danmaku!`, "action");
-            attack(this, randTarget(unitFilter("enemy", "front", false), 4, true), 6, { attacker: { accuracy: this.accuracy - 36, attack: this.attack - 20, focus: this.focus - 50 } });
-            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
+            attack(this, randTarget(unitFilter(this.team === "player" ? "enemy" : "player", "front", false), 4, true), 6, { attacker: { accuracy: this.accuracy - 36, attack: this.attack - 20, focus: this.focus - 50 } });
+            basicModifier("Evasion Penalty", "Evasion reduced during bullet hell", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
 
@@ -71,7 +71,7 @@ export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
             logAction(`${this.name} draws attention to himself!`, "action");
-            basicModifier("Feint", "Defense, evasion, and presence increase", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Feint", "Defense, evasion, and presence increase", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -84,7 +84,15 @@ export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, targets: [this], duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
+    };
+
+    this.actions.actionWeight = { 
+        spellAttack: 0.3,
+        focusFire: 0.25,
+        danmaku: 0.15,
+        feint: 0.2,
+        dodge: 0.1
     };
 });
