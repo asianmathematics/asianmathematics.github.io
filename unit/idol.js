@@ -24,15 +24,13 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
             this.resource.stamina -= 10;
             this.resource.mana -= 20;
             if (mod) {
-                if (mod.name === "Soothing Melody") {
-                    if (mod.vars.target !== target[0]) { effect = Math.max(mod.vars.effect - 1, 1) }
-                    else { effect += mod.vars.effect }
-                }
+                if (mod.name === "Soothing Melody") { mod.vars.target !== target[0] ? effect = Math.max(mod.vars.effect - 1, 1) : effect += mod.vars.effect }
                 removeModifier(mod);
             }
             new Modifier("Soothing Melody", "Heal and increase defensive stats and presence", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["presence", "defense", "evasion", "resist"], values: statIncrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
                 function() {
                     if (eventState.resourceChange.length) { handleEvent('resourceChange', {unit: this.vars.target, resource: ['hp'], value: [Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)]}) }
+                    if (this.vars.target.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: this.vars.target}) }
                     this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON), this.vars.target.base.hp);
                     logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.target.name} for ${Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)} HP!`, "heal");
                     this.vars.values = this.vars.values.map(val => val *= (3 + this.vars.effect)/4);
@@ -57,7 +55,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                         this.vars.target = null;
                     } else {
                         if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
-                        const bonus = (2 ** elementBonus(unit, this)) * (3 + this.vars.effect)/4;
+                        const bonus = (1.5 ** elementBonus(unit, this)) * (3 + this.vars.effect)/4;
                         this.vars.target = unit;
                         this.vars.values = [16 * bonus, 16 * bonus, 12 * bonus, 20 * bonus];
                         if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
@@ -103,11 +101,12 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                         if (context.position === "front") {
                             this.vars.bonusArray[this.vars.bonusArray.length] = elementBonus(context.unit, this);
                             this.vars.targets.push(context.unit);
-                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.bonusArray.length - 1] + Number.EPSILON)))
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray.at(-1) + Number.EPSILON)));
                         } else {
-                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.targets.indexOf(context.unit)] + Number.EPSILON)), false)
-                            this.vars.bonusArray.splice(this.vars.targets.indexOf(context.unit), 1);
-                            this.vars.targets.splice(this.vars.targets.indexOf(context.unit), 1);
+                            const index = this.vars.targets.indexOf(context.unit);
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[index] + Number.EPSILON)), false);
+                            this.vars.bonusArray.splice(index, 1);
+                            this.vars.targets.splice(index, 1);
                         }
                     }
                     if (this.vars.duration === 0) { return true }
@@ -116,8 +115,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                     if (this.vars.cancel && this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) }
                         this.vars.applied = false;
-                    }
-                    else if (!this.vars.cancel && !this.vars.applied) {
+                    } else if (!this.vars.cancel && !this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
                         this.vars.applied = true;
                     }
@@ -171,35 +169,36 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                     logAction(`${this.vars.caster.name} is riling up the otherside!`, "debuff");
                     this.vars.bonusArray.length = this.vars.targets.length;
                     for (let i = this.vars.targets.length - 1; i > -1; i--) {
-                        this.vars.bonusArray[i] = 2 ** (elementBonus(this.vars.caster, this) - elementBonus(this.vars.targets[i], this));
+                        this.vars.bonusArray[i] = 1.5 ** (elementBonus(this.vars.caster, this) - elementBonus(this.vars.targets[i], this));
                         if (resistDebuff(this.vars.caster, [this.vars.targets[i]]) > 75 - (6.25 * (this.vars.effect - 1) * this.vars.bonusArray[i])) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
                         else {
                             this.vars.targets.splice(i, 1);
-                            this.vars.bonusArray.splice(i, 1)
+                            this.vars.bonusArray.splice(i, 1);
                         }
                     }
                 },
                 function(context) {
                     if (context.position && context.unit.team === (this.vars.caster.team === "player" ? "enemy" : "player")) {
                         if (context.position === "back") {
-                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.targets.indexOf(context.unit)] + Number.EPSILON)), false)
-                            this.vars.bonusArray.splice(this.vars.targets.indexOf(context.unit), 1);
-                            this.vars.targets.splice(this.vars.targets.indexOf(context.unit), 1);
+                            const index = this.vars.targets.indexOf(context.unit);
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[index] + Number.EPSILON)), false);
+                            this.vars.bonusArray.splice(index, 1);
+                            this.vars.targets.splice(index, 1);
                         } else if (resistDebuff(this.vars.caster, [context.unit]) > 75 - (6.25 * (this.vars.effect - 1))) {
                             this.vars.bonusArray[this.vars.bonusArray.length] = elementBonus(context.unit, this);
                             this.vars.targets.push(context.unit);
-                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[this.vars.bonusArray.length - 1] + Number.EPSILON)))
+                            resetStat(context.unit, this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray.at(-1) + Number.EPSILON)));
                         }
                     }
                     if (context.wave) {
                         this.vars.targets = unitFilter("enemy", "front");
                         this.vars.bonusArray.length = this.vars.targets.length;
                         for (let i = this.vars.targets.length - 1; i > -1; i--) {
-                            this.vars.bonusArray[i] = 2 ** (elementBonus(this.vars.caster, this) - elementBonus(this.vars.targets[i], this));
+                            this.vars.bonusArray[i] = 1.5 ** (elementBonus(this.vars.caster, this) - elementBonus(this.vars.targets[i], this));
                             if (resistDebuff(this.vars.caster, [this.vars.targets[i]]) > 75 - (6.25 * (this.vars.effect - 1) * this.vars.bonusArray[i])) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
                             else {
                                 this.vars.targets.splice(i, 1);
-                                this.vars.bonusArray.splice(i, 1)
+                                this.vars.bonusArray.splice(i, 1);
                             }
                         }
                     }
@@ -210,8 +209,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                     if (this.vars.cancel && this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON), false)) }
                         this.vars.applied = false;
-                    }
-                    else if (!this.vars.cancel && !this.vars.applied) {
+                    } else if (!this.vars.cancel && !this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => Math.floor(value * this.vars.bonusArray[i] + Number.EPSILON))) }
                         this.vars.applied = true;
                     }
@@ -243,7 +241,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         name: "Personal Request [stamina, mana, energy]",
         properties: ["physical", "stamina", "mystic", "mana", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
         cost: { stamina: 10, mana: 10, energy: 10 },
-        description: `Costs 10 stamina & 10 mana & 10 energy\nIncreases or decreases targets stats with a percent of ${this.name}&#39;s stats depending if targeting on ally or enemy, benefits increase if used multiple times on the same target in a row`,
+        description: `Costs 10 stamina & 10 mana & 10 energy\nIncreases or decreases targets stats with a percent of ${this.name}&#39;s stats depending if targeting on ally or enemy, benefits increase if used multiple times on the same target in a row, 1% chance to fail debuff`,
         points: 60,
         target: () => {
             if (this.resource.mana < 10 || this.resource.stamina < 10 || this.resource.energy < 10) {
@@ -253,7 +251,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
             this.team === "player" ? selectTarget(this.actions.personalRequest, () => { playerTurn(this) }, [1, true, unitFilter("", "", false).filter(unit => unit !== this)]) : this.actions.personalRequest.code(randTarget(unitFilter("", "", false).filter(unit => unit !== this)));
         },
         code: (target) => {
-            const statIncrease = target[0].team === this.team ? .33 * (1.5 ** elementBonus(target[0], this.actions.personalRequest)): -.33 * (1.5 ** (elementBonus(this, this.actions.personalRequest) - elementBonus(target[0], this.actions.personalRequest)));
+            const statIncrease = target[0].team === this.team ? .34 * (1.5 ** elementBonus(target[0], this.actions.personalRequest)): -.34 * (1.5 ** (elementBonus(this, this.actions.personalRequest) - elementBonus(target[0], this.actions.personalRequest)));
             const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
             this.previousAction = [true, true, true];
@@ -261,20 +259,23 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
             this.resource.mana -= 10;
             this.resource.energy -= 10;
             if (mod) {
-                if (mod.name === "Personal Request") {
-                    if (mod.vars.target !== target[0]) { effect = Math.max(mod.vars.effect - 1, 1) }
-                    else { effect += mod.vars.effect }
-                }
+                if (mod.name === "Personal Request") { mod.vars.target !== target[0] ? effect = Math.max(mod.vars.effect - 1, 1) : effect += mod.vars.effect }
                 removeModifier(mod);
             }
             new Modifier("Personal Request", "Changes stats", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"], values: [], effect: effect, baseVal: statIncrease, changeStat: false, listeners: { turnEnd: true, statChange: true }, cancel: false, applied: true, focus: true },
                 function() {
-                    logAction(`${this.vars.caster.name} sings a song just for ${this.vars.target.name}!`, "action");
-                    for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 + Number.EPSILON)) }
-                    resetStat(this.vars.target, this.vars.stats, this.vars.values);
+                    if (this.vars.target.team !== this.vars.caster.team) {
+                        this.vars.debuff = function(unit) { return resistDebuff(this.vars.caster, unit)[0] * (2 ** (elementBonus(this.vars.caster, this) - elementBonus(unit, this) + this.vars.effect - 1)) > 1 }
+                        if (!this.vars.debuff(this.vars.target)) { this.vars.target = null }
+                    }
+                    if (this.vars.target) {
+                        logAction(`${this.vars.caster.name} sings a song just for ${this.vars.target.name}!`, "action");
+                        for (const stat of this.vars.stats) { this.vars.values.push(Math.floor(this.vars.caster[stat] * this.vars.baseVal * (3 + this.vars.effect)/4 + Number.EPSILON)) }
+                        resetStat(this.vars.target, this.vars.stats, this.vars.values);
+                    } else { logAction(`${this.vars.caster.name} made a blunder!`, "action"); }
                 },
                 function(context) {
-                    if (!this.vars.changeStat && context.statList && context.unit === this.vars.caster && context.statList.filter(s => this.vars.stats.includes(s)).length > 0) { this.vars.changeStat = true }
+                    if (this.vars.target && !this.vars.changeStat && context.statList && context.unit === this.vars.caster && context.statList.filter(s => this.vars.stats.includes(s)).length > 0) { this.vars.changeStat = true }
                     else if (!context?.statList) {
                         if (this.vars.changeStat) {
                             if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
@@ -289,10 +290,10 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 },
                 function() {
                     if (this.vars.cancel && this.vars.applied) {
-                        resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
+                        if (this.vars.target) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
                         this.vars.applied = false;
                     } else if (!this.vars.cancel && !this.vars.applied) {
-                        resetStat(this.vars.target, this.vars.stats, this.vars.values);
+                        if (this.vars.target) { resetStat(this.vars.target, this.vars.stats, this.vars.values) }
                         this.vars.applied = true;
                     }
                 },
@@ -300,8 +301,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                     if (unit === this.vars.target) {
                         resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
                         this.vars.target = null;
-                    }
-                    else {
+                    } else {
                         if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
                         this.vars.target = unit;
                         this.vars.values.length = 0;
@@ -352,7 +352,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         }
     };
     
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         soothingMelody: 0.25,
         rhythmicFrenzy: 0.2,
         rebelliousDiscord: 0.2,

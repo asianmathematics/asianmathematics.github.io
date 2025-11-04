@@ -4,7 +4,7 @@ import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, set
 export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175, 140, "back", 260, 120, 15, undefined, undefined, 250, 35], ["light/illusion", "knowledge/memory", "entropy/goner", "radiance/purity", "anomaly/synthetic", "nature/life", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.gun = {
         name: "Gun [stamina, energy]",
-        properties: ["physical", "stamina", "techno", "energy", "attack", "buff"],
+        properties: ["physical", "stamina", "techno", "energy", "attack", "debuff"],
         cost: { stamina: 10, energy: 10 },
         description: "Costs 10 stamina & 10 energy\nAttacks a target 4 times with increased accuracy and crit chance, decreases speed for 1 turn",
         points: 60,
@@ -25,7 +25,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
             basicModifier("Speed Penalty", "Speed reduced during gun", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["speed"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
     };
-    
+
     this.actions.healingPills = {
         name: "Healing Pills [physical, energy]",
         properties: ["physical", "techno", "energy", "radiance/purity", "anomaly/synthetic", "nature/life", "heal", "multitarget"],
@@ -45,7 +45,10 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
                 this.resource.energy -= 25;
                 this.previousAction[0] = this.previousAction[2] = true;
                 if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.healingPills, units: targets, resource: ['hp'], value: targets.map(u => u.resource.healFactor) }) }
-                for (const unit of targets) { unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor) }
+                for (const unit of targets) {
+                    if (unit.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit}) }
+                    unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor);
+                }
                 logAction(`${this.name} heals ${targets.map(u => u.name).join(", ")} for ${targets.map(u => u.resource.healFactor).join(", ")} HP!`, "heal");
             } else { this.resource.energy >= 35 ? this.actions.healingDrone.code() : this.actions.backupPower.code() }
         }
@@ -98,11 +101,12 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
             this.previousAction[2] = true;
             logAction(`${this.name} activates the healing drone!`, "action");
             new Modifier("Healing Drone", "Heals the lowest hp ally",
-                { caster: this, targets: unitFilter(this.team, "").filter(u => !u.base.resource.mana), duration: 3, attributes: ["techno"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
+                { caster: this, targets: unitFilter(this.team, "").filter(u => !u.base.resource.mana), duration: 3, attributes: ["techno"], elements: ["radiance/purity", "anomaly/synthetic", "nature/life"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
                 function() {
                     const heal = this.vars.targets.filter(u => u.hp < u.base.hp).reduce((min, unit) => { if (!min || unit.hp < min.hp) { return unit } return min }, null);
                     if (heal) {
                         if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.vars.mod, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
+                        if (heal.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: heal}) }
                         heal.hp = Math.min(heal.hp + heal.resource.healFactor, heal.base.hp);
                         logAction(`Healing Drone heals ${heal.name} for ${heal.resource.healFactor} HP!`, "heal");
                     } else { logAction("Healing Drone has no targets to heal!", "warning") }
@@ -112,6 +116,7 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
                         const heal = this.vars.targets.filter(u => u.hp < u.base.hp).reduce((min, unit) => { if (!min || unit.hp < min.hp) { return unit } return min }, null);
                         if (heal) {
                             if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
+                            if (heal.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: heal}) }
                             heal.hp = Math.min(heal.hp + heal.resource.healFactor, heal.base.hp);
                             logAction(`Healing Drone heals ${heal.name} for ${heal.resource.healFactor} HP!`, "heal");
                         } else { logAction("Healing Drone has no targets to heal!", "warning") }
@@ -144,11 +149,48 @@ export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175,
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         gun: 0.3,
         healingPills: 0.2,
         disableMagic: 0.15,
         healingDrone: 0.2,
         backupPower: 0.15
     };
+}, function() {
+    this.passives.scienceCouncilLeader = {
+        name: "Science Council Leader [passive, techno]",
+        properties: ["passive", "techno", "resource", "buff", "debuff"],
+        description: `Increases self and ally energy regen by 50%, and decreases ally mana regen by 20%`,
+        points: 30,
+        code: () => {
+            const statIncrease = [.5]
+            const statDecrease = [-.2]
+            new Modifier("Science Council Leader", `Increases self and ally energy regen by 50%, and decreases ally mana regen by 20%`,
+                { caster: this, targets: unitFilter(this.team, ""), attributes: ["techno"], elements: ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], buffStats: ["resource.energyRegen"], buffValues: statIncrease, debuffStats: ["resource.manaRegen"], debuffValues: statDecrease, cancel: false, applied: true, focus: true, passive: true },
+                function() {
+                    for (const unit of this.vars.targets) {
+                        if (unit.base.resource.energy) { resetStat(unit, this.vars.buffStats, this.vars.buffValues) }
+                        if (unit.base.resource.mana) { resetStat(unit, this.vars.debuffStats, this.vars.debuffValues) }
+                    }
+                },
+                function() {},
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        for (const unit of this.vars.targets) {
+                            if (unit.base.resource.energy) { resetStat(unit, this.vars.buffStats, this.vars.buffValues, false) }
+                            if (unit.base.resource.mana) { resetStat(unit, this.vars.debuffStats, this.vars.debuffValues, false) }
+                        }
+                        this.vars.applied = false;
+                    }
+                    else if (!this.vars.cancel && !this.vars.applied) {
+                        for (const unit of this.vars.targets) {
+                            if (unit.base.resource.energy) { resetStat(unit, this.vars.buffStats, this.vars.buffValues) }
+                            if (unit.base.resource.mana) { resetStat(unit, this.vars.debuffStats, this.vars.debuffValues) }
+                        }
+                        this.vars.applied = true;
+                    }
+                }
+            );
+        }
+    }
 });

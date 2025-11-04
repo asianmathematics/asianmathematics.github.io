@@ -73,7 +73,6 @@ li.modifier-item > *{display:inline-block;}
 .crit-entry{color:#ffd740;font-weight:700}
 .buff-entry{color:#00ff88}
 .debuff-entry{color:#ff0055}
-.skip-entry{color:#555;font-style:italic}
 .warning-entry{color:#ffd740}
 .error-entry{background-color:white;color:darkred;}
 .info-entry{color:#00aaff}

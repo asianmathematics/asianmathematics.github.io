@@ -69,7 +69,7 @@ export const FourArcher = new Unit("4 (Archer)", [800, 33, 12, 90, 25, 100, 50, 
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         perfectShot: 0.3,
         multishot: 0.25,
         luckyAura: 0.2,

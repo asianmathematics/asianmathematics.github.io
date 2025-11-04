@@ -42,17 +42,18 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
             this.resource.energy -= 50;
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
-            const mod = basicModifier("Sick Beats Buff", "Rhythmic performance enhancement", { caster: this, target: target[0], duration: 2, attributes: ["techno"], elements: ["harmonic/change"], stats: ["speed", "evasion", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
-            mod.changeTarget = function(unit) {
-                if (unit === this.vars.target) { removeModifier(this) }
-                else {
-                    if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
-                    const bonus = 2 ** elementBonus(unit, this);
-                    this.vars.target = unit;
-                    this.vars.values = [Math.floor(20 * bonus + Number.EPSILON), Math.floor(10 * bonus + Number.EPSILON), Math.floor(100 * bonus + Number.EPSILON)];
-                    if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+            basicModifier("Sick Beats Buff", "Rhythmic performance enhancement", { caster: this, target: target[0], duration: 2, attributes: ["techno"], elements: ["harmonic/change"], stats: ["speed", "evasion", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true },
+                function(unit) {
+                    if (unit === this.vars.target) { removeModifier(this) }
+                    else {
+                        if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
+                        const bonus = 2 ** elementBonus(unit, this);
+                        this.vars.target = unit;
+                        this.vars.values = [Math.floor(20 * bonus + Number.EPSILON), Math.floor(10 * bonus + Number.EPSILON), Math.floor(100 * bonus + Number.EPSILON)];
+                        if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+                    }
                 }
-            }
+            );
         }
     };
 
@@ -99,14 +100,14 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
                         eventState.singleDamage.push(this);
                     } else if ((!this.vars.applied || !context?.defenders || !context.defenders.includes(this.vars.target) || context.attacker.position !== "front") && this.vars.listeners.singleDamage) {
                         this.vars.listeners.singleDamage = false;
-                        eventState.singleDamage.splice(eventState.singleDamage.indexOf(this), 1)
+                        eventState.singleDamage.splice(eventState.singleDamage.indexOf(this), 1);
                     }
                     if (this.vars.target === context?.defender && context?.damageSingle > 0) {
                         const doubleDamage = elementDamage(this.vars.target, context.attacker, this);
                         const damageSingle = (doubleDamage + 1) * ( Math.ceil(Math.max(((Math.random() / 2) + .75) * (2 * this.vars.target.attack - context.attacker.defense), .2 * this.vars.target.attack)));
                         if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker: this.vars.target, defender: context.attacker, damageSingle}) }
                         context.attacker.hp = Math.max(context.attacker.hp - damageSingle, 0);
-                        logAction(`${this.vars.target.name} electricity shocks ${context.attacker.name} dealing ${damageSingle} ${doubleDamage ? "elemental " : ""}damage!`, "hit")
+                        logAction(`${this.vars.target.name} electricity shocks ${context.attacker.name} dealing ${damageSingle} ${doubleDamage ? "elemental " : ""}damage!`, "hit");
                         if (context.attacker.hp === 0) {
                             for (const mod of modifiers) { if (mod.target === context.attacker && mod.focus) { removeModifier(mod) } }
                             if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: context.attacker}) }
@@ -141,7 +142,7 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         electricDischarge: 0.3,
         sickBeats: 0.2,
         recharge: 0.15,

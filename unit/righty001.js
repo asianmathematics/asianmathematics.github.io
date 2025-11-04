@@ -1,7 +1,28 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60, 200, 140, "mid", 175, 130, 14, undefined, undefined, 90, 10], ["light/illusion", "anomaly/synthetic", "independence/loneliness", "ingenuity/insanity"], function() {
+export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60, 200, 140, "mid", 175, 130, 14, undefined, undefined, 90, 10], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+    this.actions.energyRifle = {
+        name: "Energy Rifle [energy]",
+        properties: ["techno", "energy", "radiance/purity", "attack"],
+        cost: { energy: 20 },
+        description: "Costs 20 energy\nAttacks a single target 4 times with increased accuracy and damage",
+        points: 60,
+        target: () => {
+            if (this.resource.energy < 20) {
+                showMessage("Not enough energy!", "error", "selection");
+                return;
+            }
+            this.team === "player" ? selectTarget(this.actions.energyRifle, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.energyRifle.code(randTarget(unitFilter("player", "front", false)));
+        },
+        code: (target) => {
+            this.resource.energy -= 20;
+            this.previousAction[2] = true;
+            logAction(`${this.name} fires at ${target[0].name}!`, "action");
+            attack(this, target, 4, { attacker: { accuracy: this.accuracy + 35, attack: this.attack + 10 } });
+        }
+    };
+    
     this.actions.trickShot = {
         name: "Trick Shot [stamina, energy]",
         properties: ["physical", "stamina", "techno", "energy", "attack", "multitarget"],
@@ -38,7 +59,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
             this.team === "player" ? selectTarget(this.actions.snipe, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "", false)]) : this.actions.snipe.code(randTarget(unitFilter("player", "", false)));
         },
         code: (target) => {
-            const statDecrease = [5, 10]
+            const statDecrease = [5, 10];
             this.resource.stamina -= 10;
             this.resource.energy -= 20;
             this.previousAction[0] = this.previousAction[2] = true;
@@ -114,8 +135,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                                         modifiers.pop();
                                     }
                                 }
-                            }
-                            else if (!this.vars.cancel && !this.vars.applied) {
+                            } else if (!this.vars.cancel && !this.vars.applied) {
                                 this.vars.targets[0].stun++;
                                 this.vars.applied = true;
                                 if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
@@ -133,17 +153,18 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                     will.push(1);
                 case will[0] > 30 - (10 * bonus):
                     if (!will[1]) { logAction(`${this.name} partially disorients ${target[0].name}!`, "debuff") }
-                    const mod = basicModifier("Flashbang", "Reduced speed and evasion", { caster: this, target: target[0], duration: 1, attributes: ["techno"], elements: ["light/illusion"], stats: ["speed", "evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
-                    mod.changeTarget = function(unit) {
-                        if (unit === this.vars.target) { removeModifier(this) }
-                        else {
-                            if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
-                            const bonus = 2 ** (elementBonus(this, this.actions.flashbang) - elementBonus(target[0], this.actions.flashbang));
-                            this.vars.target = unit;
-                            this.vars.values = [Math.floor(-50 * bonus + Number.EPSILON), Math.floor(-30 * bonus + Number.EPSILON)];
-                            if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+                    basicModifier("Flashbang", "Reduced speed and evasion", { caster: this, target: target[0], duration: 1, attributes: ["techno"], elements: ["light/illusion"], stats: ["speed", "evasion"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true },
+                        function(unit) {
+                            if (unit === this.vars.target) { removeModifier(this) }
+                            else {
+                                if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
+                                const bonus = 2 ** (elementBonus(this, this.actions.flashbang) - elementBonus(target[0], this.actions.flashbang));
+                                this.vars.target = unit;
+                                this.vars.values = [Math.floor(-50 * bonus + Number.EPSILON), Math.floor(-30 * bonus + Number.EPSILON)];
+                                if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
+                            }
                         }
-                    }
+                    );
                     break;
                 default:
                     logAction(`${target[0].name} fully resists the flashbang!`, "miss");
@@ -192,8 +213,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                     if (this.vars.cancel && this.vars.applied) {
                         resetStat(this.vars.target, [ ...this.vars.buffs, ...this.vars.debuffs], [...this.vars.buffValues, ...this.vars.debuffValues], false);
                         this.vars.applied = false;
-                    }
-                    else if (!this.vars.cancel && !this.vars.applied) {
+                    } else if (!this.vars.cancel && !this.vars.applied) {
                         resetStat(this.vars.target, [ ...this.vars.buffs, ...this.vars.debuffs], [...this.vars.buffValues, ...this.vars.debuffValues]);
                         this.vars.applied = true;
                     }
@@ -220,12 +240,13 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                 this.base.resist = 75;
                 this.base.speed = 290;
                 this.base.presence = 155;
-                this.actions.actionWeight = { 
+                this.actions.actionWeight = {
+                    energyRifle: 0.15,
                     trickShot: 0.3,
                     snipe: 0,
                     fastReload: 0,
                     flashbang: 0.25,
-                    dodge: 0.25,
+                    dodge: 0.1,
                     adrenalinePack: 0.1,
                     switchPosition: 0.1
                 };
@@ -240,7 +261,8 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                 this.base.resist = 60;
                 this.base.speed = 200;
                 this.base.presence = 140;
-                this.actions.actionWeight = { 
+                this.actions.actionWeight = {
+                    energyRifle: 0.1,
                     trickShot: 0.3,
                     snipe: 0.25,
                     fastReload: 0.25,
@@ -254,10 +276,11 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
+        energyRifle: 0.1,
         trickShot: 0.3,
         snipe: 0.25,
-        fastReload: 0.25,
+        fastReload: 0.15,
         flashbang: 0,
         dodge: 0,
         adrenalinePack: 0.1,

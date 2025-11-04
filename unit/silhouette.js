@@ -98,7 +98,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 this.base.resist = 40;
                 this.base.speed = 86;
                 this.base.presence = 100;
-                this.actions.actionWeight = { 
+                this.actions.actionWeight = {
                     shadowBlade: 0.4,
                     meditate: 0,
                     sneak: 0.2,
@@ -116,7 +116,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 this.base.resist = 50;
                 this.base.speed = 65;
                 this.base.presence = 77;
-                this.actions.actionWeight = { 
+                this.actions.actionWeight = {
                     shadowBlade: 0,
                     meditate: 0.4,
                     sneak: 0.2,
@@ -128,7 +128,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         shadowBlade: 0,
         meditate: 0.4,
         sneak: 0.2,

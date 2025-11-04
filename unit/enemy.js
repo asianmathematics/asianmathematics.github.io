@@ -54,10 +54,10 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
         }
     };
 
-    this.actions.actionWeight = { 
-        basicAttack: 0.25, 
-        strongAttack: 0.6, 
-        dodge: 0.1, 
-        block: 0.05 
+    this.actions.actionWeight = {
+        basicAttack: 0.25,
+        strongAttack: 0.6,
+        dodge: 0.1,
+        block: 0.05
     };
 });

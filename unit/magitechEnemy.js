@@ -67,8 +67,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
                     if (this.vars.cancel && this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i], false)) }
                         this.vars.applied = false;
-                    }
-                    else if (!this.vars.cancel && !this.vars.applied) {
+                    } else if (!this.vars.cancel && !this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i])) }
                         this.vars.applied = true;
                     }
@@ -136,12 +135,12 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 45, 150, 20, 
         }
     };
 
-    this.actions.actionWeight = { 
-        arcaneCannon: 0.20, 
-        stanceShift: 0.20, 
-        magitechBarrier: 0.20, 
-        essenceAbsorption: 0.15, 
-        energyWave: 0.20, 
-        coreOverload: 0.05 
+    this.actions.actionWeight = {
+        arcaneCannon: 0.20,
+        stanceShift: 0.20,
+        magitechBarrier: 0.20,
+        essenceAbsorption: 0.15,
+        energyWave: 0.20,
+        coreOverload: 0.05
     };
 });

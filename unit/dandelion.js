@@ -88,7 +88,7 @@ export const Dandelion = new Unit("Dandelion", [1300, 66, 18, 140, 40, 130, 60, 
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         spellAttack: 0.3,
         focusFire: 0.25,
         danmaku: 0.15,

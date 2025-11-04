@@ -39,13 +39,14 @@ export const technoEnemy = new Unit("Techno Drone", [950, 44, 15, 125, 20, 115, 
         cost: { energy: 50 },
         description: "Costs 50 energy\nHeals an ally somewhat (~20% of max HP), does Laser Blast if no ally needs healing",
         points: 60,
-        target: () => { this.actions.naniteRepair.code(randTarget(unitFilter("enemy", "front", false).filter(unit => unit.hp < unit.base.hp))) },
+        target: () => { this.actions.naniteRepair.code(randTarget(unitFilter("enemy", "front").filter(unit => unit.hp < unit.base.hp))) },
         code: (target) => {
             if (target.length) {
                 this.previousAction[2] = true;
                 this.resource.energy -= 50;
                 const bonus = 2 ** elementBonus(target[0], this.actions.naniteRepair);
                 if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.naniteRepair, unit: target[0], resource: ['hp'], value: [target[0].resource.healFactor * bonus] }) }
+                if (target[0].hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: target[0]}) }
                 target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor(target[0].resource.healFactor * bonus + Number.EPSILON));
                 logAction(`${this.name} repairs ${target[0].name}!`, "heal");
             } else { this.actions.laserBlast.code(); }
@@ -110,9 +111,9 @@ export const technoEnemy = new Unit("Techno Drone", [950, 44, 15, 125, 20, 115, 
                 this.base.speed = 140;
                 this.base.presence = 120;
                 this.actions.actionWeight = {
-                    laserBlast: 0,
-                    shieldDisruptor: 0.3,
-                    naniteRepair: 0.5,
+                    laserBlast: 0.2,
+                    shieldDisruptor: 0.25,
+                    naniteRepair: 0.35,
                     overcharge: 0,
                     backupPower: 0,
                     dodge: 0.1,
@@ -126,9 +127,9 @@ export const technoEnemy = new Unit("Techno Drone", [950, 44, 15, 125, 20, 115, 
                 this.base.speed = 120;
                 this.base.presence = 90;
                 this.actions.actionWeight = {
-                    laserBlast: 0.5,
+                    laserBlast: 0.4,
                     shieldDisruptor: 0,
-                    naniteRepair: 0,
+                    naniteRepair: 0.1,
                     overcharge: 0.25,
                     backupPower: 0.2,
                     dodge: 0,
@@ -140,9 +141,9 @@ export const technoEnemy = new Unit("Techno Drone", [950, 44, 15, 125, 20, 115, 
     };
 
     this.actions.actionWeight = {
-        laserBlast: 0.5,
+        laserBlast: 0.4,
         shieldDisruptor: 0,
-        naniteRepair: 0,
+        naniteRepair: 0.1,
         overcharge: 0.25,
         backupPower: 0.2,
         dodge: 0,

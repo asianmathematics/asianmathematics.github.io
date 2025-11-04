@@ -59,7 +59,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
             this.team === "player" ? selectTarget(this.actions.snipe, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "", false)]) : this.actions.snipe.code(randTarget(unitFilter("player", "", false)));
         },
         code: (target) => {
-            const statDecrease = [5, 10]
+            const statDecrease = [5, 10];
             this.resource.stamina -= 10;
             this.resource.energy -= 20;
             this.previousAction[0] = this.previousAction[2] = true;
@@ -106,7 +106,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 this.base.resist = 20;
                 this.base.speed = 95;
                 this.base.presence = 75;
-                this.actions.actionWeight = { 
+                this.actions.actionWeight = {
                     energyRifle: 0.2,
                     dualWield: 0.4,
                     snipe: 0,
@@ -124,7 +124,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
                 this.base.resist = 25;
                 this.base.speed = 80;
                 this.base.presence = 65;
-                this.actions.actionWeight = { 
+                this.actions.actionWeight = {
                     energyRifle: 0.35,
                     dualWield: 0,
                     snipe: 0.35,
@@ -136,7 +136,7 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         energyRifle: 0.35,
         dualWield: 0,
         snipe: 0.35,

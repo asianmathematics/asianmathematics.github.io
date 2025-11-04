@@ -27,15 +27,15 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
             this.resource.mana -= 25;
             logAction(`${this.name} casts Curse Field!`, "action");
             new Modifier("Curse Field", "Reduces accuracy and evasion",
-                { caster: this, targets: unitFilter("player", "front", false), duration: 'Indefinite', attributes: ["mystic"], elements: ["anomaly/synthetic"], stats: ["accuracy", "evasion"], values: statDecrease, bonusArray: [], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, unit) > 100 - (33.3 * (2 ** this.vars.bonusArray[i])) } },
+                { caster: this, targets: unitFilter("player", "front", false), attributes: ["mystic"], elements: ["anomaly/synthetic"], stats: ["accuracy", "evasion"], values: statDecrease, bonusArray: [], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, unit) > 100 - (33.3 * (2 ** this.vars.bonusArray[i])) } },
                 function() {
-                    this.vars.bonusArray.fill(this.vars.targets.length)
+                    this.vars.bonusArray.fill(this.vars.targets.length);
                     for (let i = this.vars.targets.length-1; i > -1; i--) {
                         this.vars.bonusArray[i] = elementBonus(this.vars.targets[i], this);
                         if (resistDebuff(this.vars.caster, [this.vars.targets[i]]) > 100 - (33.3 * (2 ** this.vars.bonusArray[i]))) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i])) }
                         else {
                             this.vars.targets.splice(i, 1);
-                            this.vars.bonusArray.splice(i, 1)
+                            this.vars.bonusArray.splice(i, 1);
                         }
                     }
                 },
@@ -52,8 +52,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
                     if (this.vars.cancel && this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i], false)) }
                         this.vars.applied = false;
-                    }
-                    else if (!this.vars.cancel && !this.vars.applied) {
+                    } else if (!this.vars.cancel && !this.vars.applied) {
                         for (let i = this.vars.targets.length - 1; i >= 0; i--) { resetStat(this.vars.targets[i], this.vars.stats, this.vars.values.map(value => value * this.vars.bonusArray[i])) }
                         this.vars.applied = true;
                     }
@@ -140,11 +139,11 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
         }
     };
 
-    this.actions.actionWeight = { 
-        manaBolt: 0.3, 
-        curseField: 0.25, 
-        drainLife: 0.2, 
-        arcaneShield: 0.15, 
-        dispelMagic: 0.1 
+    this.actions.actionWeight = {
+        manaBolt: 0.3,
+        curseField: 0.25,
+        drainLife: 0.2,
+        arcaneShield: 0.15,
+        dispelMagic: 0.1
     };
 });

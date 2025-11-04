@@ -33,7 +33,7 @@ Paragon.description = "5 star techno backline unit with good healing";
 Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
 Mannequin.description = "3 star techno midline unit with stealth capabilities";
 Idol.description = "4 star magitech backline unit with powerful healing, buffs and debuffs";
-Silhouette.description = "3 star mystic midline unit with decent versatility"
+Silhouette.description = "3 star mystic midline unit with decent versatility";
 
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
@@ -58,14 +58,14 @@ function initUnitSelection() {
         card.appendChild(tooltip);
         card.addEventListener('click', () => {
             unit.actionsInit();
+            if (unit.passivesInit) { unit.passivesInit() }
             updateInfoDisplay(unit);
             if (selectedUnits.length >= 6 && !card.classList.contains('selected')) {
                 showMessage('Maximum 6 units allowed!', 'warning', 'selection');
                 return;
             }
             card.classList.toggle('selected');
-            if (card.classList.contains('selected')) { selectedUnits.push(unit) }
-            else { selectedUnits = selectedUnits.filter(u => u.name !== unit.name) }
+            card.classList.contains('selected') ? selectedUnits.push(unit) : selectedUnits = selectedUnits.filter(u => u.name !== unit.name);
             countDisplay.textContent = `Selected Units (${selectedUnits.length}/6)`;
             renderSelectedUnits();
         });
@@ -99,7 +99,7 @@ function renderSelectedUnits() {
         card.className = 'unit-card selected';
         card.innerHTML = `<strong>${unit.name}</strong>`;
         container.appendChild(card);
-        card.addEventListener('click', () => { updateInfoDisplay(unit) })
+        card.addEventListener('click', () => { updateInfoDisplay(unit) });
     });
 }
 
@@ -107,6 +107,7 @@ function startCombatWithSelected() {
     document.getElementById('unit-selection-panel').style.display = 'none';
     selectedUnits.forEach(unit => { createUnit(unit, 'player') });
     if (wave > 0) { for (const e of waveCalc(unitFilter("player", ""), .5)) { createUnit(e, 'enemy') } }
+    for (const unit of allUnits.filter(u => u.passivesInit)) { for (const pass in unit.passives) { unit.passives[pass].code() } }
     updateBattleDisplay();
     combatTick();
 }
@@ -127,14 +128,14 @@ function updateInfoDisplay(unit) {
     for (const resName in unit.resource) {
         const resValue = unit.resource[resName].toFixed(0);
         const label = resName.charAt(0).toUpperCase() + resName.slice(1);
-        if (!unit.mult.resource[resName]) { html += `<div class="stat-line"><span>${label}</span><span>${resValue} / ${unit.base.resource[resName].toFixed(0)}</span></div>` }
-        else { html += `<div class="stat-line"><span>${label}</span><span>${resValue}</span></div>` }
+        !unit.mult.resource[resName] ? html += `<div class="stat-line"><span>${label}</span><span>${resValue} / ${unit.base.resource[resName].toFixed(0)}</span></div>` : html += `<div class="stat-line"><span>${label}</span><span>${resValue}</span></div>`
     }
     html += `</div>`;
     if (unit.actions && Object.keys(unit.actions).length > 0) {
         html += `<div class="right-column">
             <h4>Actions</h4>`;
         for (const actionKey in unit.actions) {
+            if (actionKey === "actionWeight") { continue }
             const action = unit.actions[actionKey];
             html += `<div class="action-info-box">`;
             html += `<div class="action-name">${action.name}</div>`;
@@ -146,6 +147,21 @@ function updateInfoDisplay(unit) {
             html += `</div>`;
         }
     } else { html += `<p>No active actions for this unit.</p>` }
+    if (unit.passives && Object.keys(unit.passives).length > 0) {
+        html += `<div class="right-column">
+            <h4>Passive skills</h4>`;
+            for (const actionKey in unit.passives) {
+            const action = unit.passives[actionKey];
+            html += `<div class="action-info-box">`;
+            html += `<div class="action-name">${action.name}</div>`;
+            let costs = [];
+            for (const costType in action.cost) { if (action.cost[costType] > 0) { costs.push(`${action.cost[costType]} ${costType.charAt(0).toUpperCase() + costType.slice(1)}`) } }
+            html += `<p><strong>Cost:</strong> ${costs.length > 0 ? costs.join(', ') : 'None'}</p>
+                <p><strong>Description:</strong><br>${action.description ? action.description.replace(/\n/g, '<br>') : 'No description available.'}</p>`;
+            if (action.properties && action.properties.length > 0) { html += `<p><strong>Properties:</strong> ${action.properties.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')}</p>` }
+            html += `</div>`;
+        }
+    }
     infoDisplay.innerHTML = html + '</div>';
 }
 
@@ -167,7 +183,7 @@ function updateModifiers() {
                 <span class="modifier-caster">${modifier.vars.caster?.name || "System"}'s</span>
                 <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
                 <div class="modifier-targets">Targets: ${modifier.vars?.target?.name || modifier.vars.targets.map(u => u.name).join(", ")}</div>
-                <div class="modifier-duration">${modifier.vars.duration} turn(s) left</div>
+                <div class="modifier-duration">${modifier.vars.duration || "indefinite"} turn(s) left</div>
             </li>`;
         }
         modDisplay += "</ul>";
@@ -294,6 +310,7 @@ export function createUnit(unit, team) {
     newUnit.team = team;
     allUnits.push(newUnit);
     newUnit.actionsInit();
+    if (newUnit.passivesInit) { newUnit.passivesInit() }
     newUnit.timer = 1000;
 }
 
@@ -313,6 +330,10 @@ function cloneUnit(unit) {
         cancel: false
     };
     newUnit.actionsInit = unit.actionsInit;
+    if (unit.passivesInit) {
+        newUnit.passives = {};
+        newUnit.passivesInit = unit.passivesInit;
+    }
     for (const stat in newUnit.base) {
         if (typeof newUnit.base[stat] === 'object') { continue }
         newUnit[stat] = newUnit.base[stat];
@@ -331,7 +352,7 @@ function regenerateResources(unit) {
 export function advanceWave(x = 0) {
     if (x) { wave = x }
     let turnId = allUnits[currentTurn].name;
-    if (wave < 3) { allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))) }
+    if (wave < 3) { for (const mod of modifiers) { if (allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))).includes(mod.vars.caster)) { removeModifier(mod) } } }
     switch (wave) {
         case 2:
             for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(e, 'enemy') }
@@ -421,7 +442,7 @@ export async function combatTick() {
     if (eventState.turnStart.length) { handleEvent('turnStart', { unit: turn }) }
     turn.timer += 1000;
     if (!turn.stun) {
-        setUnit(turn)
+        setUnit(turn);
         regenerateResources(turn);
         turn.absorb = [];
         turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e));

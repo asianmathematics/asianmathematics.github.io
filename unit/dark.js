@@ -63,8 +63,7 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
                                     modifiers.pop();
                                 }
                             }
-                        }
-                        else if (!this.vars.cancel && !this.vars.applied) {
+                        } else if (!this.vars.cancel && !this.vars.applied) {
                             this.vars.target.stun++;
                             this.vars.applied = true;
                             if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
@@ -148,23 +147,111 @@ export const Dark = new Unit("Dark", [2400, 80, 40, 200, 60, 175, 75, 275, 225, 
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         iceshock: 0.3,
         perfectFreeze: 0.2,
         danmaku: 0.15,
         dispelMagic: 0.25,
         dodge: 0.1
     };
-}/*, function() {
+}, function() {
     this.passives.avatarOfLoneliness = {
         name: "Avatar of Loneliness [passive]",
         properties: ["passive", "independence/loneliness", "buff", "debuff"],
-        description: "Strong Independence/Loneliness boosts, self penalty when others present",
+        description: "Gives strong buffs to other Independence/Loneliness units, self penalty when others present/alive, self boost otherwise",
+        points: 30,
         code: () => {
-            new Modifier("Avatar of Loneliness", "Strong Independence/Loneliness boosts, self penalty when others present", 
-                { caster: this, targets: unitFilter(this.team, "").filter(unit => unit.elements.includes("independence/loneliness") && unit !== this), elements: ["radiance/purity", "independence/loneliness"], listeners: { unitChange: true }, self: false, cancel: false, applied: true, focus: true},
-                function() {}
-            )
+            const darkBoost = [.2, .3, .15];
+            const otherBoost = [.25, .25, .1];
+            const selfBoost = [Math.floor(.1 * this.base.focus + Number.EPSILON), Math.floor(.1 * this.base.resist + Number.EPSILON), Math.floor(.5 * this.base.presence + Number.EPSILON)];
+            const penalty = [-Math.floor(.07 * this.base.accuracy + Number.EPSILON), -Math.floor(.2 * this.base.speed + Number.EPSILON)];
+            new Modifier("Avatar of Loneliness", "Gives strong buffs to other Independence/Loneliness units, self penalty when others present/alive, self boost otherwise",
+                { caster: this, targets: unitFilter(this.team, "").filter(unit => unit.elements.includes("independence/loneliness") && unit !== this), elements: ["radiance/purity", "independence/loneliness"], darkStats: ["attack", "accuracy", "focus"], darkValues: darkBoost, otherStats: ["defense", "evasion", "resist"], otherValues: otherBoost, boostStats: ["focus", "resist", "presence"], boostValues: selfBoost, penaltyStats: ["accuracy", "speed"], penaltyValues: penalty, bonusArray: [], valueArray: [], listeners: { unitChange: true, positionChange: true, turnEnd: false }, self: false, cancel: false, applied: true, focus: true, passive: true},
+                function() {
+                    for (const unit of this.vars.targets) {
+                        this.vars.bonusArray.push(2 ** elementBonus(unit, this));
+                        if (unit.name.includes("Dandelion")) {
+                            this.vars.valueArray.push(this.vars.darkStats.map((val, i) => Math.floor(this.vars.darkValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            resetStat(unit, this.vars.darkStats, this.vars.valueArray.at(-1));
+                        } else {
+                            this.vars.valueArray.push(this.vars.otherStats.map((val, i) => Math.floor(this.vars.otherValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            resetStat(unit, this.vars.otherStats, this.vars.valueArray.at(-1));
+                        }
+                    }
+                    this.vars.targets.length ? resetStat(this.vars.caster, this.vars.penaltyStats, this.vars.penaltyValues) : resetStat(this.vars.caster, this.vars.boostStats, this.vars.boostValues);
+                },
+                function(context) {
+                    if (this.vars.targets.includes(context.unit)) {
+                        if (context.position) {
+                            this.vars.listeners.turnEnd = true;
+                            eventState.turnEnd.push(this);
+                        } else if (context.type) {
+                            switch (context.type) {
+                                case "downed":
+                                    if (!this.vars.self && !this.vars.targets.some(unit => unit.hp > 0).length) {
+                                        if (this.vars.applied) { resetStat(this.vars.caster, [ ...this.vars.penaltyStats, ...this.vars.boostStats], [ ...this.vars.penaltyValues.map(val => -val), ...this.vars.boostValues]) }
+                                        this.vars.self = true;
+                                    }
+                                    break;
+                                case "revive":
+                                    if (this.vars.self && this.vars.targets.some(unit => unit.hp > 0)) {
+                                        if (this.vars.applied) { resetStat(this.vars.caster, [ ...this.vars.penaltyStats, ...this.vars.boostStats], [ ...this.vars.penaltyValues.map(val => -val), ...this.vars.boostValues], false) }
+                                        this.vars.self = false;
+                                    }
+                                    break;
+                            }
+                        } else {
+                            const index = this.vars.targets.indexOf(context.unit);
+                            if (this.vars.applied) { resetStat(context.unit, this.vars.otherStats, this.vars.valueArray[index], false) }
+                            this.vars.valueArray[index] = this.vars.darkStats.map((val, i) => Math.floor(this.vars.darkValues[i] * context.unit.base[val] * this.vars.bonusArray[index] + Number.EPSILON));
+                            if (this.vars.applied) { resetStat(context.unit, this.vars.otherStats, this.vars.valueArray[index]) }
+                            this.vars.listeners.turnEnd = false;
+                            eventState.turnEnd.splice(eventState.turnEnd.indexOf(this), 1);
+                        }
+                    }
+                },
+                function() {
+                    if (this.vars.cancel && this.vars.applied) {
+                        for (let i = 0; i < this.vars.targets.length; i++) { this.vars.targets[i].name.includes("Dandelion") ? resetStat(this.vars.targets[i], this.vars.darkStats, this.vars.valueArray[i], false) : resetStat(this.vars.targets[i], this.vars.otherStats, this.vars.valueArray[i], false) }
+                        !this.vars.self ? resetStat(this.vars.caster, this.vars.penaltyStats, this.vars.penaltyValues, false) : resetStat(this.vars.caster, this.vars.boostStats, this.vars.boostValues, false);
+                        this.vars.applied = false;
+                    } else if (!this.vars.cancel && !this.vars.applied) {
+                        for (let i = 0; i < this.vars.targets.length; i++) { this.vars.targets[i].name.includes("Dandelion") ? resetStat(this.vars.targets[i], this.vars.darkStats, this.vars.valueArray[i]) : resetStat(this.vars.targets[i], this.vars.otherStats, this.vars.valueArray[i]) }
+                        !this.vars.self ? resetStat(this.vars.caster, this.vars.penaltyStats, this.vars.penaltyValues) : resetStat(this.vars.caster, this.vars.boostStats, this.vars.boostValues);
+                        this.vars.applied = true;
+                    }
+                },
+                function(remove = [], add = []) {
+                    for (let i = this.vars.targets.length - 1; i >= 0; i--) {
+                        this.vars.targets[i].name.includes("Dandelion") ? resetStat(this.vars.targets[i], this.vars.darkStats, this.vars.valueArray[i], false) : resetStat(this.vars.targets[i], this.vars.otherStats, this.vars.valueArray[i], false);
+                        if (remove.includes(this.vars.targets[i])) {
+                            this.vars.targets.splice(i, 1);
+                            this.vars.bonusArray.splice(i, 1);
+                            this.vars.valueArray.splice(i, 1);
+                        }
+                    }
+                    for (const unit of add) {
+                        this.vars.bonusArray.push(2 ** elementBonus(unit, this));
+                        if (unit.name.includes("Dandelion")) {
+                            this.vars.valueArray.push(this.vars.darkStats.map((val, i) => Math.floor(this.vars.darkValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            resetStat(unit, this.vars.darkStats, this.vars.valueArray.at(-1));
+                        } else {
+                            this.vars.valueArray.push(this.vars.otherStats.map((val, i) => Math.floor(this.vars.otherValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            resetStat(unit, this.vars.otherStats, this.vars.valueArray.at(-1));
+                        }
+                    }
+                    for (let i = 0; i < this.vars.targets.length; i++) {
+                        this.vars.targets[i].name.includes("Dandelion") ? resetStat(this.vars.targets[i], this.vars.darkStats, this.vars.valueArray[i]) : resetStat(this.vars.targets[i], this.vars.otherStats, this.vars.valueArray[i]);
+                    }
+                    if (this.vars.targets.some(unit => unit.hp > 0)) {
+                        if (this.vars.applied) { resetStat(this.vars.caster, [ ...this.vars.penaltyStats, ...this.vars.boostStats], [ ...this.vars.penaltyValues.map(val => -val), ...this.vars.boostValues], false) }
+                        this.vars.self = false;
+                    } else {
+                        if (this.vars.applied) { resetStat(this.vars.caster, [ ...this.vars.penaltyStats, ...this.vars.boostStats], [ ...this.vars.penaltyValues.map(val => -val), ...this.vars.boostValues]) }
+                        this.vars.self = true;
+                    }
+                }
+            );
         }
     }
-}*/);
+});

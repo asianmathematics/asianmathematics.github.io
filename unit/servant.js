@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160, 60, "front", 200, 160, 17], ["death/darkness", "knowledge/memory", "anomaly/synthetic"], function() {
+export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160, 60, "front", 200, 160, 17], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
     this.actions.meleeAttack = {
         name: "Melee Attack",
         properties: ["attack"],
@@ -50,7 +50,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -63,27 +63,58 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: { turnStart: true }, cancel: false, applied: true, focus: true, passive: true });
         }
     };
 
-    this.actions.block = {
-        name: "Block",
-        properties: ["buff"],
-        description: "Slightly increases resist, slightly decreases presence, and increases defense for 1 turn",
-        points: 60,
+    this.actions.actionWeight = {
+        meleeAttack: 0.4,
+        takingOutTrash: 0.25,
+        sneak: 0.24,
+        dodge: 0.1,
+        skip: 0.01
+    };
+}, function() {
+    this.passives.feast = {
+        name: "Feast [passive, physical]",
+        properties: ["passive", "physical", "death/darkness", "knowledge/memory", "anomaly/synthetic", "buff"],
+        description: "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn)",
         code: () => {
-            const statIncrease = [13, 7, -8];
-            logAction(`${this.name} blocks.`, "buff");
-            basicModifier("Block", "Defense and resist increased, presence decreased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
+            new Modifier("Feast", "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn)",
+                { caster: this, target: this, attributes: ["physical"], listeners: { unitChange: true, turnEnd: false }, cancel: false, applied: true, focus: true, passive: true },
+                function() {},
+                function(context) {
+                    if (this.vars.applied && context.type === "downed" && context.unit.team !== this.vars.caster.team && currentUnit === this.vars.caster) {
+                        for (const mod of modifiers.filter(m => (m.vars.caster === context.unit && (m.vars.focus || m.vars.penalty)) || m.vars?.target === context.unit)) {
+                            mod.passive = false;
+                            removeModifier(mod);
+                        }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(context.unit))) { mod.changeTarget(context.unit) }
+                        allUnits.splice(allUnits.indexOf(context.unit), 1);
+                    } else if (this.vars.applied && !context.type && context.unit === this.vars.caster && currentAction === "Skip") {
+                        const unit = randTarget(unitFilter(this.vars.caster.team === "player" ? "enemy" : "player", "", true), 1, true);
+                        for (const mod of modifiers.filter(m => (m.vars.caster === unit && (m.vars.focus || m.vars.penalty)) || m.vars?.target === unit)) {
+                            mod.passive = false
+                            removeModifier(mod);
+                        }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(unit))) { mod.changeTarget(unit) }
+                        allUnits.splice(allUnits.indexOf(unit), 1);
+                    } else if (this.vars.applied && !this.vars.listeners.turnEnd && context.type === "downed" && context.unit.team !== this.vars.caster.team && currentUnit !== this.vars.caster) {
+                        this.vars.listeners.turnEnd = true;
+                        eventState.turnEnd.push(this);
+                    } 
+                    if (this.vars.listeners.turnEnd && context.unit === this.vars.caster) {
+                        this.vars.listeners.turnEnd = false;
+                        eventState.turnEnd.splice(eventState.turnEnd.indexOf(this), 1);
+                    }
+                },
+                function(cancel, temp) {
+                    if (!temp) {
+                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
+                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
+                    }
+                }
+            );
         }
-    };
-
-    this.actions.actionWeight = { 
-        meleeAttack: 0.3,
-        takingOutTrash: 0.2,
-        sneak: 0.2,
-        dodge: 0.15,
-        block: 0.15
-    };
+    }
 });

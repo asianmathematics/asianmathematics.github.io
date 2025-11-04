@@ -1,5 +1,5 @@
 export class Unit {
-    constructor(name, stat, elements, actionsInit, passiveInit) {
+    constructor(name, stat, elements, actionsInit, passivesInit) {
         this.name = name;
         this.base = {
             hp: stat[0],
@@ -53,9 +53,9 @@ export class Unit {
         this.absorb = [];
         this.shield = [];
         this.actionsInit = actionsInit;
-        if (passiveInit) {
+        if (passivesInit) {
             this.passives = {};
-            this.passiveInit = passiveInit;
+            this.passivesInit = passivesInit;
         }
     }
 }

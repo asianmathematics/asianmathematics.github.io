@@ -35,47 +35,6 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 50, 5
         }
     };
 
-    this.actions.determination = {
-        name: "Determination [stamina]",
-        properties: ["physical", "stamina", "harmonic/change", "inertia/cold", "radiance/purity", "heal"],
-        cost: { stamina: 50 },
-        description: `Costs 50 stamina\nModerately heals (${Math.floor(0.5 * this.resource.healFactor + Number.EPSILON)} HP) for 4 turns`,
-        points: 60,
-        code: () => {
-            if (this.resource.stamina < 50) {
-                showMessage("Not enough stamina!", "error", "selection");
-                return;
-            }
-            this.resource.stamina -= 50;
-            this.previousAction[0] = true;
-            logAction(`${this.name} held onto hope!`, "heal");
-            new Modifier("Determination", "Healing over time",
-                { caster: this, target: this, duration: 3, attributes: ["physical"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: true },
-                function() {
-                    if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
-                    this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.target.base.hp);
-                },
-                function(context) {
-                    if (this.vars.target === context?.unit) {
-                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
-                        if (this.vars.applied) {
-                            this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.5 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
-                            logAction(`${this.vars.target.name} held onto hope!`, "heal");
-                        }
-                        this.vars.duration--;
-                    }
-                    if (this.vars.duration === 0) { return true }
-                },
-                function(cancel, temp) {
-                    if (!temp) {
-                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
-                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
-                    }
-                }
-            );
-        }
-    };
-
     this.actions.guard = {
         name: "Guard [physical]",
         properties: ["physical", "inertia/cold", "buff"],
@@ -89,10 +48,37 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 50, 5
         }
     };
 
-    this.actions.actionWeight = { 
+    this.actions.actionWeight = {
         hammer: 0.35,
         quake: 0.25,
         determination: 0.2,
         guard: 0.1
+    };
+}, function() {
+    this.passives.determination = {
+        name: "Determination [passive, stamina]",
+        properties: ["physical", "stamina", "harmonic/change", "inertia/cold", "radiance/purity", "heal"],
+        cost: { stamina: this.base.resource.stamina / 2 },
+        description: `Moderately heals (${Math.floor(0.8 * this.resource.healFactor + Number.EPSILON)} HP) at start of turn whenever stamina is at least half`,
+        points: 30,
+        code: () => {
+            new Modifier("Determination", `Moderately heals (${Math.floor(0.8 * this.resource.healFactor + Number.EPSILON)} HP) at start of turn whenever stamina is at least half`,
+                { caster: this, target: this, attributes: ["physical"], elements: ["harmonic/change", "inertia/cold", "radiance/purity"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: true, passive: true },
+                function() {},
+                function(context) {
+                    if (this.vars.applied && this.vars.target === context?.unit && 2 * this.vars.target.resource.stamina >= this.vars.target.base.resource.stamina) {
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
+                        this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
+                        logAction(`${this.vars.target.name} held onto hope and healed ${Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON)} HP!`, "heal");
+                    }
+                },
+                function(cancel, temp) {
+                    if (!temp) {
+                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
+                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
+                    }
+                }
+            );
+        }
     };
 });
