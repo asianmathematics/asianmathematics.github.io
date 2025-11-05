@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 100, 100, "front", 125, 100, 10, 50, 10, 200, 20], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
+export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 100, 100, "front", 125, 100, 10, 50, 10, 160, 20], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.electricDischarge = {
         name: "Electric Discharge [mystic, energy]",
         properties: ["mystic", "techno", "energy", "harmonic/change", "attack"],

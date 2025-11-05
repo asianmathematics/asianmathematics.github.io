@@ -1,16 +1,16 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160, 60, "front", 200, 160, 17], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
+export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160, 60, "front", 200, 160, 16], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
     this.actions.meleeAttack = {
         name: "Melee Attack",
         properties: ["attack"],
-        description: "Attacks a single target twice with increased damage.",
+        description: "Attacks a single target twice with increased accuracy.",
         points: 60,
         target: () => { this.team === "player" ? selectTarget(this.actions.meleeAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.meleeAttack.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             logAction(`${this.name} deals with ${target[0].name}`, "action");
-            attack(this, target, 2, { attacker: { attack: this.attack + 8 } });
+            attack(this, target, 2, { attacker: { accuracy: this.accuracy + 20 } });
         }
     };
 
@@ -50,7 +50,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -63,7 +63,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
             const statIncrease = [2, 12, 7, -2];
             this.previousAction[0] = true;
             logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: { turnStart: true }, cancel: false, applied: true, focus: true, passive: true });
+            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: { turnStart: true }, cancel: false, applied: true, focus: true});
         }
     };
 
@@ -94,7 +94,7 @@ export const Servant = new Unit("Servant", [1800, 60, 24, 110, 35, 125, 65, 160,
                     } else if (this.vars.applied && !context.type && context.unit === this.vars.caster && currentAction === "Skip") {
                         const unit = randTarget(unitFilter(this.vars.caster.team === "player" ? "enemy" : "player", "", true), 1, true);
                         for (const mod of modifiers.filter(m => (m.vars.caster === unit && (m.vars.focus || m.vars.penalty)) || m.vars?.target === unit)) {
-                            mod.passive = false
+                            mod.passive = false;
                             removeModifier(mod);
                         }
                         for (const mod of modifiers.filter(m => m.vars?.targets?.includes(unit))) { mod.changeTarget(unit) }

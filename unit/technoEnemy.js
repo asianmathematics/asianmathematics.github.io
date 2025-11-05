@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const technoEnemy = new Unit("Techno Drone", [950, 44, 15, 125, 20, 115, 65, 120, 90, "mid", 90, 80, 8, undefined, undefined, 150, 12], ["harmonic/change", "anomaly/synthetic"], function() {
+export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115, 65, 120, 90, "mid", 150, 125, 9, undefined, undefined, 150, 12], ["harmonic/change", "anomaly/synthetic"], function() {
     this.actions.laserBlast = {
         name: "Laser Blast [techno]",
         properties: ["techno", "light/illusion", "harmonic/change", "radiance/purity", "attack", "multitarget"],

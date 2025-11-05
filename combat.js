@@ -370,8 +370,8 @@ export function advanceWave(x = 0) {
 }
 
 function waveCalc(units, mult) {
-    const total = units.reduce((sum, u) => sum + ((+u.description[0]+10.5)**2)/2 - 75.125, 0) * mult;
-    const enemyPoints = new Map([ [enemy, 16], [mysticEnemy, 30], [technoEnemy, 30], [magitechEnemy, 45] ]);
+    const total = units.reduce((sum, u) => sum + 5*((+u.description[0])**2)/2-21*+u.description[0]/2+17, 0) * mult;
+    const enemyPoints = new Map([ [enemy, 8], [mysticEnemy, 15], [technoEnemy, 15], [magitechEnemy, 27] ]);
     if (!units.some(u => u.description.includes("5 star")) && wave < 3) { enemyPoints.delete(magitechEnemy) }
     let enemies = [];
     let points = 0;

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60, 200, 140, "mid", 175, 130, 14, undefined, undefined, 90, 10], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60, 200, 150, "mid", 240, 175, 20, undefined, undefined, 125, 10], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -196,7 +196,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
             const statDecrease = [-50, -50, -25];
             this.previousAction[0] = this.previousAction[2] = true;
             new Modifier("Adrenaline Pack", "Healing and resource regen and additional stats",
-                { caster: this, target: this, duration: 4, attributes: ["physical"], elements: ["anomaly/synthetic", "independence/loneliness", "ingenuity/insanity"], buffs: ["presence", "attack", "evasion", "speed"], buffValues: statIncrease, debuffs: ["accuracy", "focus", "resist"], debuffValues: statDecrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: false },
+                { caster: this, target: this, duration: 5, attributes: ["physical"], elements: ["anomaly/synthetic", "independence/loneliness", "ingenuity/insanity"], buffs: ["presence", "attack", "evasion", "speed"], buffValues: statIncrease, debuffs: ["accuracy", "focus", "resist"], debuffValues: statDecrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: false },
                 function() { resetStat(this.vars.target, [ ...this.vars.buffs, ...this.vars.debuffs], [...this.vars.buffValues, ...this.vars.debuffValues]) },
                 function(context) {
                     if (this.vars.target === context?.unit) {
@@ -239,7 +239,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                 this.base.focus = 280;
                 this.base.resist = 75;
                 this.base.speed = 290;
-                this.base.presence = 155;
+                this.base.presence = 165;
                 this.actions.actionWeight = {
                     energyRifle: 0.15,
                     trickShot: 0.3,
@@ -260,7 +260,7 @@ export const Righty001 = new Unit("Righty_001", [1750, 100, 40, 250, 60, 250, 60
                 this.base.focus = 250;
                 this.base.resist = 60;
                 this.base.speed = 200;
-                this.base.presence = 140;
+                this.base.presence = 150;
                 this.actions.actionWeight = {
                     energyRifle: 0.1,
                     trickShot: 0.3,

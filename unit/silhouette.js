@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50, 65, 77, "mid", 66, 60, 6, 80, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
+export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50, 65, 67, "mid", 60, 60, 7, 70, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
     this.actions.shadowBlade = {
         name: "Shadow Blade [physical, mystic]",
         properties: ["physical", "mystic", "death/darkness", "attack"],
@@ -44,7 +44,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
             logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -97,7 +97,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 this.base.focus = 120;
                 this.base.resist = 40;
                 this.base.speed = 86;
-                this.base.presence = 100;
+                this.base.presence = 90;
                 this.actions.actionWeight = {
                     shadowBlade: 0.4,
                     meditate: 0,
@@ -115,7 +115,7 @@ export const Silhouette = new Unit("Silhouette", [660, 26, 16, 100, 24, 100, 50,
                 this.base.focus = 100;
                 this.base.resist = 50;
                 this.base.speed = 65;
-                this.base.presence = 77;
+                this.base.presence = 67;
                 this.actions.actionWeight = {
                     shadowBlade: 0,
                     meditate: 0.4,

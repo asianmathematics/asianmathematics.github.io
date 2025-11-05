@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const ClassicJoy = new Unit("Classical (Joy)", [1200, 64, 16, 160, 18, 170, 50, 120, 124, "back", 120, 120, 20, undefined, undefined, 140, 15], ["death/darkness", "goner/entropy", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 170, 50, 120, 120, "back", 120, 110, 20, undefined, undefined, 140, 15], ["death/darkness", "goner/entropy", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.rapidFire = {
         name: "Rapid Fire [physical, energy]",
         properties: ["physical", "techno", "energy", "attack", "buff"],

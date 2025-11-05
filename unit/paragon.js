@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Paragon = new Unit("Paragon", [2600, 55, 80, 200, 50, 250, 45, 175, 140, "back", 260, 120, 15, undefined, undefined, 250, 35], ["light/illusion", "knowledge/memory", "entropy/goner", "radiance/purity", "anomaly/synthetic", "nature/life", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175, 180, "back", 280, 120, 15, undefined, undefined, 250, 35], ["light/illusion", "knowledge/memory", "entropy/goner", "radiance/purity", "anomaly/synthetic", "nature/life", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.gun = {
         name: "Gun [stamina, energy]",
         properties: ["physical", "stamina", "techno", "energy", "attack", "debuff"],
