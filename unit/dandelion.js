@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Dandelion = new Unit("Dandelion", [1250, 60, 18, 140, 40, 130, 60, 130, 160, "front", 120, 80, 10, 120, 20], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
     this.actions.spellAttack = {
@@ -16,10 +16,10 @@ export const Dandelion = new Unit("Dandelion", [1250, 60, 18, 140, 40, 130, 60, 
     };
 
     this.actions.focusFire = {
-        name: "Focus Fire [mana, physical]",
-        properties: ["mystic", "mana", "physical", "attack"],
+        name: "Focus Fire [physical, mana]",
+        properties: ["physical", "mystic", "mana", "attack"],
         cost: { mana: 10 },
-        description: "Costs 10 mana\nHits a single target 3 times with increased accuracy and damage",
+        description: "Costs 10 mana\nAttacks a single target 3 times with increased accuracy and damage",
         points: 60,
         target: () => {
             if (this.resource.mana < 10) {
@@ -70,7 +70,7 @@ export const Dandelion = new Unit("Dandelion", [1250, 60, 18, 140, 40, 130, 60, 
             const statIncrease = [12, 20, 100];
             this.resource.stamina -= 20;
             this.previousAction[0] = true;
-            logAction(`${this.name} draws attention to himself!`, "action");
+            logAction(`${this.name} draws attention!`, "action");
             basicModifier("Feint", "Defense, evasion, and presence increase", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
         }
     };

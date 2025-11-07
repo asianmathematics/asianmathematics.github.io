@@ -1,16 +1,16 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 100, 100, "front", 100, 100, 10], [], function() {
-    this.actions.basicAttack = {
-        name: "Basic Attack",
+export const Experiment = new Unit("Experiment", [700, 30, 10, 70, 10, 10, 30, 60, 80, "front", 80, 70, 7], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
+    this.actions.meleeAttack = {
+        name: "Melee Attack",
         properties: ["attack"],
-        description: "Attacks a single target three times.",
+        description: "Attacks a single target twice with increased accuracy.",
         points: 60,
-        target: () => { this.actions.basicAttack.code(randTarget(unitFilter("player", "front", false))) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.meleeAttack, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.meleeAttack.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
-            logAction(`${this.name} attacks ${target[0].name}`, "action");
-            attack(this, target, 3);
+            logAction(`${this.name} deals with ${target[0].name}`, "action");
+            attack(this, target, 2, { attacker: { accuracy: this.accuracy + 20 } });
         }
     };
 
@@ -29,19 +29,6 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
         }
     };
 
-    this.actions.dodge = {
-        name: "Dodge [physical]",
-        properties: ["physical", "buff"],
-        description: "Slightly increases defense and resist, slightly decreases presence, and increases evasion for 1 turn",
-        points: 60,
-        code: () => {
-            const statIncrease = [2, 12, 7, -2];
-            this.previousAction[0] = true;
-            logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
-        }
-    };
-
     this.actions.block = {
         name: "Block",
         properties: ["buff"],
@@ -55,9 +42,8 @@ export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 10
     };
 
     this.actions.actionWeight = {
-        basicAttack: 0.25,
-        strongAttack: 0.6,
-        dodge: 0.1,
-        block: 0.05
+        meleeAttack: 0.3,
+        strongAttack: 0.65,
+        block: 0.05,
     };
-});
+})

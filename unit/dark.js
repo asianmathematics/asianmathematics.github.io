@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Dark = new Unit("Dark", [2400, 84, 40, 200, 60, 175, 75, 275, 245, "front", 160, 120, 15, 200, 20], ["death/darkness", "inertia/cold", "radiance/purity", "independence/loneliness"], function() {
     this.actions.iceshock = {
@@ -130,7 +130,10 @@ export const Dark = new Unit("Dark", [2400, 84, 40, 200, 60, 175, 75, 275, 245, 
                         logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
                     } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
                 } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
-            } else { this.actions.iceshock.target() }
+            } else {
+                currentAction[currentAction.length - 1] = this.actions.iceshock;
+                this.actions.iceshock.target();
+            }
         }
     };
 

@@ -1,8 +1,7 @@
 const allUnits = [];
-let modifiers = [];
+const modifiers = [];
 let currentUnit = null;
-let currentAction = null;
-let currentMod = [];
+const currentAction = [];
 const specialElements = ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"];
 const baseElements = ["death/darkness", "light/illusion", "knowledge/memory", "goner/entropy", "harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic", "nature/life"];
 const elementCombo = {
@@ -24,7 +23,6 @@ const events = [
 ];
 events.forEach(type => eventState[type] = []);
 
-function refreshState() { currentUnit = currentAction = null }
 function setUnit(unit) { currentUnit = unit }
 
 class Modifier {
@@ -65,9 +63,9 @@ class Modifier {
         modifiers.push(this);
         if (this.vars.listeners) { for (const eventType in this.vars.listeners) { if (this.vars.listeners[eventType]) { eventState[eventType].push(this) } } }
         if (eventState.modifierStart.length) { handleEvent('modifierStart', { modifier: this }) }
-        currentMod.push(this);
+        currentAction.push(this);
         this.init();
-        currentMod.pop();
+        currentAction.pop();
         this.vars.start = true;
         window.updateModifiers();
     }
@@ -76,11 +74,11 @@ class Modifier {
 function handleEvent(eventType, context) {
     for (let i = eventState[eventType].length - 1; i >= 0; i--) {
         if (!eventState[eventType][i].vars.start) { continue }
-        currentMod.push(eventState[eventType][i]);
+        currentAction.push(eventState[eventType][i]);
         try {
-            if (eventState[eventType][i] === currentMod.at(-2) && eventState[eventType][i] === currentMod.at(-3) && eventState[eventType][i] === currentMod.at(-4)) {
+            if (eventState[eventType][i] === currentAction.at(-2) && eventState[eventType][i] === currentAction.at(-3) && eventState[eventType][i] === currentAction.at(-4)) {
                 logAction(`Modifier ${eventState[eventType][i]?.name} was called too many times in one event!`, "error");
-                currentMod.pop();
+                currentAction.pop();
                 continue;
             }
             if (eventState[eventType][i].onTurn({ ...context, event: eventType })) { removeModifier(eventState[eventType][i]) }
@@ -95,18 +93,25 @@ function handleEvent(eventType, context) {
                 for (const event of events) { if (eventState[event].length) { eventState[event].filter(mod => mod !== eventState[eventType][i]) } }
             }
         }
-        currentMod.pop();
+        currentAction.pop();
     }
     window.updateModifiers();
 }
 
 function removeModifier(modifier) {
-    if (modifier.vars?.passive && allUnits.includes(modifier.vars.caster)) { return }
+    if (modifier.vars?.passive && allUnits.includes(modifier.vars.caster)) {
+        if (modifier.vars.caster.hp === 0 && modifier.vars.focus) {
+            currentAction.push(modifier);
+            modifier.cancel();
+            currentAction.pop();
+        }
+        return;
+    }
     if (eventState.modifierEnd.length) { handleEvent('modifierEnd', { modifier }) }
     if (modifier.vars.applied) {
-        currentMod.push(modifier);
+        currentAction.push(modifier);
         modifier.cancel();
-        currentMod.pop();
+        currentAction.pop();
     }
     if (modifier.vars && modifier.vars.listeners) { for (const event in modifier.vars.listeners) { if (modifier.vars.listeners[event]) { eventState[event].splice(eventState[event].indexOf(modifier), 1) } } }
     modifiers.splice(modifiers.indexOf(modifier), 1);
@@ -197,16 +202,17 @@ function enemyTurn(unit) {
         cumulativeWeight += unit.actions.actionWeight[action];
         if (randChoice <= cumulativeWeight) {
             if (action === "skip") {
-                currentAction = "Skip";
+                currentAction.push({ name: "Skip" });
                 break;
             }
-            currentAction = unit.actions[action];
+            currentAction.push(unit.actions[action]);
             if (eventState.actionStart.length) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
             if (!unit.cancel) { unit.actions[action].target ? unit.actions[action].target() : unit.actions[action].code() }
             break;
         }
     }
     if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
+    currentAction.pop();
     setTimeout(window.combatTick, 1000);
 }
 
@@ -278,14 +284,15 @@ function playerTurn(unit) {
         if (eventState.actionStart.length) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
         if (!unit.cancel) {
             if (action === "Skip") {
-                currentAction = "Skip"
+                currentAction.push("Skip");
                 logAction(`${name}'s turn is skipped`, "miss");
                 document.getElementById("selection").innerHTML = "";
                 cleanupGlobalHandlers();
                 if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
+                currentAction.pop();
                 setTimeout(window.combatTick, 500);
             } else {
-                currentAction = unit.actions[action];
+                currentAction.push(unit.actions[action]);
                 if (unit.actions[action].target !== undefined) { unit.actions[action].target() }
                 else {
                     if (unit.actions[action].cost && eventState.resourceChange.length) { handleEvent('resourceChange', { effect: unit.actions[action], unit, resource: null }) }
@@ -293,12 +300,13 @@ function playerTurn(unit) {
                     document.getElementById("selection").innerHTML = "";
                     cleanupGlobalHandlers();
                     if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
+                    currentAction.pop();
                     setTimeout(window.combatTick, 500);
                 }
             }
         } else {
-            setTimeout(window.combatTick, 500);
             if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
+            setTimeout(window.combatTick, 500);
         }
     };
 }
@@ -381,6 +389,7 @@ function selectTarget(action, back, target, targetType = 'unit') {
         document.getElementById("selection").innerHTML = "";
         cleanupGlobalHandlers();
         if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit: currentUnit }) }
+        currentAction.pop();
         setTimeout(window.combatTick, 500);
     }
 
@@ -489,14 +498,14 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     }
 }
 
-function elementDamage(attacker, defender, actionOverride = null) {
-   const elementSource = actionOverride ?? (currentMod.length > 0 ? currentMod.at(-1) : currentAction);
+function elementDamage(attacker, defender, actionOverride) {
+   const elementSource = actionOverride || currentAction.at(-1);
     const properties = elementSource?.vars?.elements || elementSource?.properties || [];
     if (properties.length === 0) { return false }
     for (const prop of properties) {
         if (baseElements.includes(prop)) {
             if (defender.shield.includes(prop)) { defender.shield.splice(defender.shield.indexOf(prop), 1) }
-            else if (!defender.absorb.includes(prop)) { defender.absorb.push(prop) }
+            else if (defender.absorb.filter(e => e === prop).length < 2) { defender.absorb.push(prop) }
         }
     }
     let doubleDamage = false;
@@ -520,8 +529,8 @@ function elementDamage(attacker, defender, actionOverride = null) {
     return doubleDamage;
 }
 
-function elementBonus(unit, actionOverride = null, weightOverrides = null) {
-    const elementSource = actionOverride ?? (currentMod.length > 0 ? currentMod.at(-1) : currentAction);
+function elementBonus(unit, actionOverride, weightOverrides = null) {
+    const elementSource = actionOverride || currentAction.at(-1);
     const elements = elementSource?.properties || elementSource?.vars?.elements || [];
     if (elements.length === 0) { return 0 }
     const rawWeights = (weightOverrides && typeof weightOverrides === 'object') ? weightOverrides : (elementSource?.vars?.elementWeights && typeof elementSource.vars.elementWeights === 'object') ? elementSource.vars.elementWeights : {};
@@ -584,4 +593,4 @@ function basicModifier(name, description, vari, changeFunc) {
     }
 }
 
-export { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState };
+export { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState };

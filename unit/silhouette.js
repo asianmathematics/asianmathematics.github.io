@@ -1,12 +1,12 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50, 65, 67, "mid", 60, 60, 7, 70, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
     this.actions.shadowBlade = {
         name: "Shadow Blade [physical, mystic]",
         properties: ["physical", "mystic", "death/darkness", "attack"],
         cost: { position: "front" },
-        description: "Attacks a single target twice with increased damage.",
+        description: "Attacks a single target twice with increased damage, accuracy, and crit chance.",
         points: 60,
         target: () => { this.team === "player" ? selectTarget(this.actions.shadowBlade, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.shadowBlade.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
@@ -43,8 +43,8 @@ export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50,
             const statIncrease = [30, 15, -50];
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
-            logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            logAction(`${this.name} drew attention away!`, "buff");
+            basicModifier("Sneak", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -76,7 +76,15 @@ export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50,
                         logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
                     } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
                 } else { logAction(`${target[0].name} has no magic to dispel!`, "warning") }
-            } else { tthis.actions.iceshock.target() }
+            } else {
+                if (this.position === "front") {
+                    currentAction[currentAction.length - 1] = this.actions.shadowBlade;
+                    this.actions.shadowBlade.target();
+                } else {
+                    currentAction[currentAction.length - 1] = this.actions.meditate;
+                    this.actions.meditate.code();
+                }
+            }
         }
     };
 

@@ -1,4 +1,4 @@
-import { Modifier, refreshState, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from './combatDictionary.js';
+import { Modifier, updateMod, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo } from './combatDictionary.js';
 import { initHexGrid, generateStrategicMap, grid, Hex, Grid } from './field.js';
 const Honeycomb = window.Honeycomb;
 let turnCounter = 1;

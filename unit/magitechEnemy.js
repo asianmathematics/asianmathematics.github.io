@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 40, 150, 20, 150, 120, 80, 250, "front", 300, 120, 12, 150, 15, 150, 15], ["harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.arcaneCannon = {
@@ -19,7 +19,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 40, 150, 20, 
 
     this.actions.stanceShift = {
         name: "Stance Shift [stamina, mystic]",
-        properties: ["physical", "stamina", "mystic", "inertia/cold", "radiance/purity", "buff"],
+        properties: ["physical", "stamina", "mystic", "harmonic/change", "inertia/cold", "radiance/purity", "buff"],
         cost: { stamina: 30 },
         description: "Costs 30 stamina\nShifts to fire or ice stance, gaining different bonuses",
         points: 60,

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80, 65, "mid", 75, 75, 15, undefined, undefined, 100, 15], [], function() {
+export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80, 65, "mid", 75, 70, 15, , , 100, 15], [], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -83,8 +83,8 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
             const statIncrease = [30, 15, -50];
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
-            logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
+            logAction(`${this.name} drew attention away!`, "buff");
+            basicModifier("Sneak", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: true });
         }
     };
 

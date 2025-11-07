@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 100, 100, "front", 125, 100, 10, 50, 10, 160, 20], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.electricDischarge = {
@@ -57,6 +57,41 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         }
     };
 
+    this.actions.emp = {
+        name: "EMP [energy]",
+        properties: ["techno", "energy", "harmonic/change", "intertia/cold", "debuff", "resource"],
+        cost: { energy: 40 },
+        description: "Costs 40 energy\nChance to set target&#39;s energy to 0, disable energy regeneration for next turn, and end all techno modifiers it focuses or cast on it",
+        points: 60,
+        target: () => {
+            if (this.resource.energy < 40) {
+                showMessage("Not enough energy!", "error", "selection");
+                return;
+            }
+            this.team === "player" ? selectTarget(this.actions.emp, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.emp.code(randTarget(unitFilter("player", "front", false).filter(u => u.base.resource.energy)));
+        },
+        code: (target) => {
+            if (target.length) {
+                this.resource.energy -= 40;
+                this.previousAction[2] = true;
+                if (target[0].resource.energy !== undefined) {
+                    if (resistDebuff(this, target)[0] > 25) {
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.emp, unit: target[0], resource: ['energy'], value: [-target[0].resource.energy] }) }
+                        target[0].resource.energy = 0;
+                        target[0].previousAction[2] = true;
+                        for (const mod of modifiers.filter(m => m?.attributes?.includes("techno") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars?.target === target[0]))) { removeModifier(mod) }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(target[0]) && m?.attributes?.includes("techno"))) { mod.changeTarget(target) }
+                        window.updateModifiers();
+                        logAction(`${this.name} EMPs ${target[0].name}'s energy!`, "action");
+                    } else { logAction(`${target[0].name} resists EMP`, "miss") }
+                } else { logAction(`${target[0].name} has no energy to EMP!`, "warning") }
+            } else {
+                currentAction[currentAction.length - 1] = this.actions.electrify;
+                this.actions.electrify.code();
+            }
+        }
+    };
+
     this.actions.recharge = {
         name: "Recharge [mana]",
         properties: ["mystic", "mana", "harmonic/change", "resource"],
@@ -90,33 +125,25 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
             const statIncrease  = [15, 105];
             this.resource.energy -= 20;
             this.previousAction[1] = this.previousAction[2] = true;
-            logAction(`${this.name} covers himself in electricity.`, "buff");
+            logAction(`${this.name} is covered in electricity.`, "buff");
             new Modifier("Electrify", "Counter attack",
-                { caster: this, target: this, duration: 1, attributes: ["mystic", "techno"], elements:["harmonic/change", "radiance/purity"], stats: ["resist", "presence"], values: statIncrease, listeners: {turnStart: true, damageStart: true, singleDamage: false}, cancel: false, applied: true, focus: true },
+                { caster: this, target: this, duration: 2, attributes: ["mystic", "techno"], elements:["harmonic/change", "radiance/purity"], stats: ["resist", "presence"], values: statIncrease, counterMap: {}, listeners: { turnEnd: true, singleDamage: true}, cancel: false, applied: true, focus: true },
                 function() { resetStat(this.vars.target, this.vars.stats, this.vars.values) },
                 function(context) {
-                    if (this.vars.applied && !this.vars.listeners.singleDamage && context?.defenders?.includes(this.vars.target) && context?.attacker.position === "front") {
-                        this.vars.listeners.singleDamage = true;
-                        eventState.singleDamage.push(this);
-                    } else if ((!this.vars.applied || !context?.defenders || !context.defenders.includes(this.vars.target) || context.attacker.position !== "front") && this.vars.listeners.singleDamage) {
-                        this.vars.listeners.singleDamage = false;
-                        eventState.singleDamage.splice(eventState.singleDamage.indexOf(this), 1);
+                    if (currentAction.at(-2)?.vars?.counterMap) { return }
+                    if (context.event === "turnEnd") {
+                        Object.keys(this.vars.counterMap).forEach(k => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)]));
+                        this.vars.counterMap = {};
                     }
-                    if (this.vars.target === context?.defender && context?.damageSingle > 0) {
-                        const doubleDamage = elementDamage(this.vars.target, context.attacker, this);
-                        const damageSingle = (doubleDamage + 1) * ( Math.ceil(Math.max(((Math.random() / 2) + .75) * (2 * this.vars.target.attack - context.attacker.defense), .2 * this.vars.target.attack)));
-                        if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker: this.vars.target, defender: context.attacker, damageSingle}) }
-                        context.attacker.hp = Math.max(context.attacker.hp - damageSingle, 0);
-                        logAction(`${this.vars.target.name} electricity shocks ${context.attacker.name} dealing ${damageSingle} ${doubleDamage ? "elemental " : ""}damage!`, "hit");
-                        if (context.attacker.hp === 0) {
-                            for (const mod of modifiers) { if (mod.target === context.attacker && mod.focus) { removeModifier(mod) } }
-                            if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: context.attacker}) }
-                        }
-                    }
+                    if (this.vars.applied && this.vars.target === context?.defender && context.damageSingle > 0) { this.vars.counterMap[context.attacker?.vars?.caster?.name || context.attacker.name] ? this.vars.counterMap[context.attacker?.vars?.caster?.name || context.attacker.name]++ : this.vars.counterMap[context.attacker?.vars?.caster?.name || context.attacker.name] = 1 }
                     if (this.vars.caster === context.unit) { this.vars.duration-- }
                     if (this.vars.duration === 0) { return true }
                 },
-                function() {
+                function(cancel, temp) {
+                    if (!temp) {
+                        Object.keys(this.vars.counterMap).forEach(k => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)]));
+                        this.vars.counterMap = {};
+                    }
                     if (this.vars.cancel && this.vars.applied) {
                         resetStat(this.vars.target, this.vars.stats, this.vars.values, false);
                         this.vars.applied = false;
@@ -129,24 +156,11 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         }
     };
 
-    this.actions.dodge = {
-        name: "Dodge [physical]",
-        properties: ["physical", "buff"],
-        description: "Slightly increases defense and resist, slightly decreases presence, and increases evasion for 1 turn",
-        points: 60,
-        code: () => {
-            const statIncrease = [2, 12, 7, -2];
-            this.previousAction[0] = true;
-            logAction(`${this.name} dodges.`, "buff");
-            basicModifier("Dodge", "Evasion and resist increased", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["defense", "evasion", "resist", "presence"], values: statIncrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
-        }
-    };
-
     this.actions.actionWeight = {
-        electricDischarge: 0.3,
+        electricDischarge: 0.4,
         sickBeats: 0.2,
-        recharge: 0.15,
-        electrify: 0.25,
-        dodge: 0.1
+        emp: 0.25,
+        recharge: 0.05,
+        electrify: 0.1,
     };
 });

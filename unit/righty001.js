@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60, 200, 150, "mid", 240, 175, 20, undefined, undefined, 125, 10], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60, 200, 150, "mid", 240, 175, 20, , , 125, 10], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -71,7 +71,7 @@ export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60
 
     this.actions.fastReload = {
         name: "Fast Reload [physical]",
-        properties: ["physical", "attack"],
+        properties: ["physical", "resource"],
         cost: { position: "back" },
         description: `Backline only\nRegains some of energy (${this.resource.energyRegen * 2})`,
         points: 60,

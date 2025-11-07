@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "back", 70, 110, 15, 135, 20, 85, 15], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
+export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "back", 70, 110, 15, 135, 20, 85, 15], ["light/illusion", "knowledge/memory", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.soothingMelody = {
         name: "Soothing Melody [stamina, mana, techno]",
         properties: ["physical", "stamina", "mystic", "mana", "techno", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
@@ -16,7 +16,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
             this.team === "player" ? selectTarget(this.actions.soothingMelody, () => { playerTurn(this) }, [1, true, unitFilter("player", "")]) : this.actions.soothingMelody.code(randTarget(unitFilter("enemy", "")));
         },
         code: (target) => {
-            const bonus = this === target[0] ? 1 : 1.5 ** elementBonus(target[0], this.actions.soothingMelody);
+            const bonus = 1.5 ** elementBonus(target[0], this.actions.soothingMelody);
             const statIncrease = [16 * bonus, 16 * bonus, 12 * bonus, 20 * bonus];
             const mod = modifiers.find(m => m.vars.caster === this);
             let effect = 1;
@@ -262,7 +262,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 if (mod.name === "Personal Request") { mod.vars.target !== target[0] ? effect = Math.max(mod.vars.effect - 1, 1) : effect += mod.vars.effect }
                 removeModifier(mod);
             }
-            new Modifier("Personal Request", "Changes stats", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"], values: [], effect: effect, baseVal: statIncrease, changeStat: false, listeners: { turnEnd: true, statChange: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Personal Request", "Changes stats", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"], values: [], effect: effect, baseVal: statIncrease, changeStat: false, listeners: { turnEnd: true, statChange: true }, cancel: false, applied: true, focus: true, debuff: false },
                 function() {
                     if (this.vars.target.team !== this.vars.caster.team) {
                         this.vars.debuff = function(unit) { return resistDebuff(this.vars.caster, unit)[0] * (2 ** (elementBonus(this.vars.caster, this) - elementBonus(unit, this) + this.vars.effect - 1)) > 1 }

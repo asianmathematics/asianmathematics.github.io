@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115, 65, 120, 90, "mid", 150, 125, 9, undefined, undefined, 150, 12], ["harmonic/change", "anomaly/synthetic"], function() {
+export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115, 65, 120, 90, "mid", 150, 125, 9, , , 150, 12], ["harmonic/change", "anomaly/synthetic"], function() {
     this.actions.laserBlast = {
         name: "Laser Blast [techno]",
         properties: ["techno", "light/illusion", "harmonic/change", "radiance/purity", "attack", "multitarget"],
@@ -18,14 +18,14 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115,
     this.actions.shieldDisruptor = {
         name: "Shield Disruptor [energy]",
         properties: ["techno", "energy", "harmonic/change", "anomaly/synthetic", "debuff"],
-        cost: { energy: 70 },
-        description: "Costs 70 energy\nChance to reduce defense and resist of target for 2 turns",
+        cost: { energy: 30 },
+        description: "Costs 30 energy\nChance to reduce defense and resist of target for 2 turns",
         points: 60,
         target: () => { this.actions.shieldDisruptor.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             this.previousAction[2] = true;
-            this.resource.energy -= 70;
-            const statDecrease = [-19, -15];
+            this.resource.energy -= 30;
+            const statDecrease = [-13, -15];
             if (resistDebuff(this, target)[0] > 20) {
                 logAction(`${this.name} disrupts ${target[0].name}'s defenses!`, "action");
                 basicModifier("Shield Disruption", "Defense reduction", { caster: this, target: target[0], duration: 2, attributes: ["techno"], elements: ["harmonic/change", "anomaly/synthetic"], stats: ["defense", "resist"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: true });
@@ -44,12 +44,15 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115,
             if (target.length) {
                 this.previousAction[2] = true;
                 this.resource.energy -= 50;
-                const bonus = 2 ** elementBonus(target[0], this.actions.naniteRepair);
+                const bonus = 2 ** (1 + elementBonus(target[0], this.actions.naniteRepair));
                 if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.naniteRepair, unit: target[0], resource: ['hp'], value: [target[0].resource.healFactor * bonus] }) }
                 if (target[0].hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: target[0]}) }
                 target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor(target[0].resource.healFactor * bonus + Number.EPSILON));
                 logAction(`${this.name} repairs ${target[0].name}!`, "heal");
-            } else { this.actions.laserBlast.code(); }
+            } else {
+                currentAction[currentAction.length - 1] = this.actions.laserBlast;
+                this.actions.laserBlast.target();
+            }
         }
     };
 

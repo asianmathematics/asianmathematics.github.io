@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160, 60, "front", 200, 160, 16], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
     this.actions.meleeAttack = {
@@ -49,8 +49,8 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
             const statIncrease = [30, 15, -50];
             this.resource.stamina -= 30;
             this.previousAction[0] = true;
-            logAction(`${this.name} drew attention away from himself!`, "buff");
-            basicModifier("Sneak Adjustment", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true });
+            logAction(`${this.name} drew attention away!`, "buff");
+            basicModifier("Sneak", "Combat focus modification", { caster: this, target: this, duration: 2, attributes: ["physical"], stats: ["focus", "resist", "presence"], values: statIncrease, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true });
         }
     };
 
@@ -81,7 +81,7 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
         description: "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn)",
         code: () => {
             new Modifier("Feast", "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn)",
-                { caster: this, target: this, attributes: ["physical"], listeners: { unitChange: true, turnEnd: false }, cancel: false, applied: true, focus: true, passive: true },
+                { caster: this, target: this, attributes: ["physical"], elements: ["death/darkness", "knowledge/memory", "anomaly/synthetic"], listeners: { unitChange: true, turnEnd: false }, cancel: false, applied: true, focus: true, passive: true },
                 function() {},
                 function(context) {
                     if (this.vars.applied && context.type === "downed" && context.unit.team !== this.vars.caster.team && currentUnit === this.vars.caster) {
@@ -91,7 +91,7 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
                         }
                         for (const mod of modifiers.filter(m => m.vars?.targets?.includes(context.unit))) { mod.changeTarget(context.unit) }
                         allUnits.splice(allUnits.indexOf(context.unit), 1);
-                    } else if (this.vars.applied && !context.type && context.unit === this.vars.caster && currentAction === "Skip") {
+                    } else if (this.vars.applied && !context.type && context.unit === this.vars.caster && currentAction.at(-2).name === "Skip") {
                         const unit = randTarget(unitFilter(this.vars.caster.team === "player" ? "enemy" : "player", "", true), 1, true);
                         for (const mod of modifiers.filter(m => (m.vars.caster === unit && (m.vars.focus || m.vars.penalty)) || m.vars?.target === unit)) {
                             mod.passive = false;

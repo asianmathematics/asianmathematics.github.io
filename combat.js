@@ -14,7 +14,15 @@ import { enemy } from './unit/enemy.js';
 import { mysticEnemy } from './unit/mysticEnemy.js';
 import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from './combatDictionary.js';
+import { ArtificialSolider } from './unit/artificialSolider.js';
+import { ChaosAgent } from './unit/chaosAgent.js';
+import { CouncilMagician } from './unit/councilMagician.js';
+import { CouncilScientist } from './unit/councilScientist.js';
+import { Dreamer } from './unit/dreamer.js';
+import { Experiment } from './unit/experiment.js';
+import { Reject } from './unit/reject.js';
+import { Revolutionary } from './unit/revolutionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -352,7 +360,7 @@ function regenerateResources(unit) {
 export function advanceWave(x = 0) {
     if (x) { wave = x }
     let turnId = allUnits[currentTurn].name;
-    if (wave < 3) { for (const mod of modifiers) { if (allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player" || (unit.team === "enemy" && unit.hp > 0))).includes(mod.vars.caster)) { removeModifier(mod) } } }
+    if (wave < 3) { for (const mod of modifiers) { if (allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player")).includes(mod.vars.caster)) { removeModifier(mod) } } }
     switch (wave) {
         case 2:
             for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(e, 'enemy') }
@@ -370,8 +378,8 @@ export function advanceWave(x = 0) {
 }
 
 function waveCalc(units, mult) {
-    const total = units.reduce((sum, u) => sum + 5*((+u.description[0])**2)/2-21*+u.description[0]/2+17, 0) * mult;
-    const enemyPoints = new Map([ [enemy, 8], [mysticEnemy, 15], [technoEnemy, 15], [magitechEnemy, 27] ]);
+    const total = units.reduce((sum, u) => sum + 2*(+u.description[0]+1)*(1.5**(+u.description[0]-3)), 0) * mult;
+    const enemyPoints = new Map([ [Experiment, 4], [Reject, 4], [CouncilMagician, 8], [CouncilScientist, 8], [Revolutionary, 8], [enemy, 8], [ArtificialSolider, 8], [Dreamer, 15], [mysticEnemy, 15], [technoEnemy, 15], [ChaosAgent, 15], [magitechEnemy, 27] ]);
     if (!units.some(u => u.description.includes("5 star")) && wave < 3) { enemyPoints.delete(magitechEnemy) }
     let enemies = [];
     let points = 0;
@@ -418,7 +426,7 @@ function frontTest() {
 }
 
 export async function combatTick() {
-    refreshState();
+    setUnit(null);
     updateBattleDisplay();
     await sleep(500);
     if (frontTest()) { return }
@@ -444,8 +452,11 @@ export async function combatTick() {
     if (!turn.stun) {
         setUnit(turn);
         regenerateResources(turn);
-        turn.absorb = [];
-        turn.shield = (turn.base.elements || []).filter(e => baseElements.includes(e));
+        baseElements.forEach(e => {
+            const i = turn.absorb.indexOf(e)
+            if (i !== -1) { turn.absorb.splice(i, 1) }
+        })
+        turn.elements.filter(e => baseElements.includes(e)).forEach(e => { if (!turn.shield.includes(e)) { turn.shield.push(e) } })
         updateBattleDisplay();
         if (turn.team === "player") {
             updateInfoDisplay(turn);

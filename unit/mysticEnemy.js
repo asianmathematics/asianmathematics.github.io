@@ -1,5 +1,5 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
 export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130, 50, 140, 90, "front", 100, 80, 8, 200, 26], ["death/darkness", "anomaly/synthetic"], function() {
     this.actions.manaBolt = {
@@ -135,7 +135,10 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
                     window.updateModifiers();
                     logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
                 } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
-            } else { this.actions.drainLife.target() }
+            } else {
+                currentAction[currentAction.length - 1] = this.actions.drainLife;
+                this.actions.drainLife.target();
+            }
         }
     };
 

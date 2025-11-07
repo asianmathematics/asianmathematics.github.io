@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
-import { Modifier, refreshState, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 170, 50, 120, 120, "back", 120, 110, 20, undefined, undefined, 140, 15], ["death/darkness", "goner/entropy", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 170, 50, 120, 120, "back", 120, 110, 20, , , 140, 15], ["death/darkness", "goner/entropy", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.rapidFire = {
         name: "Rapid Fire [physical, energy]",
         properties: ["physical", "techno", "energy", "attack", "buff"],
@@ -46,34 +46,6 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 17
         }
     };
 
-    /*put on another unit
-    this.actions.emp = {
-        name: "EMP [energy]",
-        properties: ["techno", "energy", "inertia/cold", "debuff", "resource"],
-        cost: { energy: 55 },
-        description: "Costs 55 energy\nSets energy of target to 0 and disables energy regeneration for next turn",
-        target: () => {
-            if (this.resource.energy < 55) {
-                showMessage("Not enough energy!", "error", "selection");
-                return;
-            }
-            selectTarget(this.actions.emp, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]);
-        },
-        code: (target) => {
-            this.resource.energy -= 55;
-            this.previousAction[2] = true;
-            const will = resistDebuff(this, target);
-            if (target[0].resource.energy !== undefined) {
-                if (will[0] > 35) {
-                    if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.emp, unit: target[0], resource: ['energy'], value: [-target[0].resource.energy] }) }
-                    target[0].resource.energy = 0;
-                    target[0].previousAction[2] = true;
-                    logAction(`${this.name} disables ${target[0].name}'s energy!`, "action");
-                } else { logAction(`${target[0].name} resists the emp`, "miss") }
-            } else { logAction(`${target[0].name} has no energy to disable!`, "warning") }
-        }
-    };*/
-
     this.actions.synthesizeMedicine = {
         name: "Synthesize Medicine [techno]",
         properties: ["techno", "anomaly/synthetic", "heal"],
@@ -88,7 +60,10 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 17
                 if (target[0].hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: target[0]}) }
                 target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON));
                 logAction(`${this.name} heals ${target[0].name} for ${Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON)} HP!`, "heal");
-            } else { this.actions.fastReload.code() }
+            } else {
+                currentAction[currentAction.length - 1] = this.actions.fastReload;
+                this.actions.fastReload.code();
+            }
         }
     };
 
@@ -118,7 +93,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 17
             }
             this.resource.stamina -= 10;
             const statIncrease = [80, 100, 32, 100];
-            const statDecrease = [-30, -8, -12, -60, -80, -70];
+            const statDecrease = [-30, -8, -12, -60, -80, -50];
             const mod = modifiers.find(m => m.name === "Joy" && m.vars?.target === target[0]);
             if (mod) {
                 logAction(`${this.name} reapplies Joy on ${target[0].name}!`, "buff");
@@ -153,7 +128,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 17
                             eventState.actionStart.push(this);
                         }
                     }
-                    if (this.vars.duration === 14) {
+                    if (this.vars.duration === 15) {
                         if (this.vars.applied) {
                             resetStat(this.vars.target, this.vars.buffs, this.vars.buffValues, false);
                             resetStat(this.vars.target, this.vars.debuffs, this.vars.debuffValues);
