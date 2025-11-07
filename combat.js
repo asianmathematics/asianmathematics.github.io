@@ -360,17 +360,26 @@ function regenerateResources(unit) {
 export function advanceWave(x = 0) {
     if (x) { wave = x }
     let turnId = allUnits[currentTurn].name;
-    if (wave < 3) { for (const mod of modifiers) { if (allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player")).includes(mod.vars.caster)) { removeModifier(mod) } } }
+    if (wave < 3) {
+        const re = allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player"));
+        for (const mod of modifiers) { if (re.includes(mod.vars.caster)) { removeModifier(mod) } }
+    }
+        let i = allUnits.length;
     switch (wave) {
         case 2:
-            for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(e, 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 2)) {
+                createUnit(e, 'enemy');
+            }
             break;
         case 1:
-            for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(e, 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 1)) {
+                createUnit(e, 'enemy');
+            }
             break;
         default:
             return true;
     }
+    for (const unit of allUnits.slice(i).filter(u => u.passivesInit)) { for (const pass in unit.passives) { unit.passives[pass].code() } }
     currentTurn = allUnits.findIndex(unit => unit.name === turnId);
     wave++;
     if (eventState.waveChange.length) { handleEvent('waveChange', { wave }) }
@@ -384,10 +393,10 @@ function waveCalc(units, mult) {
     let enemies = [];
     let points = 0;
     while (points < total) {
-        const enemy = Array.from(enemyPoints.keys())[Math.floor(Math.random() * enemyPoints.size)];
-        if (points + enemyPoints.get(enemy) <= total || (Math.abs(total - points - enemyPoints.get(enemy)) < Math.abs(total - points))) {
-            enemies.push(enemy);
-            points += enemyPoints.get(enemy);
+        const enem = points === 0 ? [Experiment, Reject, enemy, ArtificialSolider, mysticEnemy][Math.floor(Math.random() * 5)] : Array.from(enemyPoints.keys())[Math.floor(Math.random() * enemyPoints.size)];
+        if (points + enemyPoints.get(enem) <= total || (Math.abs(total - points - enemyPoints.get(enem)) < Math.abs(total - points))) {
+            enemies.push(enem);
+            points += enemyPoints.get(enem);
         } else { break }
     }
     return enemies;

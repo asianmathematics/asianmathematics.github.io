@@ -130,7 +130,7 @@ export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 40, 150, 20, 
             this.previousAction[1] = this.previousAction[2] = true;
             this.resource.mana -= 40;
             this.resource.energy -= 40;
-            logAction(`${this.name}'s core overloads in a desperate attack!`, "crit");
+            logAction(`${this.name}'s core overloads in a desperate attack!`, "action");
             attack(this, unitFilter("player", "front", false), 2, { attacker: { attack: this.attack + 12, accuracy: this.accuracy + 30 } });
         }
     };

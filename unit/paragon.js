@@ -49,7 +49,7 @@ export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175,
                     if (unit.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit}) }
                     unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor);
                 }
-                logAction(`${this.name} heals ${targets.map(u => u.name).join(", ")} for ${targets.map(u => u.resource.healFactor).join(", ")} HP!`, "heal");
+                logAction(`${this.name} heals ${targets.map(u => u.name).join(", ")}${this.team === "player" ? ` for ${targets.map(u => u.resource.healFactor).join(", ")} HP` : ''}!`, "heal");
             } else {
                 if (this.resource.energy >= 35) {
                     currentAction[currentAction.length - 1] = this.actions.healingDrone;
@@ -119,7 +119,7 @@ export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175,
                         if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.vars.mod, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
                         if (heal.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: heal}) }
                         heal.hp = Math.min(heal.hp + heal.resource.healFactor, heal.base.hp);
-                        logAction(`Healing Drone heals ${heal.name} for ${heal.resource.healFactor} HP!`, "heal");
+                        logAction(`Healing Drone heals ${heal.name}${this.vars.caster.team === "player" ? ` for ${heal.resource.healFactor} HP` : ''}!`, "heal");
                     } else { logAction("Healing Drone has no targets to heal!", "warning") }
                 },
                 function(context) {
@@ -129,7 +129,7 @@ export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175,
                             if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: heal, resource: ['hp'], value: [heal.resource.healFactor] }) }
                             if (heal.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: heal}) }
                             heal.hp = Math.min(heal.hp + heal.resource.healFactor, heal.base.hp);
-                            logAction(`Healing Drone heals ${heal.name} for ${heal.resource.healFactor} HP!`, "heal");
+                        logAction(`Healing Drone heals ${heal.name}${this.vars.caster.team === "player" ? ` for ${heal.resource.healFactor} HP` : ''}!`, "heal");
                         } else { logAction("Healing Drone has no targets to heal!", "warning") }
                         this.vars.duration--;
                     }
@@ -156,7 +156,7 @@ export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175,
             this.resource.stamina -= 20;
             if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON));
-            logAction(`${this.name} activates the backup power generation and recovers ${Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)} energy!`, "heal");
+            logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };
 

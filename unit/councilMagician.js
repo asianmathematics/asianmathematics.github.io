@@ -58,8 +58,8 @@ export const CouncilMagician = new Unit("Magic Council Member", [700, 50, 12, 60
                     logAction(`${this.name} dispels ${target[0].name}'s magic!`, "action");
                 } else { logAction(`${target[0].name} resists dispel magic`, "miss") }
             } else {
-                currentAction[currentAction.length - 1] = this.actions.drainLife;
-                this.actions.drainLife.target();
+                currentAction[currentAction.length - 1] = this.actions.magicMissile;
+                this.actions.magicMissile.target();
             }
         }
     };

@@ -81,7 +81,7 @@ export const CouncilScientist = new Unit("Science Council Member", [1000, 26, 12
             this.resource.stamina -= 20;
             if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON));
-            logAction(`${this.name} activates the backup power generation and recovers ${Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)} energy!`, "heal");
+            logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };
 

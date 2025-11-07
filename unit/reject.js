@@ -23,12 +23,12 @@ export const Reject = new Unit("Reject", [600, 38, 8, 60, 10, 60, 40, 40, 70, "f
         cost: { stamina: 25 },
         description: `Costs 25 energy\nHeals an self somewhat (${this.resource.healFactor * 1.5} HP), does bite if doesn't need healing`,
         points: 60,
-        code: (target) => {
+        code: () => {
             if (this.hp < this.base.hp) {
                 this.previousAction[2] = true;
-                this.resource.energy -= 25;
-                if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.naniteRepair, unit: target[0], resource: ['hp'], value: [target[0].resource.healFactor * 1.5] }) }
-                target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor(target[0].resource.healFactor * 1.5));
+                this.resource.stamina -= 25;
+                if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.naniteRepair, unit: this, resource: ['hp'], value: [this.resource.healFactor * 1.5] }) }
+                this.hp = Math.min(this.base.hp, this.hp + Math.floor(this.resource.healFactor * 1.5));
                 logAction(`${this.name} regenerates!`, "heal");
             } else {
                 currentAction[currentAction.length - 1] = this.actions.bite;

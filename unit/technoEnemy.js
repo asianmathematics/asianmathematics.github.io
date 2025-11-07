@@ -58,7 +58,7 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115,
 
     this.actions.overcharge = {
         name: "Overcharge [stamina, energy]",
-        properties: ["physical", "stamina", "techno", "energy", "harmonic/change", "anomaly/synthetic", "buff", "resource"],
+        properties: ["physical", "stamina", "techno", "energy", "harmonic/change", "anomaly/synthetic", "buff"],
         cost: { stamina: 10, energy: 30 },
         description: "Costs 10 stamina & 30 energy\nIncreases attack and speed for 3 turns",
         code: () => {

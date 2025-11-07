@@ -10,7 +10,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
         target: () => { this.actions.knifeSlash.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             this.previousAction[0] = true;
-            logAction(`${this.name} attacks ${target[0].name}`, "action");
+            logAction(`${this.name} slices ${target[0].name}`, "action");
             attack(this, target, 1, { accuracy: this.accuracy + 33, focus: this.focus + 15 });
         }
     };
@@ -93,7 +93,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
         points: 30,
         code: () => {
             new Modifier( "Effect: none", "Produces one random effect per turn\nCurrent effect: none",
-                { caster: this, targets: allUnits.filter(u => u !== this.vars.caster), effectType: null, effectVars: {}, listeners: { turnStart: true, singleDamage: false }, cancel: false, applied: true, focus: true, passive: true },
+                { caster: this, targets: allUnits.filter(u => u !== this), effectType: null, effectVars: {}, listeners: { turnStart: true, singleDamage: false }, cancel: false, applied: true, focus: true, passive: true },
                 function () {},
                 function (context) {
                     if (context.event === "turnStart" && context.unit === this.vars.caster) {
@@ -247,12 +247,12 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 values = [300];
                                 if (this.vars.applied) {
                                 resetStat(this.vars.caster, stats, values);
-                                    for (const unit of allUnits.filter(u => u.elements.includes("light/illusion"))) { unit.shield.push("death/darkness", "knowledge/memory") }
-                                    for (const unit of allUnits.filter(u => u.elements.includes("death/darkness"))) {
-                                        if (this.vars.target.shield.includes("nature/life")) { this.vars.target.shield.splice(this.vars.target.shield.indexOf("nature/life"), 1) }
-                                        else if (!this.vars.target.absorb.includes("nature/life")) { this.vars.target.absorb.push("nature/life") }
-                                        if (this.vars.target.shield.includes("light/illusion")) { this.vars.target.shield.splice(this.vars.target.shield.indexOf("light/illusion"), 1) }
-                                        else if (!this.vars.target.absorb.includes("light/illusion")) { this.vars.target.absorb.push("light/illusion") }
+                                    for (const unit of this.vars.targets.filter(u => u.elements.includes("light/illusion"))) { unit.shield.push("death/darkness", "knowledge/memory") }
+                                    for (const unit of this.vars.targets.filter(u => u.elements.includes("death/darkness"))) {
+                                        if (unit.shield.includes("nature/life")) { unit.shield.splice(unit.shield.indexOf("nature/life"), 1) }
+                                        else if (!unit.absorb.includes("nature/life")) { unit.absorb.push("nature/life") }
+                                        if (unit.shield.includes("light/illusion")) { unit.shield.splice(unit.shield.indexOf("light/illusion"), 1) }
+                                        else if (!unit.absorb.includes("light/illusion")) { unit.absorb.push("light/illusion") }
                                     }
                                 }
                                 this.vars.effectVars = { stats, values };
@@ -275,8 +275,8 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 break;
                             case "poopHair":
                                 this.name = "Effect: Poop Hair";
-                                this.description = "Current effect: Random target increased presence";
-                                const target = randTarget(allUnits, 1, true);
+                                const target = randTarget(this.vars.targets, 1, true);
+                                this.description = `Current effect: Random target (${target[0].name}) increased presence`;
                                 if (this.vars.applied) { resetStat(target[0], ["presence"], [300]) }
                                 this.vars.effectVars = { stats: ["presence"], values: [300], affectedUnits: target };
                                 break;
@@ -298,7 +298,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 break;
                             case "witch":
                                 this.name = "Effect: Witch";
-                                this.description = "Current effect: Increased evasion andpresence";
+                                this.description = "Current effect: Increased evasion and presence";
                                 stats = ["evasion", "presence"];
                                 values = [5, 40];
                                 if (this.vars.applied) { resetStat(this.vars.caster, stats, values) }
@@ -310,6 +310,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 if (this.vars.applied) {
                                     const target = randTarget(unitFilter("player", "", false), 1, true)[0]
                                     if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker: this.vars.caster, defender: target, damageSingle: 30}) }
+                                    logAction(`Lightning struck ${target.name}!`, "action")
                                     target.hp = Math.max(target.hp - 30, 0)
                                 }
                                 break;

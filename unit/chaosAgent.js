@@ -7,7 +7,7 @@ export const ChaosAgent = new Unit("Agent Of Chaos", [1000, 50, 30, 125, 30, 125
         properties: ["physical", "mystic", "attack"],
         description: "Attacks a single target twice with increased damage, accuracy, and crit chance.",
         points: 60,
-        target: () => { this.team === "player" ? selectTarget(this.actions.shadowBlade, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.shadowBlade.code(randTarget(unitFilter("player", "front", false))) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.magicWeapon, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.magicWeapon.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             logAction(`${this.name} deals with ${target[0].name}`, "action");
             attack(this, target, 2, { attacker: { attack: this.attack + 8, accuracy: this.accuracy + 22, focus: this.focus + 10 } });
@@ -32,7 +32,7 @@ export const ChaosAgent = new Unit("Agent Of Chaos", [1000, 50, 30, 125, 30, 125
             this.resource.stamina -= 10;
             this.resource.energy -= 10;
             this.previousAction[0] = this.previousAction[2] = true;
-            logAction(`I'm a healer but...`, "action");
+            logAction(`gun`, "action");
             attack(this, target, 4, { accuracy: this.accuracy + 65, focus: this.focus + 30 });
             basicModifier("Speed Penalty", "Speed reduced during gun", { caster: this, target: this, duration: 1, attributes: ["physical"], stats: ["speed"], values: statDecrease, listeners: {turnStart: true}, cancel: false, applied: true, focus: false, penalty: true });
         }
@@ -67,7 +67,7 @@ export const ChaosAgent = new Unit("Agent Of Chaos", [1000, 50, 30, 125, 30, 125
             this.resource.stamina -= 20;
             if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
             this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON));
-            logAction(`${this.name} activates the backup power generation and recovers ${Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)} energy!`, "heal");
+            logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };
 

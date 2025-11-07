@@ -7,7 +7,7 @@ export const ArtificialSolider = new Unit("Artificial Solider", [1200, 30, 14, 8
         properties: ["physical", "mystic", "attack"],
         description: "Attacks a single target twice with increased damage, accuracy, and crit chance.",
         points: 60,
-        target: () => { this.team === "player" ? selectTarget(this.actions.shadowBlade, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.shadowBlade.code(randTarget(unitFilter("player", "front", false))) },
+        target: () => { this.team === "player" ? selectTarget(this.actions.magicWeapon, () => { playerTurn(this) }, [1, true, unitFilter("enemy", "front", false)]) : this.actions.magicWeapon.code(randTarget(unitFilter("player", "front", false))) },
         code: (target) => {
             logAction(`${this.name} deals with ${target[0].name}`, "action");
             attack(this, target, 2, { attacker: { attack: this.attack + 8, accuracy: this.accuracy + 22, focus: this.focus + 10 } });

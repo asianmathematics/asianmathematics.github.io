@@ -32,7 +32,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                     if (eventState.resourceChange.length) { handleEvent('resourceChange', {unit: this.vars.target, resource: ['hp'], value: [Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)]}) }
                     if (this.vars.target.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: this.vars.target}) }
                     this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON), this.vars.target.base.hp);
-                    logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.target.name} for ${Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)} HP!`, "heal");
+                    logAction(`${this.vars.caster.name} sings a soothing melody, healing ${this.vars.target.name}${this.vars.caster.team === "player" ? ` for ${Math.floor(this.vars.target.resource.healFactor * (3 + this.vars.effect)/4 + Number.EPSILON)} HP` : ''}!`, "heal");
                     this.vars.values = this.vars.values.map(val => val *= (3 + this.vars.effect)/4);
                     resetStat(this.vars.target, this.vars.stats, this.vars.values);
                 },
@@ -67,7 +67,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
 
     this.actions.rhythmicFrenzy = {
         name: "Rhythmic Frenzy [stamina, mystic, energy]",
-        properties: ["physical", "stamina", "mystic", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
+        properties: ["physical", "stamina", "mystic", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "buff"],
         cost: { stamina: 20, energy: 10 },
         description: "Costs 20 stamina & 10 energy\nIncreases offensive stats of all frontline allies, benefits increase if used multiple times in a row",
         points: 60,
@@ -145,7 +145,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
 
     this.actions.rebelliousDiscord = {
         name: "Rebellious Discord [physical, mana, energy]",
-        properties: ["physical", "mystic", "mana", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
+        properties: ["physical", "mystic", "mana", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "debuff"],
         cost: { mana: 10, energy: 20 },
         description: "Costs 10 mana & 20 energy\nChance to decrease defensive stats of each frontline enemy, chances to apply debuff increases if used multiple times in a row",
         points: 60,
@@ -239,7 +239,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
 
     this.actions.personalRequest = {
         name: "Personal Request [stamina, mana, energy]",
-        properties: ["physical", "stamina", "mystic", "mana", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
+        properties: ["physical", "stamina", "mystic", "mana", "techno", "energy", "light/illusion", "harmonic/change", "radiance/purity", "buff", "debuff"],
         cost: { stamina: 10, mana: 10, energy: 10 },
         description: `Costs 10 stamina & 10 mana & 10 energy\nIncreases or decreases targets stats with a percent of ${this.name}&#39;s stats depending if targeting on ally or enemy, benefits increase if used multiple times on the same target in a row, 1% chance to fail debuff`,
         points: 60,
@@ -316,7 +316,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
 
     this.actions.retune = {
         name: "Retune [physical, mystic, techno]",
-        properties: ["physical", "mystic", "techno", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
+        properties: ["physical", "mystic", "techno", "light/illusion", "harmonic/change", "radiance/purity", "resource"],
         description: `Regains some resources at the start and end of ${this.name}&#39;s turn, benefits increase if used multiple times in a row`,
         points: 60,
         code: () => {

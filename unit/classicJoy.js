@@ -59,7 +59,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 17
                 if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.synthesizeMedicine, unit: target[0], resource: ['hp'], value: [Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON)] }) }
                 if (target[0].hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: target[0]}) }
                 target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON));
-                logAction(`${this.name} heals ${target[0].name} for ${Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON)} HP!`, "heal");
+                logAction(`${this.name} heals ${target[0].name}${this.team === "player" ? ` for ${Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON)} HP` : ''}!`, "heal");
             } else {
                 currentAction[currentAction.length - 1] = this.actions.fastReload;
                 this.actions.fastReload.code();
