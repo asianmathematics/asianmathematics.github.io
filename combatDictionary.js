@@ -274,7 +274,7 @@ function playerTurn(unit) {
             for (const resource in action.cost) { if (resource !== "position" && unit.resource[resource] < action.cost[resource]) { disabled = " disabled" } }
         }
         actionButton += `
-        <button id='${action.name}' class='action-button${disabled}' data-tooltip='${action.description}' onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${action.name}</button>`;
+        <button id='${action.name}' class='action-button${disabled}' onclick='handleActionClick(\"${actionKey}\", \"${unit.name}\")'>${action.name}</button>`;
     }
     document.getElementById("selection").innerHTML = `${actionButton}
         <button id='Skip' class='action-button' data-tooltip="Skip current unit's turn" onclick='handleActionClick("Skip", \"${unit.name}\")'>Skip</button>

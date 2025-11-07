@@ -137,8 +137,8 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                     resetStat(this.vars.caster, stats, values);
                                     const target = randTarget(unitFilter("enemy", "mid", true).filter(u => u.position === "front"), 1, true)
                                     if (target.length) {
-                                        currentAction.push(target.switchPosition);
-                                        target.switchPosition.code();
+                                        currentAction.push(target.actions.switchPosition);
+                                        target.actions.switchPosition.code();
                                         currentAction.pop();
                                     }
                                 }
@@ -150,7 +150,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 stats = ["speed"];
                                 values = [-15];
                                 if (this.vars.applied) {
-                                    for (const unit of this.vars.target) resetStat(unit, stats, values);
+                                    for (const unit of this.vars.targets) resetStat(unit, stats, values);
                                     resetStat(this.vars.caster, ["presence"], [15]);
                                     for (const unit of allUnits.filter(u => u.elements.includes("inertia/cold"))) { unit.shield.push("harmonic/change", "radience/purity") }
                                 }
@@ -160,7 +160,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 this.name = "Effect: Knife";
                                 this.description = "Current effect: Random knife attack";
                                 if (this.vars.applied) {
-                                    currentAction.push(this.vars.caster.action.knifeSlash);
+                                    currentAction.push(this.vars.caster.actions.knifeSlash);
                                     this.vars.caster.action.knifeSlash.code(randTarget(unitFilter("player", "front", false), 1, true));
                                     currentAction.pop();
                                 }
