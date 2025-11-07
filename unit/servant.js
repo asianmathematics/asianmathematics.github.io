@@ -89,7 +89,7 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
                             mod.passive = false;
                             removeModifier(mod);
                         }
-                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(context.unit))) { mod.changeTarget(context.unit) }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(context.unit))) { mod.changeTarget(mod.vars.target ? context.unit : [context.unit]) }
                         allUnits.splice(allUnits.indexOf(context.unit), 1);
                     } else if (this.vars.applied && !context.type && context.unit === this.vars.caster && currentAction.at(-2).name === "Skip") {
                         const unit = randTarget(unitFilter(this.vars.caster.team === "player" ? "enemy" : "player", "", true), 1, true);
@@ -97,7 +97,7 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
                             mod.passive = false;
                             removeModifier(mod);
                         }
-                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(unit))) { mod.changeTarget(unit) }
+                        for (const mod of modifiers.filter(m => m.vars?.targets?.includes(unit))) { mod.changeTarget(mod.vars.target ? unit : [unit]) }
                         allUnits.splice(allUnits.indexOf(unit), 1);
                     } else if (this.vars.applied && !this.vars.listeners.turnEnd && context.type === "downed" && context.unit.team !== this.vars.caster.team && currentUnit !== this.vars.caster) {
                         this.vars.listeners.turnEnd = true;
