@@ -105,6 +105,11 @@ li.modifier-item > *{display:inline-block;}
 .team::-webkit-scrollbar-thumb,.modifiers-container::-webkit-scrollbar-thumb,#action-log::-webkit-scrollbar-thumb,.info-display::-webkit-scrollbar-thumb{background:#00ff88;border-radius:0;}
 .team::-webkit-scrollbar-thumb:hover,.modifiers-container::-webkit-scrollbar-thumb:hover,#action-log::-webkit-scrollbar-thumb:hover,.info-display::-webkit-scrollbar-thumb:hover{background:#00cc66;}
 .team,.modifiers-container,#action-log,.info-display{scrollbar-width:thin;scrollbar-color:#00ff88 #0a0a0a;}
+.unit.stunned{border-color:#40f9ff !important;box-shadow:0 0 8px rgba(64, 179, 255, 0.5);}
+.unit.stunned .unit-name{color:#40f9ff !important;}
+.stun-indicator{position:absolute;top:5px;right:5px;color:#40f9ff;font-size:12px;font-weight:bold;text-shadow:0 0 5px rgba(64, 249, 25, 0.7);animation:pulse 1s infinite;background-color:rgba(255, 215, 64, 0.1);padding:2px 5px;border-radius:2px;}
+.unit.stunned.current-turn .stun-indicator{left:5px;top:5px;}
+.unit.stunned.current-turn .turn-indicator{right:5px;top:5px;}
 @media (max-width:900px){
     .game-layout{flex-direction:column}
     .info-display{flex-direction:column}
@@ -120,7 +125,7 @@ li.modifier-item > *{display:inline-block;}
 }
 @keyframes pulse {
     0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
     100% { opacity: 1; transform: scale(1); }
 }
 /*.defeat-entry{color:#c0392b;font-weight:bold;}

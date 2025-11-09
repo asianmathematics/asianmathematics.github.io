@@ -184,6 +184,7 @@ export const Dark = new Unit("Dark", [2400, 84, 40, 200, 60, 175, 75, 275, 245, 
                     this.vars.targets.length ? resetStat(this.vars.caster, this.vars.penaltyStats, this.vars.penaltyValues) : resetStat(this.vars.caster, this.vars.boostStats, this.vars.boostValues);
                 },
                 function(context) {
+                    if (!this.vars.applied && context.unit === this.vars.caster && context.type === 'revive') { this.cancel(false) }
                     if (this.vars.targets.includes(context.unit)) {
                         if (context.position) {
                             this.vars.listeners.turnEnd = true;

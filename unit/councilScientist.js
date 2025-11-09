@@ -6,9 +6,9 @@ export const CouncilScientist = new Unit("Science Council Member", [1000, 26, 12
         name: "Laser Turret [energy]",
         properties: ["techno", "light/illusion", "harmonic/change", "radiance/purity", "attack", "multitarget"],
         cost: { energy: 20 },
-        description: "Costs 20 energy\nAttacks a targets 6 times at increased accuracy",
+        description: "Costs 20 energy\nAttacks a target 6 times at increased accuracy",
         points: 60,
-        target: () => { this.actions.laserTurret.code(randTarget(unitFilter("player", "front", false), 2)) },
+        target: () => { this.actions.laserTurret.code(randTarget(unitFilter("player", "front", false), 1)) },
         code: (targets) => {
             this.resource.energy -= 20;
             this.previousAction[2] = true;

@@ -84,7 +84,8 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
                 { caster: this, target: this, attributes: ["physical"], elements: ["death/darkness", "knowledge/memory", "anomaly/synthetic"], listeners: { unitChange: true, turnEnd: false }, cancel: false, applied: true, focus: true, passive: true },
                 function() {},
                 function(context) {
-                    if (this.vars.applied && context.type === "downed" && context.unit.team !== this.vars.caster.team && currentUnit === this.vars.caster) {
+                    if (this.vars.listeners.unitChange && context.unit === this.vars.caster && context.type === "revive") { this.cancel(false) }
+                    else if (this.vars.applied && context.type === "downed" && context.unit.team !== this.vars.caster.team && currentUnit === this.vars.caster) {
                         for (const mod of modifiers.filter(m => (m.vars.caster === context.unit && (m.vars.focus || m.vars.penalty)) || m.vars?.target === context.unit)) {
                             mod.passive = false;
                             removeModifier(mod);

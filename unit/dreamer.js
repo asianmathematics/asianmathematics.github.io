@@ -93,10 +93,11 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
         points: 30,
         code: () => {
             new Modifier( "Effect: none", "Produces one random effect per turn\nCurrent effect: none",
-                { caster: this, targets: allUnits.filter(u => u !== this), effectType: null, effectVars: {}, listeners: { turnStart: true, singleDamage: false }, cancel: false, applied: true, focus: true, passive: true },
+                { caster: this, targets: allUnits.filter(u => u !== this), effectType: null, effectVars: {}, listeners: { turnStart: true, singleDamage: false, unitChange: false }, cancel: false, applied: true, focus: true, passive: true },
                 function () {},
                 function (context) {
-                    if (context.event === "turnStart" && context.unit === this.vars.caster) {
+                    if (this.vars.listeners.unitChange && context.unit === this.vars.caster && context.type === "revive") { this.cancel(false) }
+                    else if (context.event === "turnStart" && context.unit === this.vars.caster) {
                         if (this.vars.listeners.singleDamage) {
                             this.vars.listeners.singleDamage = false;
                             eventState.singleDamage.splice(eventState.singleDamage.indexOf(this), 1);
@@ -346,11 +347,22 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                     if (this.vars.cancel && this.vars.applied) {
                         if (this.vars.effectVars?.stats && this.vars.effectVars?.values) { resetStat(this.vars.caster, this.vars.effectVars.stats, this.vars.effectVars.values, false) }
                         if (this.vars.effectVars?.affectedUnits) { for (const unit of this.vars.effectVars.affectedUnits) { resetStat(unit, this.vars.effectVars.stats, this.vars.effectVars.values, false) } }
-                        this.vars.listeners.damageSingle = false;
+                        if (this.vars.listeners.damageSingle) {
+                            this.vars.listeners.damageSingle = false;
+                            eventState.damageSingle.splice(eventState.damageSingle.indexOf(this), 1);
+                        }
+                        this.vars.listeners.turnStart = false;
+                        eventState.turnStart.splice(eventState.turnStart.indexOf(this), 1);
+                        this.vars.listeners.unitChange = true;
+                        eventState.unitChange.push(this);
                     } else if (!this.vars.cancel && !this.vars.applied) {
                         if (this.vars.effectVars?.stats && this.vars.effectVars?.values) { resetStat(this.vars.caster, this.vars.effectVars.stats, this.vars.effectVars.values) }
                         if (this.vars.effectVars?.affectedUnits) { for (const unit of this.vars.effectVars.affectedUnits) { resetStat(unit, this.vars.effectVars.stats, this.vars.effectVars.values) } }
                         if (this.vars.effectVars.negate) { this.vars.listeners.damageSingle = true }
+                        this.vars.listeners.unitChange = false;
+                        eventState.unitChange.splice(eventState.unitChange.indexOf(this), 1);
+                        this.vars.listeners.turnStart = true;
+                        eventState.turnStart.push(this);
                     }
                 }
             );

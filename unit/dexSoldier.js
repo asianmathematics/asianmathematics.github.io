@@ -63,10 +63,11 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 80, 5
         points: 30,
         code: () => {
             new Modifier("Determination", `Moderately heals${this.team === "player" ? ` (${Math.floor(0.8 * this.resource.healFactor + Number.EPSILON)} HP)` : ''} at start of turn whenever stamina is at least half`,
-                { caster: this, target: this, attributes: ["physical"], elements: ["harmonic/change", "inertia/cold", "radiance/purity"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: true, passive: true },
+                { caster: this, target: this, attributes: ["physical"], elements: ["harmonic/change", "inertia/cold", "radiance/purity"], stats: ["hp"], listeners: { turnStart: true, unitChange: false }, cancel: false, applied: true, focus: true, passive: true },
                 function() {},
                 function(context) {
-                    if (this.vars.applied && this.vars.target === context?.unit && 2 * this.vars.target.resource.stamina >= this.vars.target.base.resource.stamina) {
+                    if (this.vars.listeners.unitChange && context.unit === this.vars.caster && context.type === "revive") { this.cancel(false) }
+                    else if (this.vars.applied && this.vars.target === context?.unit && 2 * this.vars.target.resource.stamina >= this.vars.target.base.resource.stamina) {
                         if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
                         this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
                         logAction(`${this.vars.target.name} held onto hope and healed${this.vars.caster.team === "player" ? ` ${Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON)} HP` : ''}!`, "heal");
@@ -74,8 +75,19 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1500, 36, 32, 85, 10, 80, 5
                 },
                 function(cancel, temp) {
                     if (!temp) {
-                        if (this.vars.cancel && this.vars.applied) { this.vars.applied = false }
-                        else if (!this.vars.cancel && !this.vars.applied) { this.vars.applied = true }
+                        if (this.vars.cancel && this.vars.applied) {
+                            this.vars.applied = false;
+                            this.vars.listeners.turnStart = false;
+                            eventState.turnStart.splice(eventState.turnStart.indexOf(this), 1);
+                            this.vars.listeners.unitChange = true;
+                            eventState.unitChange.push(this);
+                        } else if (!this.vars.cancel && !this.vars.applied) {
+                            this.vars.applied = true;
+                            this.vars.listeners.unitChange = false;
+                            eventState.unitChange.splice(eventState.unitChange.indexOf(this), 1);
+                            this.vars.listeners.turnStart = true;
+                            eventState.turnStart.push(this);
+                        }
                     }
                 }
             );

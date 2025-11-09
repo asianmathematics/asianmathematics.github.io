@@ -227,13 +227,15 @@ function updateBattleDisplay() {
     function renderUnit(unit, isEnemy = false) {
         const isDefeated = unit.hp <= 0;
         const isCurrentTurn = currentUnit && unit.name === currentUnit.name;
-        return `<div class='unit ${isDefeated ? "defeated" : ""} ${unit.position === "back" ? "back" : ""} ${isCurrentTurn ? "current-turn" : ""}'>
-            ${isCurrentTurn ? '<div class="turn-indicator">▶</div>' : ''}
-            <div class='unit-name'>${unit.name}</div>
-            <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
-            ${renderUnitStats(unit, isEnemy)}
-        </div>`;
-    }
+        const isStunned = unit.stun;
+        return `<div class='unit ${isDefeated ? "defeated" : ""} ${unit.position === "back" ? "back" : ""} ${isCurrentTurn ? "current-turn" : ""} ${isStunned ? "stunned" : ""}'>
+        ${isStunned ? '<div class="stun-indicator">STUNNED</div>' : ''}
+        ${isCurrentTurn ? '<div class="turn-indicator">▶</div>' : ''}
+        <div class='unit-name'>${unit.name}</div>
+        <div class='position-indicator'>${unit.position === "back" ? "Backline" : ""}</div>
+        ${renderUnitStats(unit, isEnemy)}
+    </div>`;
+}
     function renderUnitStats(unit, isEnemy = false) {
         if (unit.hp <= 0) {
             return `<div style="text-align: center; color: #ff0055; font-style: italic; padding: 10px 0;">
@@ -376,19 +378,28 @@ export function advanceWave(x = 0) {
     }
     for (const unit of allUnits.slice(i).filter(u => u.passivesInit)) { for (const pass in unit.passives) { unit.passives[pass].code() } }
     currentTurn = allUnits.findIndex(unit => unit.name === turnId);
-    wave++;
+    logAction(`Wave ${++wave}!`, "turn");
     if (eventState.waveChange.length) { handleEvent('waveChange', { wave }) }
     updateBattleDisplay();
 }
 
 function waveCalc(units, mult) {
     const total = units.reduce((sum, u) => sum + 2*(+u.description[0]+1)*(1.5**(+u.description[0]-3)), 0) * mult;
-    const enemyPoints = new Map([ [Experiment, 4], [Reject, 4], [CouncilMagician, 8], [CouncilScientist, 8], [Revolutionary, 8], [enemy, 8], [ArtificialSolider, 8], [Dreamer, 15], [mysticEnemy, 15], [technoEnemy, 15], [ChaosAgent, 15], [magitechEnemy, 27] ]);
-    if (!units.some(u => u.description.includes("5 star")) && wave < 3) { enemyPoints.delete(magitechEnemy) }
+    let enemyPoints;
+    if (total >= 200) { enemyPoints = new Map([ [Dreamer, 15], [mysticEnemy, 15], [technoEnemy, 15], [ChaosAgent, 15], [magitechEnemy, 27] ]) }
+    else {
+        enemyPoints = new Map([ [Experiment, 4], [Reject, 4], [CouncilMagician, 8], [CouncilScientist, 8], [Revolutionary, 8], [enemy, 8], [ArtificialSolider, 8], [Dreamer, 15], [mysticEnemy, 15], [technoEnemy, 15], [ChaosAgent, 15], [magitechEnemy, 27] ]);
+        if (!units.some(u => u.description.includes("5 star")) && wave < 3) { enemyPoints.delete(magitechEnemy) }
+        if (total >= 125) {
+            enemyPoints.delete(Experiment);
+            enemyPoints.delete(Reject);
+        }
+    }
     let enemies = [];
     let points = 0;
+    const front = [Experiment, Reject, enemy, ArtificialSolider, mysticEnemy, magitechEnemy].filter(e => enemyPoints.has(e));
     while (points < total) {
-        const enem = points === 0 ? [Experiment, Reject, enemy, ArtificialSolider, mysticEnemy][Math.floor(Math.random() * 5)] : Array.from(enemyPoints.keys())[Math.floor(Math.random() * enemyPoints.size)];
+        const enem = points === 0 ? front[Math.floor(Math.random() * front.length)] : Array.from(enemyPoints.keys())[Math.floor(Math.random() * enemyPoints.size)];
         if (points + enemyPoints.get(enem) <= total || (Math.abs(total - points - enemyPoints.get(enem)) < Math.abs(total - points))) {
             enemies.push(enem);
             points += enemyPoints.get(enem);
@@ -430,6 +441,7 @@ function frontTest() {
 }
 
 export async function combatTick() {
+    currentUnit.timer += 1000;
     setUnit(null);
     updateBattleDisplay();
     await sleep(500);
@@ -452,7 +464,6 @@ export async function combatTick() {
     }
     logAction(`<strong>Turn ${turnCounter++}: ${turn.name}'s turn</strong>`, "turn");
     if (eventState.turnStart.length) { handleEvent('turnStart', { unit: turn }) }
-    turn.timer += 1000;
     if (!turn.stun) {
         setUnit(turn);
         regenerateResources(turn);
