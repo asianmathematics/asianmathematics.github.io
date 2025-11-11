@@ -162,7 +162,7 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 this.description = "Current effect: Random knife attack";
                                 if (this.vars.applied) {
                                     currentAction.push(this.vars.caster.actions.knifeSlash);
-                                    this.vars.caster.action.knifeSlash.code(randTarget(unitFilter("player", "front", false), 1, true));
+                                    this.vars.caster.actions.knifeSlash.code(randTarget(unitFilter("player", "front", false), 1, true));
                                     currentAction.pop();
                                 }
                                 break;
