@@ -37,8 +37,8 @@ export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175,
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            const healable = unitFilter("player", "").filter(u => !u.resource.mana);
-            this.team === "player" ? selectTarget(this.actions.healingPills, () => { playerTurn(this) }, [3, false, healable]) : this.actions.healingPills.code(randTarget(unitFilter("enemy", "").filter(u => !u.resource.mana && u.hp < u.base.hp), 3));
+            const healable = unitFilter("player", "").filter(u => !(u.base.resource.mana && !u.name.includes("Idol")));
+            this.team === "player" ? selectTarget(this.actions.healingPills, () => { playerTurn(this) }, [3, false, healable]) : this.actions.healingPills.code(randTarget(unitFilter("enemy", "").filter(u => !(u.base.resource.mana && !u.name.includes("Idol")) && u.hp < u.base.hp), 3));
         },
         code: (targets) => {
             if (targets.length) {
@@ -112,7 +112,7 @@ export const Paragon = new Unit("Paragon", [2800, 55, 80, 200, 50, 250, 45, 175,
             this.previousAction[2] = true;
             logAction(`${this.name} activates the healing drone!`, "action");
             new Modifier("Healing Drone", "Heals the lowest hp ally",
-                { caster: this, targets: unitFilter(this.team, "").filter(u => !u.base.resource.mana), duration: 3, attributes: ["techno"], elements: ["radiance/purity", "anomaly/synthetic", "nature/life"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
+                { caster: this, targets: unitFilter(this.team, "").filter(u => !(u.base.resource.mana && !u.name.includes("Idol"))), duration: 3, attributes: ["techno"], elements: ["radiance/purity", "anomaly/synthetic", "nature/life"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
                 function() {
                     const heal = this.vars.targets.filter(u => u.hp < u.base.hp).reduce((min, unit) => { if (!min || unit.hp < min.hp) { return unit } return min }, null);
                     if (heal) {
