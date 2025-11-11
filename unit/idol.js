@@ -164,7 +164,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 if (mod.name === "Rebellious Discord") { effect += mod.vars.effect }
                 removeModifier(mod);
             }
-            new Modifier("Rebellious Discord", "Defensive stat decrease", { caster: this, targets: unitFilter(this.team === "player" ? "enemy" : "player", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["defense", "evasion", "resist"], values: statDecrease, bonusArray: [], effect: effect, listeners: { turnEnd: true, positionChange: true, waveChange: this.team === "player" }, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, unit) > 75 - (6.25 * (this.vars.effect - 1)) * (4 ** (elementBonus(this.vars.caster, this) - elementBonus(unit, this))) } },
+            new Modifier("Rebellious Discord", "Defensive stat decrease", { caster: this, targets: unitFilter(this.team === "player" ? "enemy" : "player", "front"), duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["defense", "evasion", "resist"], values: statDecrease, bonusArray: [], effect: effect, listeners: { turnEnd: true, positionChange: true, waveChange: this.team === "player" }, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, [unit]) > 75 - (6.25 * (this.vars.effect - 1)) * (4 ** (elementBonus(this.vars.caster, this) - elementBonus([unit], this))) } },
                 function() {
                     logAction(`${this.vars.caster.name} is riling up the otherside!`, "debuff");
                     this.vars.bonusArray.length = this.vars.targets.length;
@@ -265,7 +265,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
             new Modifier("Personal Request", "Changes stats", { caster: this, target: target[0], duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], stats: ["attack", "defense", "accuracy", "evasion", "focus", "resist", "speed", "presence"], values: [], effect: effect, baseVal: statIncrease, changeStat: false, listeners: { turnEnd: true, statChange: true }, cancel: false, applied: true, focus: true, debuff: false },
                 function() {
                     if (this.vars.target.team !== this.vars.caster.team) {
-                        this.vars.debuff = function(unit) { return resistDebuff(this.vars.caster, unit)[0] * (2 ** (elementBonus(this.vars.caster, this) - elementBonus(unit, this) + this.vars.effect - 1)) > 1 }
+                        this.vars.debuff = function(unit) { return resistDebuff(this.vars.caster, [unit])[0] * (2 ** (elementBonus(this.vars.caster, this) - elementBonus([unit], this) + this.vars.effect - 1)) > 1 }.bind(this);
                         if (!this.vars.debuff(this.vars.target)) { this.vars.target = null }
                     }
                     if (this.vars.target) {

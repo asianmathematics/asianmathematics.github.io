@@ -27,7 +27,7 @@ export const mysticEnemy = new Unit("Mystic Fiend", [1000, 50, 20, 130, 30, 130,
             this.resource.mana -= 25;
             logAction(`${this.name} casts Curse Field!`, "action");
             new Modifier("Curse Field", "Reduces accuracy and evasion",
-                { caster: this, targets: unitFilter("player", "front", false), attributes: ["mystic"], elements: ["anomaly/synthetic"], stats: ["accuracy", "evasion"], values: statDecrease, bonusArray: [], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, unit) > 100 - (33.3 * (2 ** this.vars.bonusArray[i])) } },
+                { caster: this, targets: unitFilter("player", "front", false), attributes: ["mystic"], elements: ["anomaly/synthetic"], stats: ["accuracy", "evasion"], values: statDecrease, bonusArray: [], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this.vars.caster, [unit]) > 100 - (33.3 * (2 ** this.vars.bonusArray[i])) } },
                 function() {
                     this.vars.bonusArray.fill(this.vars.targets.length);
                     for (let i = this.vars.targets.length-1; i > -1; i--) {

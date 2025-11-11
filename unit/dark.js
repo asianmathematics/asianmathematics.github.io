@@ -34,7 +34,7 @@ export const Dark = new Unit("Dark", [2400, 84, 40, 200, 60, 175, 75, 275, 245, 
             if (resistDebuff(this, target)[0] * (2 ** (elementBonus(this, this.actions.perfectFreeze) - elementBonus(target[0], this.actions.perfectFreeze))) > 1) {
                 logAction(`${this.name} freezes ${target[0].name}!`, "action");
                 new Modifier("Perfect Freeze", "stun effect",
-                    { caster: this, target: target[0], duration: 1, attributes: ["mystic"], elements: ["inertia/cold"], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this, unit)[0] * (2 ** (elementBonus(this.vars.caster, this.vars.caster.actions.perfectFreeze) - elementBonus(unit, this.vars.caster.actions.perfectFreeze))) > 1}, modlist: null },
+                    { caster: this, target: target[0], duration: 1, attributes: ["mystic"], elements: ["inertia/cold"], listeners: {turnEnd: true}, cancel: false, applied: true, focus: true, debuff: function(unit) { return resistDebuff(this, [unit])[0] * (2 ** (elementBonus(this.vars.caster, this.vars.caster.actions.perfectFreeze) - elementBonus([unit], this.vars.caster.actions.perfectFreeze))) > 1}, modlist: null },
                     function() {
                         this.vars.target.stun++;
                         if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
