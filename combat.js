@@ -441,7 +441,7 @@ function frontTest() {
 }
 
 export async function combatTick() {
-    currentUnit.timer += 1000;
+    if (currentUnit) { currentUnit.timer += 1000 }
     setUnit(null);
     updateBattleDisplay();
     await sleep(500);
