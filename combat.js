@@ -493,6 +493,7 @@ export async function combatTick() {
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, "miss");
         if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit: turn }) }
+        turn.timer += 1000;
         setTimeout(combatTick, 500);
     }
 }
