@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100, 150, "back", 80, 40, 4, 100, 16], ["light/illusion", "knowledge/memory", "interia/cold", "independence/loneliness", "ingenuity/insanity"], function() {
+export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 100, 120, "back", 120, 75, 8, 200, 22], ["light/illusion", "knowledge/memory", "interia/cold", "independence/loneliness", "ingenuity/insanity"], function() {
     this.actions.knifeSlash = {
         name: "Knife Slash [physical]",
         properties: ["physical", "attack"],
@@ -136,8 +136,8 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
                                 values = [-30, -30];
                                 if (this.vars.applied) {
                                     resetStat(this.vars.caster, stats, values);
-                                    const target = randTarget(unitFilter("enemy", "mid", true).filter(u => u.position === "front"), 1, true)
-                                    if (target.length) {
+                                    const target = randTarget(unitFilter("enemy", "mid", true).filter(u => u.position === "front"), 1, true)[0]
+                                    if (target) {
                                         currentAction.push(target.actions.switchPosition);
                                         target.actions.switchPosition.code();
                                         currentAction.pop();
@@ -368,4 +368,4 @@ export const Dreamer = new Unit("Dreamer", [1200, 60, 16, 125, 35, 175, 85, 100,
             );
         }
     };
-})
+});

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const ChaosAgent = new Unit("Agent Of Chaos", [1000, 50, 30, 125, 30, 125, 70, 150, 140, "back", 100, 80, 10, 60, 5, 60, 5], ["light/illusion", "knowledge/memory", "goner/entropy", "anomaly/synthetic", "ingenuity/insanity"], function() {
+export const ChaosAgent = new Unit("Agent Of Chaos", [1500, 140, 50, 160, 90, 150, 70, 120, 120, "back", 150, 80, 10, 60, 5, 60, 5], ["light/illusion", "knowledge/memory", "goner/entropy", "anomaly/synthetic", "ingenuity/insanity"], function() {
     this.actions.magicWeapon = {
         name: "Magic Weapon [physical, mystic]",
         properties: ["physical", "mystic", "attack"],

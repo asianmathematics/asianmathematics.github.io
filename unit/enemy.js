@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const enemy = new Unit("Basic Enemy", [1000, 36, 16, 100, 20, 100, 50, 100, 100, "front", 100, 100, 10], [], function() {
+export const enemy = new Unit("Basic Enemy", [1000, 80, 25, 100, 50, 100, 50, 100, 100, "front", 100, 100, 10], [], function() {
     this.actions.basicAttack = {
         name: "Basic Attack",
         properties: ["attack"],

@@ -284,7 +284,7 @@ function playerTurn(unit) {
         if (eventState.actionStart.length) { handleEvent('actionStart', {unit, action: unit.actions[action]}) }
         if (!unit.cancel) {
             if (action === "Skip") {
-                currentAction.push("Skip");
+                currentAction.push({ name: "Skip" });
                 logAction(`${name}'s turn is skipped`, "miss");
                 document.getElementById("selection").innerHTML = "";
                 cleanupGlobalHandlers();
@@ -431,7 +431,7 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
         const hit = [];
         for (let i = 0; i < num; i++) {
             const roll = Math.floor(Math.random() * 100 + 1);
-            let hitSingle = roll === 1 ? 0 : 10 * ((roll === 100 ? 2 * attackMods.accuracy : attackMods.accuracy) / defendMods.evasion ) + roll - 85;
+            let hitSingle = roll === 1 ? 0 : 20 * ((roll === 100 ? 2 * attackMods.accuracy : attackMods.accuracy) / defendMods.evasion ) + roll - 80;
             if (roll === 100) { hitSingle = Math.min(-hitSingle, -100) }
             if (eventState.singleAttack.length) { handleEvent('singleAttack', {attacker, defender: unit, hitSingle}) }
              if (attacker.cancel) {
@@ -459,7 +459,7 @@ function crit(attacker, defenders, hit, calcMods = {}) {
                 hit[i][j] *= -1;
                 max = true;
             }
-            let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (Math.max((3 * defendMods.resist) - attackMods.focus, 10)), max);
+            let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (Math.max((3 * defendMods.resist) - attackMods.focus, 20)), max);
             if (eventState.singleCrit.length) { handleEvent('singleCrit', {attacker, defender: defenders[i], critSingle}) }
             if (attacker.cancel) {
                 critSingle = 0;
@@ -477,24 +477,29 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     if (eventState.damageStart.length) { handleEvent('damageStart', {attacker, defenders, critical, calcMods}) }
     const attackMods = { ...attacker, ...calcMods.attacker };
     for (let i = 0; i < defenders.length; i++) {
-        const doubleDamage = elementDamage(attacker, defenders[i], calcMods?.actionOverride || null);
-        const defendMods = { ...defenders[i], ...calcMods.defender };
-        const hit = [];
-        let total = 0;
-        for (let j = 0; j < critical[i].length; j++) {
-            let damageSingle = (doubleDamage + 1) * (critical[i][j] <= 0 ? 0 : Math.ceil(Math.max(((Math.random() / 2) + .75) * ((critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1)) - defendMods.defense), .1 * (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1)))));
-            if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
-            hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
-            total += damageSingle;
-        }
-        if (total > 0) {
-            defenders[i].hp = Math.max(defenders[i].hp - total, 0);
-            if (defenders[i].hp === 0) {
-                if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
-                if (defenders[i].hp === 0) { for (const mod of modifiers) { if (mod.vars.caster === defenders[i] && (mod.vars.focus || mod.vars.penalty)) { removeModifier(mod) } } }
+        let dCheck = false;
+        if (critical[i].some(c => c > 0)) {
+            const doubleDamage = elementDamage(attacker, defenders[i], calcMods?.actionOverride || null);
+            const defendMods = { ...defenders[i], ...calcMods.defender };
+            const hit = [];
+            let total = 0;
+            for (let j = 0; j < critical[i].length; j++) {
+                let damageSingle = (critical[i][j] <= 0) ? 0 : (doubleDamage + 1) * Math.ceil(Math.max(((Math.random() * 0.5) + 0.75) * ((critical[i][j] < 1 ? 1 : critical[i][j] + 1) * (attackMods.attack - defendMods.defense)), (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1))/8));
+                if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
+                hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
+                total += damageSingle;
             }
-            critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} ${doubleDamage ? "elemental " : ""}damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} ${doubleDamage ? "elemental " : ""}damage!`, "hit");
-        } else { logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss") }
+            if (total) {
+                defenders[i].hp = Math.max(defenders[i].hp - total, 0);
+                if (defenders[i].hp === 0) {
+                    if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
+                    if (defenders[i].hp === 0) { for (const mod of modifiers) { if (mod.vars.caster === defenders[i] && (mod.vars.focus || mod.vars.penalty)) { removeModifier(mod) } } }
+                }
+                critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} ${doubleDamage ? "elemental " : ""}damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} ${doubleDamage ? "elemental " : ""}damage!`, "hit");
+                dCheck = true;
+            }
+        }
+        if (!dCheck) { logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss") }
     }
 }
 

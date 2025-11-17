@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const CouncilScientist = new Unit("Science Council Member", [1000, 26, 12, 90, 20, 120, 40, 80, 130, "back", 100, 80, 6, , , 70, 7], ["anomaly/synthetic", "ingenuity/insanity"], function() {
+export const CouncilScientist = new Unit("Science Council Member", [1000, 57, 24, 100, 40, 120, 40, 80, 130, "back", 100, 80, 6, , , 70, 9], ["anomaly/synthetic", "ingenuity/insanity"], function() {
     this.actions.laserTurret = {
         name: "Laser Turret [energy]",
         properties: ["techno", "light/illusion", "harmonic/change", "radiance/purity", "attack", "multitarget"],

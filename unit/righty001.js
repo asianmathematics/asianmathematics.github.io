@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60, 200, 150, "mid", 240, 175, 20, , , 125, 10], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const Righty001 = new Unit("Righty_001", [2400, 160, 50, 250, 120, 250, 60, 200, 150, "mid", 240, 160, 18, , , 120, 9], ["light/illusion", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -232,14 +232,9 @@ export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
-                this.base.attack = 120;
                 this.base.defense = 30;
-                this.base.accuracy = 280;
-                this.base.evasion = 40;
-                this.base.focus = 280;
-                this.base.resist = 75;
-                this.base.speed = 290;
-                this.base.presence = 165;
+                this.base.evasion = 80;
+                this.base.speed = 220;
                 this.actions.actionWeight = {
                     energyRifle: 0.15,
                     trickShot: 0.3,
@@ -253,14 +248,9 @@ export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60
             } else {
                 this.position = "back";
                 logAction(`${this.name} moves to the backline.`, "info");
-                this.base.attack = 100;
-                this.base.defense = 40;
-                this.base.accuracy = 250;
-                this.base.evasion = 60;
-                this.base.focus = 250;
-                this.base.resist = 60;
+                this.base.defense = 50;
+                this.base.evasion = 120;
                 this.base.speed = 200;
-                this.base.presence = 150;
                 this.actions.actionWeight = {
                     energyRifle: 0.1,
                     trickShot: 0.3,
@@ -287,3 +277,5 @@ export const Righty001 = new Unit("Righty_001", [2400, 100, 40, 250, 60, 250, 60
         switchPosition: 0.1
     };
 })
+
+Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";

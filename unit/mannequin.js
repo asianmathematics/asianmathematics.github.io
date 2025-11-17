@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80, 65, "mid", 75, 70, 15, , , 100, 15], [], function() {
+export const Mannequin = new Unit("Mannequin", [900, 60, 15, 110, 35, 115, 40, 80, 50, "mid", 90, 70, 10, , , 100, 10], ["perfection/precision", "independence/loneliness", "passion/hatred"], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -98,14 +98,10 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
-                this.base.attack = 40;
-                this.base.defense = 6;
-                this.base.accuracy = 120;
-                this.base.evasion = 10;
-                this.base.focus = 130;
-                this.base.resist = 20;
-                this.base.speed = 95;
-                this.base.presence = 75;
+                this.base.evasion = 25;
+                this.base.resist = 30;
+                this.base.speed = 85;
+                this.base.presence = 60;
                 this.actions.actionWeight = {
                     energyRifle: 0.2,
                     dualWield: 0.4,
@@ -116,14 +112,10 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
             } else {
                 this.position = "back";
                 logAction(`${this.name} moves to the backline.`, "info");
-                this.base.attack = 35;
-                this.base.defense = 9;
-                this.base.accuracy = 110;
-                this.base.evasion = 15;
-                this.base.focus = 120;
-                this.base.resist = 25;
+                this.base.evasion = 35;
+                this.base.resist = 40;
                 this.base.speed = 80;
-                this.base.presence = 65;
+                this.base.presence = 50;
                 this.actions.actionWeight = {
                     energyRifle: 0.35,
                     dualWield: 0,
@@ -144,3 +136,5 @@ export const Mannequin = new Unit("Mannequin", [750, 35, 9, 110, 15, 120, 25, 80
         switchPosition: 0.2
     };
 })
+
+Mannequin.description = "3 star techno midline unit with stealth capabilities";

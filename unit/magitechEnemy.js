@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const magitechEnemy = new Unit("Magitech Golem", [3000, 60, 40, 150, 20, 150, 120, 80, 250, "front", 300, 120, 12, 150, 15, 150, 15], ["harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic"], function() {
+export const magitechEnemy = new Unit("Magitech Golem", [3800, 120, 100, 150, 62, 150, 120, 120, 400, "front", 380, 120, 12, 150, 15, 150, 15], ["harmonic/change", "inertia/cold", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.arcaneCannon = {
         name: "Arcane Cannon [physical, mana]",
         properties: ["physical", "mystic", "mana", "attack"],

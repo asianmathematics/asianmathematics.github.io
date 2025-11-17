@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50, 65, 67, "mid", 60, 60, 7, 70, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
+export const Silhouette = new Unit("Silhouette", [750, 67, 34, 100, 60, 110, 65, 90, 66, "mid", 75, 70, 7, 80, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
     this.actions.shadowBlade = {
         name: "Shadow Blade [physical, mystic]",
         properties: ["physical", "mystic", "death/darkness", "attack"],
@@ -98,14 +98,12 @@ export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50,
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} teleports to the frontline.`, "info");
-                this.base.attack = 36;
-                this.base.defense = 10;
-                this.base.accuracy = 120;
-                this.base.evasion = 18;
+                this.base.defense = 20;
+                this.base.accuracy = 110;
+                this.base.evasion = 34;
                 this.base.focus = 120;
-                this.base.resist = 40;
-                this.base.speed = 86;
-                this.base.presence = 90;
+                this.base.resist = 33;
+                this.base.speed = 100;
                 this.actions.actionWeight = {
                     shadowBlade: 0.4,
                     meditate: 0,
@@ -116,14 +114,12 @@ export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50,
             } else {
                 this.position = "back";
                 logAction(`${this.name} teleports to the backline.`, "info");
-                this.base.attack = 26;
-                this.base.defense = 16;
+                this.base.defense = 34;
                 this.base.accuracy = 100;
-                this.base.evasion = 24;
-                this.base.focus = 100;
-                this.base.resist = 50;
-                this.base.speed = 65;
-                this.base.presence = 67;
+                this.base.evasion = 60;
+                this.base.focus = 110;
+                this.base.resist = 65;
+                this.base.speed = 90;
                 this.actions.actionWeight = {
                     shadowBlade: 0,
                     meditate: 0.4,
@@ -144,3 +140,5 @@ export const Silhouette = new Unit("Silhouette", [700, 26, 16, 100, 24, 100, 50,
         switchPosition: 0.2
     };
 })
+
+Silhouette.description = "3 star mystic midline unit with decent versatility";

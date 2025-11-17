@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160, 60, "front", 200, 160, 16], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
+export const Servant = new Unit("Servant", [2000, 120, 45, 140, 50, 160, 70, 140, 76, "front", 200, 150, 15], ["death/darkness", "knowledge/memory", "anomaly/synthetic", "passion/hatred"], function() {
     this.actions.meleeAttack = {
         name: "Melee Attack",
         properties: ["attack"],
@@ -78,9 +78,9 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
     this.passives.feast = {
         name: "Feast [passive, physical]",
         properties: ["passive", "physical", "death/darkness", "knowledge/memory", "anomaly/synthetic", "buff"],
-        description: "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn)",
+        description: "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn, frontline enemies only)",
         code: () => {
-            new Modifier("Feast", "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn)",
+            new Modifier("Feast", "When finishing off an enemy or skips turn with a dead enemy, it is removed from battle (one enemy per turn, frontline enemies only)",
                 { caster: this, target: this, attributes: ["physical"], elements: ["death/darkness", "knowledge/memory", "anomaly/synthetic"], listeners: { unitChange: true, turnEnd: false }, cancel: false, applied: true, focus: true, passive: true },
                 function() {},
                 function(context) {
@@ -93,7 +93,7 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
                         for (const mod of modifiers.filter(m => m.vars?.targets?.includes(context.unit))) { mod.changeTarget(mod.vars.target ? context.unit : [context.unit]) }
                         allUnits.splice(allUnits.indexOf(context.unit), 1);
                     } else if (this.vars.applied && !context.type && context.unit === this.vars.caster && currentAction.at(-2).name === "Skip") {
-                        const unit = randTarget(unitFilter(this.vars.caster.team === "player" ? "enemy" : "player", "", true), 1, true);
+                        const unit = randTarget(unitFilter(this.vars.caster.team === "player" ? "enemy" : "player", "front", true), 1, true);
                         for (const mod of modifiers.filter(m => (m.vars.caster === unit && (m.vars.focus || m.vars.penalty)) || m.vars?.target === unit)) {
                             mod.passive = false;
                             removeModifier(mod);
@@ -119,3 +119,5 @@ export const Servant = new Unit("Servant", [2000, 60, 24, 125, 35, 130, 65, 160,
         }
     }
 });
+
+Servant.description = "4 star unit with stealth and critical hit capabilities";

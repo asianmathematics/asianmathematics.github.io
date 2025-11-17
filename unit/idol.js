@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "back", 70, 110, 15, 135, 20, 85, 15], ["light/illusion", "knowledge/memory", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
+export const Idol = new Unit("Idol", [800, 100, 30, 180, 52, 200, 50, 75, 300, "back", 100, 100, 10, 120, 12, 80, 8], ["light/illusion", "knowledge/memory", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.soothingMelody = {
         name: "Soothing Melody [stamina, mana, techno]",
         properties: ["physical", "stamina", "mystic", "mana", "techno", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],
@@ -328,7 +328,7 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
                 if (mod.name === "Retune") { effect += mod.vars.effect }
                 removeModifier(mod);
             }
-            new Modifier("Retune", "Increased resource regen", { caster: this, target: this, duration: 4, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], values: statIncrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
+            new Modifier("Retune", "Increased resource regen", { caster: this, target: this, duration: 2, attributes: ["physical", "mystic", "techno"], elements: ["light/illusion", "harmonic/change", "radiance/purity"], values: statIncrease, effect: effect, listeners: { turnEnd: true }, cancel: false, applied: true, focus: true },
                 function() { logAction(`${this.vars.caster.name} is preparing for the next performance!`, "action") },
                 function(context) {
                     if (context.unit === this.vars.target) {
@@ -360,3 +360,5 @@ export const Idol = new Unit("Idol", [750, 44, 20, 125, 30, 130, 50, 60, 240, "b
         retune: 0.25
     };
 })
+
+Idol.description = "4 star magitech backline unit with powerful healing, buffs and debuffs";

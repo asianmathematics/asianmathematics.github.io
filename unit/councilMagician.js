@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const CouncilMagician = new Unit("Magic Council Member", [700, 50, 12, 60, 15, 100, 50, 60, 150, "back", 80, 50, 5, 90, 15], ["harmonic/change", "anomaly/synthetic", "independence/loneliness"], function() {
+export const CouncilMagician = new Unit("Magic Council Member", [700, 100, 25, 60, 30, 100, 50, 60, 150, "back", 80, 50, 5, 120, 15], ["harmonic/change", "anomaly/synthetic", "independence/loneliness"], function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
         properties: ["mystic", "attack"],

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dark = new Unit("Dark", [2400, 84, 40, 200, 60, 175, 75, 275, 245, "front", 160, 120, 15, 200, 20], ["death/darkness", "inertia/cold", "radiance/purity", "independence/loneliness"], function() {
+export const Dark = new Unit("Dark", [2400, 160, 60, 200, 125, 170, 105, 270, 240, "front", 200, 120, 15, 200, 20], ["death/darkness", "inertia/cold", "radiance/purity", "independence/loneliness"], function() {
     this.actions.iceshock = {
         name: "Iceshock [mystic]",
         properties: ["mystic", "intertia/cold", "attack"],
@@ -259,3 +259,5 @@ export const Dark = new Unit("Dark", [2400, 84, 40, 200, 60, 175, 75, 275, 245, 
         }
     }
 });
+
+Dark.description = "5 star mystic unit with high evasion, speed, and crowd control capabilities";

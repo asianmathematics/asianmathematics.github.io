@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dandelion = new Unit("Dandelion", [1250, 60, 18, 140, 40, 130, 60, 130, 160, "front", 120, 80, 10, 120, 20], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
+export const Dandelion = new Unit("Dandelion", [1600, 120, 35, 160, 120, 140, 60, 130, 160, "front", 120, 70, 8, 110, 12], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
         properties: ["mystic", "attack"],
@@ -96,3 +96,7 @@ export const Dandelion = new Unit("Dandelion", [1250, 60, 18, 140, 40, 130, 60, 
         dodge: 0.1
     };
 });
+
+Dandelion.description = "4 star mystic unit with decent evasion, speed, and crowd control capabilities";
+Dandelion.forcedSkills = ["Dodge [physical]"]
+Dandelion.selectedSkills = ["Spell Attack [mystic]", "Focus Fire [physical, mana]", "Danmaku [mana]", "Feint [stamina]"]

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const FourArcher = new Unit("4 (Archer)", [800, 35, 12, 100, 25, 100, 40, 70, 135, "back", 80, 50, 5, 90, 15], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
+export const FourArcher = new Unit("4 (Archer)", [700, 40, 20, 144, 77, 140, 70, 70, 140, "back", 77, 50, 4, 90, 15], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.perfectShot = {
         name: "Perfect Shot [mystic]",
         properties: ["mystic", "radiance/purity", "attack"],
@@ -76,3 +76,5 @@ export const FourArcher = new Unit("4 (Archer)", [800, 35, 12, 100, 25, 100, 40,
         laze: 0.25
     };
 });
+
+FourArcher.description = "3 star mystic backline unit with increased luck and low speed";

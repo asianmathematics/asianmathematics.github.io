@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Reject = new Unit("Reject", [600, 38, 8, 60, 10, 60, 40, 40, 70, "front", 66, 60, 8], ["death/darkness", "goner/entropy", "anomaly/synthetic"], function() {
+export const Reject = new Unit("Reject", [660, 78, 14, 60, 20, 60, 40, 40, 70, "front", 66, 60, 8], ["death/darkness", "goner/entropy", "anomaly/synthetic"], function() {
     this.actions.bite = {
         name: "Bite [stamina]",
         properties: ["physical", "stamina", "attack"],

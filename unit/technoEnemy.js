@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115, 65, 120, 90, "mid", 150, 125, 9, , , 150, 12], ["harmonic/change", "anomaly/synthetic"], function() {
+export const technoEnemy = new Unit("Techno Drone", [1500, 100, 20, 175, 86, 140, 65, 120, 90, "mid", 150, 125, 9, , , 150, 12], ["harmonic/change", "anomaly/synthetic"], function() {
     this.actions.laserBlast = {
         name: "Laser Blast [techno]",
         properties: ["techno", "light/illusion", "harmonic/change", "radiance/purity", "attack", "multitarget"],
@@ -37,7 +37,7 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115,
         name: "Nanite Repair [energy]",
         properties: ["techno", "energy", "harmonic/change", "anomaly/synthetic", "heal"],
         cost: { energy: 50 },
-        description: "Costs 50 energy\nHeals an ally somewhat (~20% of max HP), does Laser Blast if no ally needs healing",
+        description: "Costs 50 energy\nHeals an ally somewhat (~20% of max HP)",
         points: 60,
         target: () => { this.actions.naniteRepair.code(randTarget(unitFilter("enemy", "front").filter(unit => unit.hp < unit.base.hp))) },
         code: (target) => {
@@ -109,10 +109,9 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115,
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
-                this.base.defense = 15;
-                this.base.evasion = 15;
-                this.base.speed = 140;
-                this.base.presence = 120;
+                this.base.evasion = 40;
+                this.base.speed = 130;
+                this.base.presence = 108;
                 this.actions.actionWeight = {
                     laserBlast: 0.2,
                     shieldDisruptor: 0.25,
@@ -125,9 +124,8 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 50, 15, 125, 20, 115,
             } else {
                 this.position = "back";
                 logAction(`${this.name} moves to the backline.`, "info");
-                this.base.defense = 20;
-                this.base.evasion = 20;
-                this.base.speed = 120;
+                this.base.evasion = 86;
+                this.base.speed = 130;
                 this.base.presence = 90;
                 this.actions.actionWeight = {
                     laserBlast: 0.4,

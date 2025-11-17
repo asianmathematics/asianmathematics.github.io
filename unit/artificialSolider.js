@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const ArtificialSolider = new Unit("Artificial Solider", [1200, 30, 14, 85, 15, 80, 20, 80, 110, "front", 120, 80, 8, 50, 5, 70, 7], ["inertia/cold", "anomaly/synthetic", "precision/perfection"], function() {
+export const ArtificialSolider = new Unit("Artificial Solider", [1200, 60, 20, 85, 30, 80, 30, 90, 110, "front", 120, 80, 8, 50, 5, 70, 7], ["inertia/cold", "anomaly/synthetic", "precision/perfection"], function() {
     this.actions.magicWeapon = {
         name: "Magic Weapon [physical, mystic]",
         properties: ["physical", "mystic", "attack"],

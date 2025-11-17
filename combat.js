@@ -30,19 +30,6 @@ let wave = 1;
 const availableUnits = [Dark, Electric, Servant, ClassicJoy, DexSoldier, Dandelion, FourArcher, Paragon, Righty001, Mannequin, Idol, Silhouette];
 let selectedUnits = [];
 
-Dark.description = "5 star mystic unit with high evasion, speed, and crowd control capabilities";
-Electric.description = "4 star magitech unit with high versatility";
-Servant.description = "4 star unit with stealth and critical hit capabilities";
-ClassicJoy.description = "4 star techno backline unit with high attack and healing capabilities";
-DexSoldier.description = "3 star unit with high tank abilities and low speed";
-Dandelion.description = "4 star mystic unit with decent evasion, speed, and crowd control capabilities";
-FourArcher.description = "3 star mystic backline unit with increased luck and low speed";
-Paragon.description = "5 star techno backline unit with good healing";
-Righty001.description = "5 star techno midline unit with high speed and critical hit capabilities";
-Mannequin.description = "3 star techno midline unit with stealth capabilities";
-Idol.description = "4 star magitech backline unit with powerful healing, buffs and debuffs";
-Silhouette.description = "3 star mystic midline unit with decent versatility";
-
 function initUnitSelection() {
     const roster = document.getElementById('unit-roster');
     const selectedContainer = document.getElementById('selected-units');
@@ -88,6 +75,24 @@ function initUnitSelection() {
         }
         startCombatWithSelected();
     });
+    document.getElementById('skill-select').addEventListener('click', () => {
+        if (selectedUnits.length === 0) {
+            showMessage('Please select at least 1 unit!', 'error', 'selection');
+            return;
+        }
+        let frontcheck = true;
+        for (const unit of selectedUnits) {
+            if (!unit.description.includes("backline")) {
+                frontcheck = false;
+                break;
+            }
+        }
+        if (frontcheck) {
+            showMessage('Please select at least 1 non-backline unit!', 'error', 'selection');
+            return;
+        }
+        startCombatWithSelected();
+    });
 }
 
 function renderSelectedUnits() {
@@ -100,6 +105,16 @@ function renderSelectedUnits() {
         container.appendChild(card);
         card.addEventListener('click', () => { updateInfoDisplay(unit) });
     });
+}
+
+function skillSelection(unit) {
+    const current = document.getElementById('current-unit');
+    const roster = document.getElementById('skill-roster');
+    const selectedContainer = document.getElementById('selected-skills');
+    const countDisplay = selectedContainer.querySelector('h4');
+    current.innerHTML = `${unit.name}`;
+    selectedContainer.innerHTML = `<h4>Selected Skills (max of ${unit.skillSlots})</h4>`;
+    selected
 }
 
 function startCombatWithSelected() {
@@ -332,7 +347,8 @@ function cloneUnit(unit) {
         absorb: [],
         shield: (unit.base.elements || []).filter(e => baseElements.includes(e)),
         stun: false,
-        cancel: false
+        cancel: false,
+        learnedSkills: []
     };
     newUnit.actionsInit = unit.actionsInit;
     if (unit.passivesInit) {
@@ -364,14 +380,10 @@ export function advanceWave(x = 0) {
         let i = allUnits.length;
     switch (wave) {
         case 2:
-            for (const e of waveCalc(unitFilter("player", ""), 2)) {
-                createUnit(e, 'enemy');
-            }
+            for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(e, 'enemy') }
             break;
         case 1:
-            for (const e of waveCalc(unitFilter("player", ""), 1)) {
-                createUnit(e, 'enemy');
-            }
+            for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(e, 'enemy') }
             break;
         default:
             return true;

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 170, 50, 120, 120, "back", 120, 110, 20, , , 140, 15], ["death/darkness", "goner/entropy", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
+export const ClassicJoy = new Unit("Classical (Joy)", [1200, 135, 30, 160, 80, 180, 70, 130, 170, "back", 120, 90, 8, , , 100, 10], ["death/darkness", "goner/entropy", "anomaly/synthetic", "precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"], function() {
     this.actions.rapidFire = {
         name: "Rapid Fire [physical, energy]",
         properties: ["physical", "techno", "energy", "attack", "buff"],
@@ -168,3 +168,7 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1000, 60, 16, 160, 20, 17
         joy: 0.2
     };
 });
+
+ClassicJoy.description = "4 star techno backline unit with high attack and healing capabilities";
+ClassicJoy.forcedSkills = ["Joy [stamina]"]
+ClassicJoy.selectedSkills = ["Rapid Fire [physical, energy]", "Energy Rifle [energy]", "Synthesize Medicine [techno]", "Fast Reload [physical]"]

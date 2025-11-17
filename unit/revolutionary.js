@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Revolutionary = new Unit("Revolutionary", [800, 40, 12, 100, 15, 110, 20, 90, 90, "mid", 80, 120, 15, , , 70, 9], ["anomaly/synthetic", "passion/hatred"], function() {
+export const Revolutionary = new Unit("Revolutionary", [800, 80, 20, 100, 30, 110, 25, 90, 90, "mid", 75, 80, 6, , , 70, 10], ["anomaly/synthetic", "passion/hatred"], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -165,14 +165,10 @@ export const Revolutionary = new Unit("Revolutionary", [800, 40, 12, 100, 15, 11
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
-                this.base.attack = 46;
-                this.base.defense = 9;
-                this.base.accuracy = 110;
-                this.base.evasion = 10;
-                this.base.focus = 120;
-                this.base.resist = 15;
-                this.base.speed = 100;
-                this.base.presence = 100;
+                this.base.defense = 13;
+                this.base.evasion = 25;
+                this.base.speed = 92;
+                this.base.presence = 95;
                 this.actions.actionWeight = {
                     energyRifle: 0.2,
                     flashbang: 0.4,
@@ -183,12 +179,8 @@ export const Revolutionary = new Unit("Revolutionary", [800, 40, 12, 100, 15, 11
             } else {
                 this.position = "back";
                 logAction(`${this.name} moves to the backline.`, "info");
-                this.base.attack = 40;
-                this.base.defense = 12;
-                this.base.accuracy = 100;
-                this.base.evasion = 15;
-                this.base.focus = 110;
-                this.base.resist = 20;
+                this.base.defense = 20;
+                this.base.evasion = 30;
                 this.base.speed = 90;
                 this.base.presence = 90;
                 this.actions.actionWeight = {

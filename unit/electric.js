@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 100, 100, "front", 125, 100, 10, 50, 10, 160, 20], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
+export const Electric = new Unit("Electric", [1400, 80, 35, 140, 82, 175, 80, 120, 150, "front", 120, 90, 8, 60, 7, 150, 12], ["light/illusion", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.electricDischarge = {
         name: "Electric Discharge [mystic, energy]",
         properties: ["mystic", "techno", "energy", "harmonic/change", "attack"],
@@ -164,3 +164,5 @@ export const Electric = new Unit("Electric", [1000, 44, 20, 105, 25, 110, 50, 10
         electrify: 0.1,
     };
 });
+
+Electric.description = "4 star magitech unit with high versatility";
