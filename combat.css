@@ -2,7 +2,7 @@
 #battle-container,#selection{background-color:#0a0a0a;box-shadow:0 0 15px rgba(0,255,136,0.2);padding:20px;border:1px solid #00ff88}
 body{font-family:'Courier Prime',monospace;font-size:18px;max-width:1200px;margin:0 auto;padding:20px;background:#0a0a0a;color:#00ff88;position:relative}
 body::after{content:"";position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 2px);pointer-events:none;opacity:0.1}
-.hit-entry,h1,h2,h3{color:#00ff88;font-family:'Courier Prime',monospace;text-shadow:0 0 8px rgba(0,255,136,0.3);border-bottom:2px solid #ff0055}
+.h1,h2,h3{color:#00ff88;font-family:'Courier Prime',monospace;text-shadow:0 0 8px rgba(0,255,136,0.3);border-bottom:2px solid #ff0055}
 .game-layout{flex-direction:row;margin-top:20px}
 .left-column{flex:2;max-width:350px;flex-direction:column}
 .right-column{flex:1}
@@ -70,6 +70,7 @@ li.modifier-item > *{display:inline-block;}
 .log-entry{margin-bottom:4px;padding:2px 5px;border-radius:0;word-wrap:break-word}
 .turn-entry{background-color:#002233;color:#00aaff;padding:5px;margin-top:5px;border-left:3px solid #00aaff}
 .action-entry{color:#00ff88}
+.hit-entry{color:#00ff88;font-family:'Courier Prime',monospace;text-shadow:0 0 8px rgba(0,255,136,0.3);}
 .miss-entry{color:#666;font-style:italic}
 .crit-entry{color:#ffd740;font-weight:700}
 .buff-entry{color:#00ff88}

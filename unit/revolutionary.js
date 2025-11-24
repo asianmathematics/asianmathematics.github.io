@@ -40,7 +40,7 @@ export const Revolutionary = new Unit("Revolutionary", [800, 80, 20, 100, 30, 11
             this.resource.energy -= 30;
             this.previousAction[2] = true;
             const bonus = 2 ** (elementBonus(this, this.actions.flashbang) - elementBonus(target[0], this.actions.flashbang));
-            const statDecrease = [Math.floor(-50 * bonus + Number.EPSILON), Math.floor(-30 * bonus + Number.EPSILON)];
+            const statDecrease = [Math.round(-50 * bonus), Math.round(-30 * bonus)];
             const will = resistDebuff(this, target);
             switch (true) {
                 case will[0] > 93 - (31 * bonus):
@@ -50,7 +50,7 @@ export const Revolutionary = new Unit("Revolutionary", [800, 80, 20, 100, 30, 11
                         function() {
                             this.vars.target.stun++;
                             if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
-                            if (this.vars.targets[0].stun) {
+                            if (this.vars.target.stun) {
                                 this.vars.modlist = modifiers.filter( m => m.vars.caster === this.vars.target && m.vars.focus === true);
                                 for (const mod of this.vars.modlist) {
                                     modifiers.push(mod);
@@ -76,7 +76,7 @@ export const Revolutionary = new Unit("Revolutionary", [800, 80, 20, 100, 30, 11
                                     }
                                 }
                             } else if (!this.vars.cancel && !this.vars.applied) {
-                                this.vars.targets[0].stun++;
+                                this.vars.target.stun++;
                                 this.vars.applied = true;
                                 if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
                                 if (this.vars.target.stun) {
@@ -100,7 +100,7 @@ export const Revolutionary = new Unit("Revolutionary", [800, 80, 20, 100, 30, 11
                                 if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
                                 const bonus = 2 ** (elementBonus(this, this.actions.flashbang) - elementBonus(target[0], this.actions.flashbang));
                                 this.vars.target = unit;
-                                this.vars.values = [Math.floor(-50 * bonus + Number.EPSILON), Math.floor(-30 * bonus + Number.EPSILON)];
+                                this.vars.values = [Math.round(-50 * bonus), Math.round(-30 * bonus)];
                                 if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
                             }
                         }

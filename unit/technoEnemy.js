@@ -47,7 +47,7 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 100, 20, 175, 86, 140
                 const bonus = 2 ** (1 + elementBonus(target[0], this.actions.naniteRepair));
                 if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.naniteRepair, unit: target[0], resource: ['hp'], value: [target[0].resource.healFactor * bonus] }) }
                 if (target[0].hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: target[0]}) }
-                target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor(target[0].resource.healFactor * bonus + Number.EPSILON));
+                target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.round(target[0].resource.healFactor * bonus));
                 logAction(`${this.name} repairs ${target[0].name}!`, "heal");
             } else {
                 currentAction[currentAction.length - 1] = this.actions.laserBlast;
@@ -75,13 +75,13 @@ export const technoEnemy = new Unit("Techno Drone", [1500, 100, 20, 175, 86, 140
         name: "Backup Power [stamina]",
         properties: ["physical", "stamina", "harmonic/change", "anomaly/synthetic", "resource"],
         cost: { stamina: 20 },
-        description: `Costs 20 stamina\nRecovers a lot of energy (${Math.floor(this.resource.energyRegen * 4.5 + Number.EPSILON)})`,
+        description: `Costs 20 stamina\nRecovers a lot of energy (${Math.round(this.resource.energyRegen * 4.5)})`,
         points: 60,
         code: () => {
             this.previousAction[0] = true;
             this.resource.stamina -= 20;
-            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 4.5 + Number.EPSILON)] }) }
-            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 4.5 + Number.EPSILON));
+            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.round(this.resource.energyRegen * 4.5)] }) }
+            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.round(this.resource.energyRegen * 4.5));
             logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };

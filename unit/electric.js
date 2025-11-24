@@ -38,7 +38,7 @@ export const Electric = new Unit("Electric", [1400, 80, 35, 140, 82, 175, 80, 12
         },
         code: (target) => {
             const bonus = 2 ** elementBonus(target[0], this.actions.sickBeats);
-            const statIncrease = [Math.floor(20 * bonus + Number.EPSILON), Math.floor(10 * bonus + Number.EPSILON), Math.floor(100 * bonus + Number.EPSILON)];
+            const statIncrease = [Math.round(20 * bonus), Math.round(10 * bonus), Math.round(100 * bonus)];
             this.resource.energy -= 50;
             this.previousAction[2] = true;
             logAction(`${this.name} plays sick beats, energizing ${target[0].name}!`, "buff");
@@ -49,7 +49,7 @@ export const Electric = new Unit("Electric", [1400, 80, 35, 140, 82, 175, 80, 12
                         if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
                         const bonus = 2 ** elementBonus(unit, this);
                         this.vars.target = unit;
-                        this.vars.values = [Math.floor(20 * bonus + Number.EPSILON), Math.floor(10 * bonus + Number.EPSILON), Math.floor(100 * bonus + Number.EPSILON)];
+                        this.vars.values = [Math.round(20 * bonus), Math.round(10 * bonus), Math.round(100 * bonus)];
                         if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
                     }
                 }

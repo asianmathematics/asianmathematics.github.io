@@ -100,7 +100,7 @@ export const Righty001 = new Unit("Righty_001", [2400, 160, 50, 250, 120, 250, 6
             this.resource.energy -= 30;
             this.previousAction[2] = true;
             const bonus = 2 ** (elementBonus(this, this.actions.flashbang) - elementBonus(target[0], this.actions.flashbang));
-            const statDecrease = [Math.floor(-50 * bonus + Number.EPSILON), Math.floor(-30 * bonus + Number.EPSILON)];
+            const statDecrease = [Math.round(-50 * bonus), Math.round(-30 * bonus)];
             const will = resistDebuff(this, target);
             switch (true) {
                 case will[0] > 93 - (31 * bonus):
@@ -110,7 +110,7 @@ export const Righty001 = new Unit("Righty_001", [2400, 160, 50, 250, 120, 250, 6
                         function() {
                             this.vars.target.stun++;
                             if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
-                            if (this.vars.targets[0].stun) {
+                            if (this.vars.target.stun) {
                                 this.vars.modlist = modifiers.filter( m => m.vars.caster === this.vars.target && m.vars.focus === true);
                                 for (const mod of this.vars.modlist) {
                                     modifiers.push(mod);
@@ -136,7 +136,7 @@ export const Righty001 = new Unit("Righty_001", [2400, 160, 50, 250, 120, 250, 6
                                     }
                                 }
                             } else if (!this.vars.cancel && !this.vars.applied) {
-                                this.vars.targets[0].stun++;
+                                this.vars.target.stun++;
                                 this.vars.applied = true;
                                 if (eventState.stun.length) {handleEvent('stun', { effect: this, unit: this.vars.target, stun: true }) }
                                 if (this.vars.target.stun) {
@@ -160,7 +160,7 @@ export const Righty001 = new Unit("Righty_001", [2400, 160, 50, 250, 120, 250, 6
                                 if (this.vars.applied) { resetStat(this.vars.target, this.vars.stats, this.vars.values, false) }
                                 const bonus = 2 ** (elementBonus(this, this.actions.flashbang) - elementBonus(target[0], this.actions.flashbang));
                                 this.vars.target = unit;
-                                this.vars.values = [Math.floor(-50 * bonus + Number.EPSILON), Math.floor(-30 * bonus + Number.EPSILON)];
+                                this.vars.values = [Math.round(-50 * bonus), Math.round(-30 * bonus)];
                                 if (this.vars.applied) { resetStat(unit, this.vars.stats, this.vars.values) }
                             }
                         }
@@ -195,6 +195,7 @@ export const Righty001 = new Unit("Righty_001", [2400, 160, 50, 250, 120, 250, 6
             const statIncrease = [100, 22, 5, 10];
             const statDecrease = [-50, -50, -25];
             this.previousAction[0] = this.previousAction[2] = true;
+            logAction(`${this.name} uses an adrenaline pack!`, "buff");
             new Modifier("Adrenaline Pack", "Healing and resource regen and additional stats",
                 { caster: this, target: this, duration: 5, attributes: ["physical"], elements: ["anomaly/synthetic", "independence/loneliness", "ingenuity/insanity"], buffs: ["presence", "attack", "evasion", "speed"], buffValues: statIncrease, debuffs: ["accuracy", "focus", "resist"], debuffValues: statDecrease, listeners: {turnEnd: true}, cancel: false, applied: true, focus: false },
                 function() { resetStat(this.vars.target, [ ...this.vars.buffs, ...this.vars.debuffs], [...this.vars.buffValues, ...this.vars.debuffValues]) },

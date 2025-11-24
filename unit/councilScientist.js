@@ -74,13 +74,13 @@ export const CouncilScientist = new Unit("Science Council Member", [1000, 57, 24
         name: "Backup Power [stamina]",
         properties: ["physical", "stamina", "harmonic/change", "anomaly/synthetic", "resource"],
         cost: { stamina: 20 },
-        description: `Costs 20 stamina\nRecovers a lot of energy (${Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)})`,
+        description: `Costs 20 stamina\nRecovers a lot of energy (${Math.round(this.resource.energyRegen * 3.5)})`,
         points: 60,
         code: () => {
             this.previousAction[0] = true;
             this.resource.stamina -= 20;
-            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
-            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON));
+            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.round(this.resource.energyRegen * 3.5)] }) }
+            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.round(this.resource.energyRegen * 3.5));
             logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };

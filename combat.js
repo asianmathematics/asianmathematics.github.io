@@ -364,9 +364,9 @@ function cloneUnit(unit) {
 
 function regenerateResources(unit) {
     if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: regenerateResources, unit, resource: [] }) }
-    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.floor(unit.resource.stamina + unit.resource.staminaRegen + Number.EPSILON)) }
-    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.floor(unit.resource.mana + unit.resource.manaRegen + Number.EPSILON)) }
-    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.floor(unit.resource.energy + unit.resource.energyRegen + Number.EPSILON)) }
+    if (!unit.previousAction[0]) { unit.resource.stamina = Math.min(unit.base.resource.stamina, Math.round(unit.resource.stamina + unit.resource.staminaRegen)) }
+    if (unit.base.resource.mana && !unit.previousAction[1]) { unit.resource.mana = Math.min(unit.base.resource.mana, Math.round(unit.resource.mana + unit.resource.manaRegen)) }
+    if (unit.base.resource.energy && !unit.previousAction[2]) { unit.resource.energy = Math.min(unit.base.resource.energy, Math.round(unit.resource.energy + unit.resource.energyRegen)) }
     unit.previousAction = [false, false, false];
 }
 
@@ -374,13 +374,13 @@ export function advanceWave(x = 0) {
     if (x) { wave = x }
     let turnId = allUnits[currentTurn].name;
     if (wave < 3) {
-        const re = allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player"));
-        for (const mod of modifiers) { if (re.includes(mod.vars.caster)) { removeModifier(mod) } }
+        allUnits.splice(0, allUnits.length, ...allUnits.filter(unit => unit.team === "player"));
+        for (const mod of modifiers) { if (!allUnits.includes(mod.vars.caster)) { removeModifier(mod) } }
     }
         let i = allUnits.length;
     switch (wave) {
         case 2:
-            for (const e of waveCalc(unitFilter("player", ""), 2)) { createUnit(e, 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 1.5)) { createUnit(e, 'enemy') }
             break;
         case 1:
             for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(e, 'enemy') }
@@ -390,19 +390,19 @@ export function advanceWave(x = 0) {
     }
     for (const unit of allUnits.slice(i).filter(u => u.passivesInit)) { for (const pass in unit.passives) { unit.passives[pass].code() } }
     currentTurn = allUnits.findIndex(unit => unit.name === turnId);
-    logAction(`Wave ${++wave}!`, "turn");
+    logAction(`<strong>Wave ${++wave}!</strong>`, "turn");
     if (eventState.waveChange.length) { handleEvent('waveChange', { wave }) }
     updateBattleDisplay();
 }
 
 function waveCalc(units, mult) {
-    const total = units.reduce((sum, u) => sum + 2*(+u.description[0]+1)*(1.5**(+u.description[0]-3)), 0) * mult;
+    const total = units.reduce((sum, u) => sum + (2.25 ** (+u.description[0]-1)), 0) * mult;
     let enemyPoints;
-    if (total >= 200) { enemyPoints = new Map([ [Dreamer, 15], [mysticEnemy, 15], [technoEnemy, 15], [ChaosAgent, 15], [magitechEnemy, 27] ]) }
+    if (total >= 100) { enemyPoints = new Map([ [Dreamer, 729/64], [mysticEnemy, 729/64], [technoEnemy, 729/64], [ChaosAgent, 729/64], [magitechEnemy, 6561/256] ]) }
     else {
-        enemyPoints = new Map([ [Experiment, 4], [Reject, 4], [CouncilMagician, 8], [CouncilScientist, 8], [Revolutionary, 8], [enemy, 8], [ArtificialSolider, 8], [Dreamer, 15], [mysticEnemy, 15], [technoEnemy, 15], [ChaosAgent, 15], [magitechEnemy, 27] ]);
-        if (!units.some(u => u.description.includes("5 star")) && wave < 3) { enemyPoints.delete(magitechEnemy) }
-        if (total >= 125) {
+        enemyPoints = new Map([ [Experiment, 9/4], [Reject, 9/4], [CouncilMagician, 81/16], [CouncilScientist, 81/16], [Revolutionary, 81/16], [enemy, 81/16], [ArtificialSolider, 81/16], [Dreamer, 729/64], [mysticEnemy, 729/64], [technoEnemy, 729/64], [ChaosAgent, 729/64], [magitechEnemy, 6561/256] ]);
+        if (!units.some(u => +u.description[0] === 5) && wave < 3) { enemyPoints.delete(magitechEnemy) }
+        if (total >= 60) {
             enemyPoints.delete(Experiment);
             enemyPoints.delete(Reject);
         }

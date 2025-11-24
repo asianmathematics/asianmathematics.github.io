@@ -166,18 +166,18 @@ export const Dark = new Unit("Dark", [2400, 160, 60, 200, 125, 170, 105, 270, 24
         code: () => {
             const darkBoost = [.2, .3, .15];
             const otherBoost = [.25, .25, .1];
-            const selfBoost = [Math.floor(.1 * this.base.focus + Number.EPSILON), Math.floor(.1 * this.base.resist + Number.EPSILON), Math.floor(.5 * this.base.presence + Number.EPSILON)];
-            const penalty = [-Math.floor(.07 * this.base.accuracy + Number.EPSILON), -Math.floor(.2 * this.base.speed + Number.EPSILON)];
+            const selfBoost = [Math.round(.1 * this.base.focus), Math.round(.1 * this.base.resist), Math.round(.5 * this.base.presence)];
+            const penalty = [-Math.round(.07 * this.base.accuracy), -Math.round(.2 * this.base.speed)];
             new Modifier("Avatar of Loneliness", "Gives strong buffs to other Independence/Loneliness units, self penalty when others present/alive, self boost otherwise",
                 { caster: this, targets: unitFilter(this.team, "").filter(unit => unit.elements.includes("independence/loneliness") && unit !== this), elements: ["radiance/purity", "independence/loneliness"], darkStats: ["attack", "accuracy", "focus"], darkValues: darkBoost, otherStats: ["defense", "evasion", "resist"], otherValues: otherBoost, boostStats: ["focus", "resist", "presence"], boostValues: selfBoost, penaltyStats: ["accuracy", "speed"], penaltyValues: penalty, bonusArray: [], valueArray: [], listeners: { unitChange: true, positionChange: true, turnEnd: false }, self: false, cancel: false, applied: true, focus: true, passive: true},
                 function() {
                     for (const unit of this.vars.targets) {
                         this.vars.bonusArray.push(2 ** elementBonus(unit, this));
                         if (unit.name.includes("Dandelion")) {
-                            this.vars.valueArray.push(this.vars.darkStats.map((val, i) => Math.floor(this.vars.darkValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            this.vars.valueArray.push(this.vars.darkStats.map((val, i) => Math.round(this.vars.darkValues[i] * unit.base[val] * this.vars.bonusArray.at(-1))));
                             resetStat(unit, this.vars.darkStats, this.vars.valueArray.at(-1));
                         } else {
-                            this.vars.valueArray.push(this.vars.otherStats.map((val, i) => Math.floor(this.vars.otherValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            this.vars.valueArray.push(this.vars.otherStats.map((val, i) => Math.round(this.vars.otherValues[i] * unit.base[val] * this.vars.bonusArray.at(-1))));
                             resetStat(unit, this.vars.otherStats, this.vars.valueArray.at(-1));
                         }
                     }
@@ -207,7 +207,7 @@ export const Dark = new Unit("Dark", [2400, 160, 60, 200, 125, 170, 105, 270, 24
                         } else {
                             const index = this.vars.targets.indexOf(context.unit);
                             if (this.vars.applied) { resetStat(context.unit, this.vars.otherStats, this.vars.valueArray[index], false) }
-                            this.vars.valueArray[index] = this.vars.darkStats.map((val, i) => Math.floor(this.vars.darkValues[i] * context.unit.base[val] * this.vars.bonusArray[index] + Number.EPSILON));
+                            this.vars.valueArray[index] = this.vars.darkStats.map((val, i) => Math.round(this.vars.darkValues[i] * context.unit.base[val] * this.vars.bonusArray[index]));
                             if (this.vars.applied) { resetStat(context.unit, this.vars.otherStats, this.vars.valueArray[index]) }
                             this.vars.listeners.turnEnd = false;
                             eventState.turnEnd.splice(eventState.turnEnd.indexOf(this), 1);
@@ -237,10 +237,10 @@ export const Dark = new Unit("Dark", [2400, 160, 60, 200, 125, 170, 105, 270, 24
                     for (const unit of add) {
                         this.vars.bonusArray.push(2 ** elementBonus(unit, this));
                         if (unit.name.includes("Dandelion")) {
-                            this.vars.valueArray.push(this.vars.darkStats.map((val, i) => Math.floor(this.vars.darkValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            this.vars.valueArray.push(this.vars.darkStats.map((val, i) => Math.round(this.vars.darkValues[i] * unit.base[val] * this.vars.bonusArray.at(-1))));
                             resetStat(unit, this.vars.darkStats, this.vars.valueArray.at(-1));
                         } else {
-                            this.vars.valueArray.push(this.vars.otherStats.map((val, i) => Math.floor(this.vars.otherValues[i] * unit.base[val] * this.vars.bonusArray.at(-1) + Number.EPSILON)));
+                            this.vars.valueArray.push(this.vars.otherStats.map((val, i) => Math.round(this.vars.otherValues[i] * unit.base[val] * this.vars.bonusArray.at(-1))));
                             resetStat(unit, this.vars.otherStats, this.vars.valueArray.at(-1));
                         }
                     }

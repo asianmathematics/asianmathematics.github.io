@@ -30,21 +30,21 @@ export const Paragon = new Unit("Paragon", [3100, 110, 110, 200, 225, 250, 60, 1
         name: "Healing Pills [physical, energy]",
         properties: ["physical", "techno", "energy", "radiance/purity", "anomaly/synthetic", "nature/life", "heal", "multitarget"],
         cost: { energy: 25 },
-        description: "Cost 25 energy\nHeals up to 3 allies moderately (~10% max HP), doesn&#39;t heal mystic units",
+        description: "Cost 25 energy\nHeals up to 3 allies moderately (~10% max HP), doesn&#39;t heal most mystic units",
         points: 60,
         target: () => {
             if (this.resource.energy < 25) {
                 showMessage("Not enough energy!", "error", "selection");
                 return;
             }
-            const healable = unitFilter("player", "").filter(u => !(u.base.resource.mana && !u.name.includes("Idol")));
-            this.team === "player" ? selectTarget(this.actions.healingPills, () => { playerTurn(this) }, [3, false, healable]) : this.actions.healingPills.code(randTarget(unitFilter("enemy", "").filter(u => !(u.base.resource.mana && !u.name.includes("Idol")) && u.hp < u.base.hp), 3));
+            const healable = unitFilter("player", "").filter(u => !(u.base.resource.mana && !["Idol", "Dandelion", "Dark"].includes(u.name)));
+            this.team === "player" ? selectTarget(this.actions.healingPills, () => { playerTurn(this) }, [3, false, healable]) : this.actions.healingPills.code(randTarget(unitFilter("enemy", "").filter(u => !(u.base.resource.mana && !["Idol", "Dandelion", "Dark"].includes(u.name)) && u.hp < u.base.hp), 3));
         },
         code: (targets) => {
             if (targets.length) {
                 this.resource.energy -= 25;
                 this.previousAction[0] = this.previousAction[2] = true;
-                if (eventState.resourceChange.flag) { handleEvent('resourceChange', { effect: this.actions.healingPills, units: targets, resource: ['hp'], value: targets.map(u => u.resource.healFactor) }) }
+                if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.healingPills, units: targets, resource: ['hp'], value: targets.map(u => u.resource.healFactor) }) }
                 for (const unit of targets) {
                     if (unit.hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit}) }
                     unit.hp = Math.min(unit.base.hp, unit.hp + unit.resource.healFactor);
@@ -85,7 +85,7 @@ export const Paragon = new Unit("Paragon", [3100, 110, 110, 200, 225, 250, 60, 1
                         target[0].resource.mana = 0;
                         target[0].previousAction[1] = true;
                         for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && ((m.vars.caster === target[0] && m.vars.focus) || m.vars?.target === target[0]))) { removeModifier(mod) }
-                        for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && m.vars?.targets?.includes(target[0]))) { mod.changetarget(target) }
+                        for (const mod of modifiers.filter(m => m?.attributes?.includes("mystic") && m.vars?.targets?.includes(target[0]))) { mod.changeTarget(target) }
                         window.updateModifiers();
                         logAction(`${this.name} disables ${target[0].name}'s magic!`, "action");
                     } else { logAction(`${target[0].name} resists disable magic`, "miss") }
@@ -101,7 +101,7 @@ export const Paragon = new Unit("Paragon", [3100, 110, 110, 200, 225, 250, 60, 1
         name: "Healing Drone [energy]",
         properties: ["techno", "energy", "radiance/purity", "anomaly/synthetic", "nature/life", "heal"],
         cost: { energy: 35 },
-        description: `Costs 35 energy\nModerately heals (~10% max HP) lowest hp ally for 4 turns, doesn&#39;t heal mystic units.`,
+        description: `Costs 35 energy\nModerately heals (~10% max HP) lowest hp ally for 4 turns, doesn&#39;t heal most mystic units.`,
         points: 60,
         code: () => {
             if (this.resource.energy < 35) {
@@ -112,7 +112,7 @@ export const Paragon = new Unit("Paragon", [3100, 110, 110, 200, 225, 250, 60, 1
             this.previousAction[2] = true;
             logAction(`${this.name} activates the healing drone!`, "action");
             new Modifier("Healing Drone", "Heals the lowest hp ally",
-                { caster: this, targets: unitFilter(this.team, "").filter(u => !(u.base.resource.mana && !u.name.includes("Idol"))), duration: 3, attributes: ["techno"], elements: ["radiance/purity", "anomaly/synthetic", "nature/life"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
+                { caster: this, targets: unitFilter(this.team, "").filter(u => !(u.base.resource.mana && !["Idol", "Dandelion", "Dark"].includes(u.name))), duration: 3, attributes: ["techno"], elements: ["radiance/purity", "anomaly/synthetic", "nature/life"], stats: ["hp"], listeners: {turnStart: true}, cancel: false, applied: true, focus: false },
                 function() {
                     const heal = this.vars.targets.filter(u => u.hp < u.base.hp).reduce((min, unit) => { if (!min || unit.hp < min.hp) { return unit } return min }, null);
                     if (heal) {
@@ -149,13 +149,13 @@ export const Paragon = new Unit("Paragon", [3100, 110, 110, 200, 225, 250, 60, 1
         name: "Backup Power [stamina]",
         properties: ["physical", "stamina", "harmonic/change", "anomaly/synthetic", "resource"],
         cost: { stamina: 20 },
-        description: `Costs 20 stamina\nRecovers a lot of energy (${Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)})`,
+        description: `Costs 20 stamina\nRecovers a lot of energy (${Math.round(this.resource.energyRegen * 3.5)})`,
         points: 60,
         code: () => {
             this.previousAction[0] = true;
             this.resource.stamina -= 20;
-            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON)] }) }
-            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.floor(this.resource.energyRegen * 3.5 + Number.EPSILON));
+            if (eventState.resourceChange.length) {handleEvent('resourceChange', { effect: this.actions.backupPower, unit: this, resource: ['energy'], value: [Math.round(this.resource.energyRegen * 3.5)] }) }
+            this.resource.energy = Math.min(this.base.resource.energy, this.resource.energy + Math.round(this.resource.energyRegen * 3.5));
             logAction(`${this.name} activates the backup power generation and recovers energy!`, "heal");
         }
     };

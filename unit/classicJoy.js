@@ -56,10 +56,10 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 135, 30, 160, 80, 1
             if (target.length) {
                 this.previousAction[2] = true;
                 const bonus = 2 ** elementBonus(target[0], this.actions.synthesizeMedicine);
-                if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.synthesizeMedicine, unit: target[0], resource: ['hp'], value: [Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON)] }) }
+                if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this.actions.synthesizeMedicine, unit: target[0], resource: ['hp'], value: [Math.round(bonus * .8 * target[0].resource.healFactor)] }) }
                 if (target[0].hp === 0 && eventState.unitChange.length) { handleEvent('unitChange', {type: 'revive', unit: target[0]}) }
-                target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON));
-                logAction(`${this.name} heals ${target[0].name}${this.team === "player" ? ` for ${Math.floor((bonus * .8 * target[0].resource.healFactor) + Number.EPSILON)} HP` : ''}!`, "heal");
+                target[0].hp = Math.min(target[0].base.hp, target[0].hp + Math.round(bonus * .8 * target[0].resource.healFactor));
+                logAction(`${this.name} heals ${target[0].name}${this.team === "player" ? ` for ${Math.round(bonus * .8 * target[0].resource.healFactor)} HP` : ''}!`, "heal");
             } else {
                 currentAction[currentAction.length - 1] = this.actions.fastReload;
                 this.actions.fastReload.code();
@@ -104,8 +104,8 @@ export const ClassicJoy = new Unit("Classical (Joy)", [1200, 135, 30, 160, 80, 1
                 function() {
                     const bonus = 1.5 ** elementBonus(this.vars.target, this, { "ingenuity/insanity": 2 });
                     if (bonus !== 1) {
-                        for (let i = 0; i < this.vars.buffValues.length; i++) { this.vars.buffValues[i] = Math.floor(this.vars.buffValues[i] * bonus + Number.EPSILON) }
-                        for (let i = 0; i < this.vars.debuffValues.length; i++) { this.vars.debuffValues[i] = Math.floor(this.vars.debuffValues[i] * bonus + Number.EPSILON) }
+                        for (let i = 0; i < this.vars.buffValues.length; i++) { this.vars.buffValues[i] = Math.round(this.vars.buffValues[i] * bonus) }
+                        for (let i = 0; i < this.vars.debuffValues.length; i++) { this.vars.debuffValues[i] = Math.round(this.vars.debuffValues[i] * bonus) }
                     }
                     resetStat(this.vars.target, this.vars.buffs, this.vars.buffValues);
                 },

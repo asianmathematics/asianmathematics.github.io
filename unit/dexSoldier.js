@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const DexSoldier = new Unit("DeX (Soldier)", [1900, 40, 50, 80, 27, 70, 65, 60, 190, "front", 190, 120, 16], ["harmonic/change", "inertia/cold", "radiance/purity"], function() {
+export const DexSoldier = new Unit("DeX (Soldier)", [1900, 40, 50, 85, 27, 80, 65, 60, 190, "front", 190, 120, 12], ["harmonic/change", "inertia/cold", "radiance/purity"], function() {
     this.actions.hammer = {
         name: "Hammer [physical]",
         properties: ["physical", "attack", "buff"],
@@ -49,28 +49,28 @@ export const DexSoldier = new Unit("DeX (Soldier)", [1900, 40, 50, 80, 27, 70, 6
     };
 
     this.actions.actionWeight = {
-        hammer: 0.35,
-        quake: 0.25,
-        determination: 0.2,
-        guard: 0.1
+        hammer: 0.7,
+        quake: 0.2,
+        guard: 0.05,
+        skip: 0.05,
     };
 }, function() {
     this.passives.determination = {
         name: "Determination [passive, stamina]",
         properties: ["physical", "stamina", "harmonic/change", "inertia/cold", "radiance/purity", "heal"],
         cost: { stamina: this.base.resource.stamina / 2 },
-        description: `Moderately heals (${Math.floor(0.8 * this.resource.healFactor + Number.EPSILON)} HP) at start of turn whenever stamina is at least half`,
+        description: `Moderately heals (${Math.round(0.8 * this.resource.healFactor)} HP) at start of turn whenever stamina is at least half`,
         points: 30,
         code: () => {
-            new Modifier("Determination", `Moderately heals${this.team === "player" ? ` (${Math.floor(0.8 * this.resource.healFactor + Number.EPSILON)} HP)` : ''} at start of turn whenever stamina is at least half`,
+            new Modifier("Determination", `Moderately heals${this.team === "player" ? ` (${Math.round(0.8 * this.resource.healFactor)} HP)` : ''} at start of turn whenever stamina is at least half`,
                 { caster: this, target: this, attributes: ["physical"], elements: ["harmonic/change", "inertia/cold", "radiance/purity"], stats: ["hp"], listeners: { turnStart: true, unitChange: false }, cancel: false, applied: true, focus: true, passive: true },
                 function() {},
                 function(context) {
                     if (this.vars.listeners.unitChange && context.unit === this.vars.caster && context.type === "revive") { this.cancel(false) }
                     else if (this.vars.applied && this.vars.target === context?.unit && 2 * this.vars.target.resource.stamina >= this.vars.target.base.resource.stamina) {
-                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON)] }) }
-                        this.vars.target.hp = Math.min(this.vars.target.hp + Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON), this.vars.caster.base.hp);
-                        logAction(`${this.vars.target.name} held onto hope and healed${this.vars.caster.team === "player" ? ` ${Math.floor(0.8 * this.vars.target.resource.healFactor + Number.EPSILON)} HP` : ''}!`, "heal");
+                        if (eventState.resourceChange.length) { handleEvent('resourceChange', { effect: this, unit: this.vars.target, resource: ['hp'], value: [Math.round(0.8 * this.vars.target.resource.healFactor)] }) }
+                        this.vars.target.hp = Math.min(this.vars.target.hp + Math.round(0.8 * this.vars.target.resource.healFactor), this.vars.caster.base.hp);
+                        logAction(`${this.vars.target.name} held onto hope and healed${this.vars.caster.team === "player" ? ` ${Math.round(0.8 * this.vars.target.resource.healFactor)} HP` : ''}!`, "heal");
                     }
                 },
                 function(cancel, temp) {

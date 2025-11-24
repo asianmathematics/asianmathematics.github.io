@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 100, 120, "back", 120, 75, 8, 200, 22], ["light/illusion", "knowledge/memory", "interia/cold", "independence/loneliness", "ingenuity/insanity"], function() {
+export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 100, 120, "back", 120, 75, 8, 200, 22], ["light/illusion", "knowledge/memory", "inertia/cold", "independence/loneliness", "ingenuity/insanity"], function() {
     this.actions.knifeSlash = {
         name: "Knife Slash [physical]",
         properties: ["physical", "attack"],
@@ -52,7 +52,7 @@ export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 1
 
     this.actions.dissociation = {
         name: "Dissociation [physical, mana]",
-        properties: ["physical", "mystic", "mana", "goner/entropy", "independence/lonliness", "ingenuity/insanity", "buff"],
+        properties: ["physical", "mystic", "mana", "goner/entropy", "independence/loneliness", "ingenuity/insanity", "buff"],
         cost: { mana: 40 },
         description: "Costs 40 mana\nIncreases evasion and resist, and decreases presence for 2 turns",
         points: 60,
@@ -153,7 +153,7 @@ export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 1
                                 if (this.vars.applied) {
                                     for (const unit of this.vars.targets) resetStat(unit, stats, values);
                                     resetStat(this.vars.caster, ["presence"], [15]);
-                                    for (const unit of allUnits.filter(u => u.elements.includes("inertia/cold"))) { unit.shield.push("harmonic/change", "radience/purity") }
+                                    for (const unit of allUnits.filter(u => u.elements.includes("inertia/cold"))) { unit.shield.push("harmonic/change", "radiance/purity") }
                                 }
                                 this.vars.effectVars = { stats, values, affectedUnits: this.vars.targets };
                                 break;
@@ -194,7 +194,7 @@ export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 1
                                 values = [300];
                                 if (this.vars.applied) {
                                     resetStat(this.vars.caster, stats, values);
-                                    for (const unit of allUnits.filter(u => u.elements.includes("harmonic/change"))) { unit.shield.push("goner/entropy", "inertia/change") }
+                                    for (const unit of allUnits.filter(u => u.elements.includes("harmonic/change"))) { unit.shield.push("goner/entropy", "inertia/cold") }
                                 }
                                 this.vars.effectVars = { stats, values };
                                 break;
@@ -337,7 +337,7 @@ export const Dreamer = new Unit("Dreamer", [1400, 120, 55, 125, 100, 175, 100, 1
                         }
                     } else if (context.defender === this.vars.caster) {
                         if (resistDebuff(this.vars.caster, [context.attacker]) > 100 * this.vars.effectVars.negate) {
-                            if (!context.original) { context.original = context.damageSingle }
+                            if (!context.original && context.original !== 0) { context.original = context.damageSingle }
                             context.nullify = (context.nullify || 0) + 1;
                             context.damageSingle = 0;
                         }
