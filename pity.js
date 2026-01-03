@@ -21,8 +21,8 @@ function setupPullListeners() {
         gacha(protoField, 10, 1);
     });
     document.getElementById('field100').addEventListener('click', () => {
-        totalCost += 110;
-        totalPity += 100;
+        totalCost += 100;
+        totalPity += 80;
         updateDisplays();
         gacha(protoField, 100, 15, 2);
     });
@@ -33,8 +33,8 @@ function setupPullListeners() {
         gacha(protoSquad, 1);
     });
     document.getElementById('squad10').addEventListener('click', () => {
-        totalCost += 440;
-        totalPity += 200;
+        totalCost += 400;
+        totalPity += 160;
         updateDisplays();
         gacha(protoSquad, 10, 0, 0, 1);
     });
