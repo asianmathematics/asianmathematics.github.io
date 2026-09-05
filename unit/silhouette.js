@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Silhouette = new Unit("Silhouette", [750, 67, 34, 100, 60, 110, 65, 90, 66, "mid", 75, 70, 7, 80, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
+export const Silhouette = new Unit("Silhouette", [360, 50, 66, 100, 100, 110, 110, 90, 66, "mid", 38, 70, 7, 80, 8], ["death/darkness", "anomaly/synthetic", "independence/loneliness"], function() {
     this.actions.shadowBlade = {
         name: "Shadow Blade [physical, mystic]",
         properties: ["physical", "mystic", "death/darkness", "attack"],
@@ -98,12 +98,11 @@ export const Silhouette = new Unit("Silhouette", [750, 67, 34, 100, 60, 110, 65,
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} teleports to the frontline.`, "info");
-                this.base.defense = 20;
-                this.base.accuracy = 110;
-                this.base.evasion = 34;
-                this.base.focus = 120;
-                this.base.resist = 33;
-                this.base.speed = 100;
+                this.base.accuracy = 130;
+                this.base.evasion = 70;
+                this.base.focus = 150;
+                this.base.resist = 90;
+                this.base.speed = 120;
                 this.actions.actionWeight = {
                     shadowBlade: 0.4,
                     meditate: 0,
@@ -114,11 +113,10 @@ export const Silhouette = new Unit("Silhouette", [750, 67, 34, 100, 60, 110, 65,
             } else {
                 this.position = "back";
                 logAction(`${this.name} teleports to the backline.`, "info");
-                this.base.defense = 34;
                 this.base.accuracy = 100;
-                this.base.evasion = 60;
+                this.base.evasion = 100;
                 this.base.focus = 110;
-                this.base.resist = 65;
+                this.base.resist = 110;
                 this.base.speed = 90;
                 this.actions.actionWeight = {
                     shadowBlade: 0,

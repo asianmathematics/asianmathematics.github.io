@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squad mode selector</title>
+    <link rel="stylesheet" href="combat.css">
+    <style></style>
+</head>
+<body>
+    <h1 style="font-size:84px;text-align:center;margin:6px">Squad Mode Selector</h1>
+
+    <div id="game-controls">
+        <button class="action-button" id="combatStart">Select Squad</button>
+    </div>
+    
+    <div id="unit-selection-panel" style="display:none;">
+        <h3>Select Your Team (max 6 units, 4 recommended)</h3>
+        <p>Enemy waves will be randomized and balanced based on party strength. There will be 3 waves of enemies.</p>
+        <div id="unit-roster" class="unit-roster">
+        </div>
+        <div id="selected-units" class="selected-units">
+            <h4>Selected Units (0/6)</h4>
+        </div>
+        <p>Click on a unit in the selected units to view or modify its skills.</p>
+        <button id="start-with-selected" class="action-button">Start Combat</button>
+    </div>
+
+    <div id="skill-selection-panel" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; border: 2px solid #555; padding: 20px; z-index: 100; width: 80%; max-width: 800px; color: white; border-radius: 8px;">
+        <h2 id="skill-unit-name" style="text-align: center; margin-top: 0;"></h2>
+        <p style="text-align: center; color: #aaa; font-size: 14px;">Select skills for this unit. Empty slots are allowed but not recommended.</p>
+        
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1; border: 1px solid #444; padding: 10px; border-radius: 4px; max-height: 400px; overflow-y: auto;">
+                <h3>Available Skills</h3>
+                <div id="skill-roster"></div>
+            </div>
+            <div style="flex: 1; border: 1px solid #444; padding: 10px; border-radius: 4px; max-height: 400px; overflow-y: auto;">
+                <h4 id="selected-skills-count">Selected Skills (0/0)</h4>
+                <div id="selected-skills-list"></div>
+                <button id="reset-defaults" style="margin-top: 10px; width: 100%; padding: 8px; background: #555; color: white; border: none; cursor: pointer; border-radius: 4px;">Reset to Defaults</button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: right;">
+            <button id="cancel-skills" style="padding: 10px 20px; margin-right: 10px; background: #600; color: white; border: none; cursor: pointer; border-radius: 4px;">Cancel</button>
+            <button id="confirm-skills" style="padding: 10px 20px; background: #060; color: white; border: none; cursor: pointer; border-radius: 4px;">Done</button>
+        </div>
+    </div>
+
+    <div class="info-display"></div>
+    
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', function() {
+            import('./squadselect.js').then(module => {
+                window.startCombat = module.startCombat;
+                const startButton = document.getElementById('combatStart');
+                if (startButton) { startButton.addEventListener('click', function() { window.startCombat() }) }
+            });
+        });
+    </script>
+</body>

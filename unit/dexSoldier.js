@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const DexSoldier = new Unit("DeX (Soldier)", [1900, 40, 50, 85, 27, 80, 65, 60, 190, "front", 190, 120, 12], ["harmonic/change", "inertia/cold", "radiance/purity"], function() {
+export const DexSoldier = new Unit("DeX (Soldier)", [900, 42, 90, 80, 77, 66, 91, 50, 150, "front", 90, 120, 12], ["harmonic/change", "inertia/cold", "radiance/purity"], function() {
     this.actions.hammer = {
         name: "Hammer [physical]",
         properties: ["physical", "attack", "buff"],

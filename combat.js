@@ -22,7 +22,7 @@ import { Dreamer } from './unit/dreamer.js';
 import { Experiment } from './unit/experiment.js';
 import { Reject } from './unit/reject.js';
 import { Revolutionary } from './unit/revolutionary.js';
-import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from './combatDictionary.js';
+import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from './combatDictionary.js';
 let turnCounter = 1;
 let currentTurn = 0;
 let wave = 1;
@@ -120,7 +120,11 @@ function skillSelection(unit) {
 function startCombatWithSelected() {
     document.getElementById('unit-selection-panel').style.display = 'none';
     selectedUnits.forEach(unit => { createUnit(unit, 'player') });
-    if (wave > 0) { for (const e of waveCalc(unitFilter("player", ""), .5)) { createUnit(e, 'enemy') } }
+    if (wave > 0) { for (const e of waveCalc(unitFilter("player", ""), .5)) { 
+        const newEnemy = createUnit(e, 'enemy');
+        newEnemy.learnedSkills = assignEnemySkills(e);
+        newEnemy.skills = { equipped: [...newEnemy.learnedSkills] };
+    } }
     for (const unit of allUnits.filter(u => u.passivesInit)) { for (const pass in unit.passives) { unit.passives[pass].code() } }
     updateBattleDisplay();
     combatTick();
@@ -317,7 +321,7 @@ function updateBattleDisplay() {
         const newEnemyTeam = document.querySelector('.enemy-team');
         if (newPlayerTeam && playerScroll > 0) { newPlayerTeam.scrollTop = playerScroll }
         if (newEnemyTeam && enemyScroll > 0) { newEnemyTeam.scrollTop = enemyScroll }
-    }, 10);
+    }, 5);
 }
 
 export function createUnit(unit, team) {
@@ -370,6 +374,55 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
+// Helper to resolve default skills for enemies
+function resolveEnemyDefaults(template, defaultsArray) {
+    return defaultsArray.map(def => {
+        const categorySkills = template.skills[def.category];
+        if (!categorySkills) return null;
+        const skillsArray = Array.isArray(categorySkills) ? categorySkills : [categorySkills];
+        return skillsArray.find(s => s.name === def.name);
+    }).filter(Boolean);
+}
+
+// 50% Default / 50% Randomized Skill Assignment
+function assignEnemySkills(enemyTemplate) {
+    // 50% chance to use default skills if they exist
+    if (enemyTemplate.defaultSkills && Array.isArray(enemyTemplate.defaultSkills) && Math.random() < 0.5) {
+        return resolveEnemyDefaults(enemyTemplate, enemyTemplate.defaultSkills);
+    }
+    
+    // 50% chance to randomize skills
+    const maxSlots = enemyTemplate.skillSlots || 5;
+    const allSkills = [];
+    
+    // Gather all skills with their categories
+    for (const cat of ['special', 'basic', 'secondary', 'passive', 'augment']) {
+        const skills = enemyTemplate.skills[cat];
+        if (skills) {
+            const arr = Array.isArray(skills) ? skills : [skills];
+            arr.forEach(s => allSkills.push({ skill: s, category: cat }));
+        }
+    }
+    
+    // Shuffle and pick, enforcing no duplicate categories/names
+    const shuffled = allSkills.sort(() => 0.5 - Math.random());
+    const selected = [];
+    const usedCategories = new Set();
+    const usedNames = new Set();
+    
+    for (const item of shuffled) {
+        if (selected.length >= maxSlots) break;
+        if (usedCategories.has(item.category)) continue;
+        if (usedNames.has(item.skill.name)) continue;
+        
+        selected.push(item.skill);
+        usedCategories.add(item.category);
+        usedNames.add(item.skill.name);
+    }
+    
+    return selected;
+}
+
 export function advanceWave(x = 0) {
     if (x) { wave = x }
     let turnId = allUnits[currentTurn].name;
@@ -380,10 +433,18 @@ export function advanceWave(x = 0) {
         let i = allUnits.length;
     switch (wave) {
         case 2:
-            for (const e of waveCalc(unitFilter("player", ""), 1.5)) { createUnit(e, 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 1.5)) { 
+                const newEnemy = createUnit(e, 'enemy');
+                newEnemy.learnedSkills = assignEnemySkills(e);
+                newEnemy.skills = { equipped: [...newEnemy.learnedSkills] };
+            }
             break;
         case 1:
-            for (const e of waveCalc(unitFilter("player", ""), 1)) { createUnit(e, 'enemy') }
+            for (const e of waveCalc(unitFilter("player", ""), 1)) { 
+                const newEnemy = createUnit(e, 'enemy');
+                newEnemy.learnedSkills = assignEnemySkills(e);
+                newEnemy.skills = { equipped: [...newEnemy.learnedSkills] };
+            }
             break;
         default:
             return true;

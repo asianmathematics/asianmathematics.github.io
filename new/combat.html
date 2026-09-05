@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squad Proto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="combat.css">
+</head>
+<body>
+    <h1 style="text-align:center; letter-spacing:4px; margin-bottom:10px;">SQUAD PROTO</h1>
+    <div id="selection" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 20px; border: 2px solid #00ff88; z-index: 1000; min-width: 300px; color: white; display:none;"></div>
+    <div id="message-container" class="message-container"></div>
+    <div class="unit-inspector-column">
+        <div class="inspector-tabs">
+            <button class="tab-button active" data-tab="units">Units</button>
+            <button class="tab-button" data-tab="modifiers">Modifiers</button>
+        </div>
+        <div class="tab-content active" id="tab-units">
+            <div id="inspector-unit-list">
+                <p style="color:#888; text-align:center; padding:20px;">Select a unit to inspect...</p>
+            </div>
+        </div>
+        <div class="tab-content" id="tab-modifiers">
+            <div id="modifiers-content">
+                <h3 style="border-bottom:2px solid #ff0055; padding-bottom:5px; margin-bottom:10px;">Active Modifiers</h3>
+                <p style="color:#888;">No active modifiers</p>
+            </div>
+        </div>
+    </div>
+    <div class="game-layout">
+        <div class="battle-container">
+            <h2>BATTLEFIELD</h2>
+            <div class="grid-zone player-backline">
+                <h3>PLAYER BACKLINE</h3>
+                <div class="unit-row" id="player-backline-row"></div>
+            </div>
+            <div class="grid-zone frontline-mixed">
+                <h3>FRONTLINE</h3>
+                <div class="unit-row" id="frontline-row"></div>
+            </div>
+            <div class="grid-zone enemy-backline">
+                <h3>ENEMY BACKLINE</h3>
+                <div class="unit-row" id="enemy-backline-row"></div>
+            </div>
+        </div>
+         <div id="action-log-container">
+            <h3 style="margin-bottom:5px;">COMBAT LOG</h3>
+            <div id="action-log"></div>
+        </div>
+    </div>
+    <div id="selection" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; min-width:400px; max-width:600px;"></div>
+    
+    <!-- Squad Selection Panel (pre-battle setup) 
+    <div id="unit-selection-panel" style="display:none;">
+        <div class="info-display">
+            <div class="left-column" id="info-left">
+                <h2>Select a unit</h2>
+                <p>Click a unit card on the right to view their stats and skills.</p>
+            </div>
+            <div class="right-column" id="info-right"></div>
+        </div>
+        
+        <h3>Select Your Team (max 6 units, 4 recommended)</h3>
+        <p style="color:#aaa; font-size:14px;">Enemy waves will be randomized and balanced based on party strength. There will be 3 waves of enemies.</p>
+        
+        <div class="unit-roster" id="unit-roster"></div>
+        
+        <h4>Selected Units (<span id="selected-count">0</span>/6)</h4>
+        <div class="selected-units" id="selected-units"></div>
+        
+        <div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
+            <button id="skill-select" class="action-button">Customize Skills</button>
+            <button id="start-with-selected" class="action-button" style="border-color:#00ff88;">Start Combat</button>
+        </div>
+    </div>
+    
+    !-- Skill Selection Modal --
+    <div id="skill-selection-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#0a0a0a; border:2px solid #00ff88; padding:20px; z-index:600; width:80%; max-width:900px; color:#00ff88; box-shadow:0 0 30px rgba(0,255,136,0.4);">
+        <h2 id="skill-unit-name" style="text-align:center; margin-top:0;"></h2>
+        <p style="text-align:center; color:#aaa; font-size:14px;">Select skills for this unit. Empty slots allowed but not recommended.</p>
+        
+        <div style="display:flex; gap:20px;">
+            <div style="flex:1; border:1px solid #333; padding:10px; max-height:500px; overflow-y:auto;">
+                <h3>Available Skills</h3>
+                <div id="skill-roster"></div>
+            </div>
+            <div style="flex:1; border:1px solid #333; padding:10px; max-height:500px; overflow-y:auto;">
+                <h4 id="selected-skills-count">Selected Skills (0/0)</h4>
+                <div id="selected-skills-list"></div>
+                <button id="reset-defaults" style="margin-top:10px; width:100%; padding:8px; background:#1a1a1a; color:#00ff88; border:1px solid #00ff88; cursor:pointer; font-family:'Courier Prime',monospace;">Reset to Defaults</button>
+            </div>
+        </div>
+        
+        <div style="margin-top:20px; text-align:right;">
+            <button id="cancel-skills" style="padding:10px 20px; margin-right:10px; background:#1a1a1a; color:#ff0055; border:1px solid #ff0055; cursor:pointer; font-family:'Courier Prime',monospace;">Cancel</button>
+            <button id="confirm-skills" style="padding:10px 20px; background:#1a1a1a; color:#00ff88; border:1px solid #00ff88; cursor:pointer; font-family:'Courier Prime',monospace;">Done</button>
+        </div>
+    </div>-->
+    <div id="speed-controls" style="position: fixed; bottom: 20px; right: 20px; background: rgba(20, 20, 20, 0.95); padding: 8px 12px; border-radius: 8px; z-index: 1000; display: flex; gap: 8px; align-items: center; border: 1px solid #444; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">
+        <span style="color: #ccc; font-size: 12px; font-weight: bold;">SPEED:</span>
+        <button class="speed-btn" data-speed="0.25" style="padding: 4px 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 11px;">0.25x</button>
+        <button class="speed-btn" data-speed="0.5" style="padding: 4px 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 11px;">0.5x</button>
+        <button class="speed-btn active" data-speed="1" style="padding: 4px 8px; background: #060; color: #fff; border: 1px solid #0a0; border-radius: 4px; cursor: pointer; font-size: 11px;">1x</button>
+        <button class="speed-btn" data-speed="2" style="padding: 4px 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 11px;">2x</button>
+        <button class="speed-btn" data-speed="4" style="padding: 4px 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 11px;">4x</button>
+        <button class="speed-btn" data-speed="6" style="padding: 4px 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 11px;">6x</button>
+    </div>
+    <script type="module" src="combat.js"></script>
+</body>
+</html>

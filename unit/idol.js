@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Idol = new Unit("Idol", [800, 100, 30, 180, 52, 200, 50, 75, 300, "back", 100, 100, 10, 120, 12, 80, 8], ["light/illusion", "knowledge/memory", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
+export const Idol = new Unit("Idol", [600, 95, 90, 175, 120, 300, 100, 75, 300, "back", 60, 100, 10, 120, 12, 80, 8], ["light/illusion", "knowledge/memory", "harmonic/change", "radiance/purity", "anomaly/synthetic"], function() {
     this.actions.soothingMelody = {
         name: "Soothing Melody [stamina, mana, techno]",
         properties: ["physical", "stamina", "mystic", "mana", "techno", "light/illusion", "harmonic/change", "radiance/purity", "heal", "buff"],

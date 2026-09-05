@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Dandelion = new Unit("Dandelion", [1600, 120, 35, 160, 120, 140, 60, 130, 160, "front", 120, 70, 8, 110, 12], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
+export const Dandelion = new Unit("Dandelion", [800, 95, 50, 160, 210, 140, 120, 130, 160, "front", 60, 70, 8, 110, 12], ["death/darkness", "inertia/cold", "independence/loneliness"], function() {
     this.actions.spellAttack = {
         name: "Spell Attack [mystic]",
         properties: ["mystic", "attack"],

@@ -1,7 +1,7 @@
 import { Unit } from './unit.js';
 import { Modifier, handleEvent, removeModifier, basicModifier, setUnit, sleep, logAction, selectTarget, playerTurn, unitFilter, showMessage, attack, resistDebuff, resetStat, crit, damage, elementDamage, elementBonus, randTarget, enemyTurn, cleanupGlobalHandlers, allUnits, modifiers, currentUnit, currentAction, baseElements, elementCombo, eventState } from '../combatDictionary.js';
 
-export const Mannequin = new Unit("Mannequin", [900, 60, 15, 110, 35, 115, 40, 80, 50, "mid", 90, 70, 10, , , 100, 10], ["perfection/precision", "independence/loneliness", "passion/hatred"], function() {
+export const Mannequin = new Unit("Mannequin", [450, 52, 44, 120, 90, 130, 95, 100, 50, "mid", 45, 70, 10, , , 100, 10], ["perfection/precision", "independence/loneliness", "passion/hatred"], function() {
     this.actions.energyRifle = {
         name: "Energy Rifle [energy]",
         properties: ["techno", "energy", "radiance/purity", "attack"],
@@ -98,10 +98,11 @@ export const Mannequin = new Unit("Mannequin", [900, 60, 15, 110, 35, 115, 40, 8
             if (this.position === "back") {
                 this.position = "front";
                 logAction(`${this.name} moves to the frontline.`, "info");
-                this.base.evasion = 25;
-                this.base.resist = 30;
-                this.base.speed = 85;
-                this.base.presence = 60;
+                this.base.attack = 56;
+                this.base.evasion = 80;
+                this.base.resist = 85;
+                this.base.speed = 115;
+                this.base.presence = 75;
                 this.actions.actionWeight = {
                     energyRifle: 0.2,
                     dualWield: 0.4,
@@ -112,9 +113,10 @@ export const Mannequin = new Unit("Mannequin", [900, 60, 15, 110, 35, 115, 40, 8
             } else {
                 this.position = "back";
                 logAction(`${this.name} moves to the backline.`, "info");
-                this.base.evasion = 35;
-                this.base.resist = 40;
-                this.base.speed = 80;
+                this.base.attack = 52;
+                this.base.evasion = 90;
+                this.base.resist = 95;
+                this.base.speed = 100;
                 this.base.presence = 50;
                 this.actions.actionWeight = {
                     energyRifle: 0.35,
