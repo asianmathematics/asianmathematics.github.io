@@ -374,7 +374,7 @@ function resourceChange(unit, resources, add = true, drain = false) {
     const context = {unit, resources: actualResources, add, drain};
     if (eventState.resourceChange.length) handleEvent('resourceChange', context);
     for (const resource in context.resources) {
-        context.resources[resource] = (add ? 1 : -1)(context[resource]?.nil || context.all?.nil) ? 0 : (context.resources[resource] + (context[resource]?.bonus || 0) + (context.all?.bonus || 0))*(context[resource]?.mult || 1)*(context.all?.mult || 1)/(context[resource]?.div || 1)/(context.all?.div || 1) + (context[resource]?.flatBonus || 0) + (context.all?.flatBonus || 0);
+        context.resources[resource] = (add ? 1 : -1)*((context[resource]?.nil || context.all?.nil) ? 0 : (context.resources[resource] + (context[resource]?.bonus || 0) + (context.all?.bonus || 0))*(context[resource]?.mult || 1)*(context.all?.mult || 1)/(context[resource]?.div || 1)/(context.all?.div || 1) + (context[resource]?.flatBonus || 0) + (context.all?.flatBonus || 0));
         if (!drain && -context.resources[resource] > unit[resource]) return (currentAction.length === 1 && currentAction.at(-1)[1].team === 'player') ? logAction(`Not enough ${resource}!`, "warning") && false : false;
     }
     for (const resource in context.resources) unit[resource] = Math.ceil(Math.max(0, Math.min(unit[resource] + context.resources[resource], unit.base[resource])));
