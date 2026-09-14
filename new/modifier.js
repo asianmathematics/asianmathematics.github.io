@@ -153,10 +153,10 @@ function auraModifier(name, description, vari, mod, filter) {
     return new Modifier(name, description, vari,
         function() {},
         function(context) {
-            if (context.wave) this.changeTarget(this.vars.targets.filter(u => !filter(u) || !allUnits.includes(u)), allUnits.filter(u => filter(u) && !this.vars.targets.includes(u)));
+            if (context.wave) this.changeTarget(this.vars.targets.filter(u => !filter.call(this, u) || !allUnits.includes(u)), allUnits.filter(u => filter.call(this, u) && !this.vars.targets.includes(u)));
             else {
-                if (this.vars.targets.includes(context.unit)) { if (!allUnits.includes(context.unit) || !filter(context.unit)) this.changeTarget([context.unit]); }
-                else if (filter(context.unit)) this.changeTarget([], [context.unit]);
+                if (this.vars.targets.includes(context.unit)) { if (!allUnits.includes(context.unit) || !filter.call(this, context.unit)) this.changeTarget([context.unit]); }
+                else if (filter.call(this, context.unit)) this.changeTarget([], [context.unit]);
             }
         },
         function(cancel, temp) {
@@ -191,7 +191,7 @@ function stunModifier(name, vari, dur = 'target') {
                     mod.cancel();
                     currentAction.pop();
                 }
-                logAction(`${this.vars.target} becomes stunned!`, "debuff");
+                logAction(`${this.vars.target.name} becomes stunned!`, "debuff");
             }
         },
         function(context) {
