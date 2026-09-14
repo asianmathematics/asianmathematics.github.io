@@ -1,9 +1,9 @@
 import { allUnits, createUnit } from "./unit/unit.js";
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
 const elements = ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"];
 
 function regenerateResources(unit) {
-    const regen = {}
+    const regen = {};
     if (!unit.previousAction[0]) regen.stamina = unit.staminaRegen;
     if (unit.base.mana && !unit.previousAction[1]) regen.mana = unit.manaRegen;
     if (unit.base.energy && !unit.previousAction[2]) regen.energy = unit.energyRegen;
@@ -11,7 +11,7 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
-function specialTarget(unit, list, count = 1, max = true) { unit.team === "player" ? selectTarget(unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)) }
+function specialTarget(unit, list, count = 1, max = true) { unit.team === "player" ? selectTarget(unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)); }
 
 function enemyTurn(unit) {
     if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.2) return executeEnemyAction(unit, unit.skills.special);
@@ -19,7 +19,8 @@ function enemyTurn(unit) {
         if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: 'skip' });
         logAction(`${unit.name} is resting!`, 'info');
         if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
-        return setTimeout(window.combatTick, 1000 / (window.combatSpeedMultiplier || 1));
+        setTimeout(window.combatTick, 1000 / (window.combatSpeedMultiplier || 1));
+        return;
     }
     const availableActions = [];
     if (unit.skills.basic && unit.stamina >= (unit.skills.basic.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.basic.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.basic.cost?.energy || 0)) availableActions.push(unit.skills.basic);
@@ -68,7 +69,7 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
             }
         }
     }
-    let selectedTargets = [];
+    const selectedTargets = [];
     const availableUnits = [...unitList];
     for (let i = 0; i < count && availableUnits.length > 0; i++) {
         let selectedUnit;
@@ -98,7 +99,7 @@ function selectTarget(action, target, targetType = 'unit') {
     const unit = currentAction.at(-1)[1];
     let maxSelections = target[0];
     if (target[0] === -1 || target[0] > target[2].length) maxSelections = target[2].length;
-    let selectionTitle = `<h2 style="text-align:center;">Action: ${action.name}</h2>`;
+    const selectionTitle = `<h2 style="text-align:center;">Action: ${action.name}</h2>`;
     let selectionForm = `<form id='targetSelection' onsubmit='submitTargetSelection(event)'>`;
     if (targetType === 'hex') selectionForm += `<div class="hex-selection-container">`;
     for (const obj of target[2]) {
@@ -171,7 +172,7 @@ function selectTarget(action, target, targetType = 'unit') {
         document.getElementById("selection").innerHTML = "";
         document.getElementById('selection').style.display = 'none';
         cleanupGlobalHandlers();
-        if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }) }
+        if (eventState.turnEnd.length) { handleEvent('turnEnd', { unit }); }
         unit.specialReady = false;
     }
 
@@ -184,6 +185,13 @@ function selectTarget(action, target, targetType = 'unit') {
     window.checkTargetSelection = checkTargetSelection;
     window.submitTargetSelection = submitTargetSelection;
     window.exitTargetSelection = exitTargetSelection;
+}
+
+function cleanupGlobalHandlers() {
+  delete window.checkTargetSelection;
+  delete window.submitTargetSelection;
+  delete window.exitTargetSelection;
+  delete window.handleActionClick;
 }
 
 function showMessage(message, type = 'info', elementId = 'message-container', duration = 3000) {
@@ -202,8 +210,6 @@ function showMessage(message, type = 'info', elementId = 'message-container', du
     return messageElement;
 }
 
-function cleanupGlobalHandlers() { window.checkTargetSelection = window.submitTargetSelection = window.exitTargetSelection = window.handleActionClick = null }
-
 function attack(attacker, defenders, num = 1, calcMods = {}) {
     if (eventState.attackStart.length) handleEvent('attackStart', {attacker, defenders, num, calcMods});
     const attackMods = getModdedStats(attacker, calcMods.attacker);
@@ -212,7 +218,7 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
         const defendMods = getModdedStats(defenders[i], calcMods.all, calcMods.defenders?.[i]);
         const hit = [];
         for (let j = 0; j < num; j++) {
-            let rolls = [];
+            const rolls = [];
             for (let r = 0; r <= Math.abs((calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0)); r++) rolls.push(Math.floor(Math.random() * 100 + 1));
             const roll = (calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0) < 0 ? Math.min(...rolls) : Math.max(...rolls);
             let hitSingle = roll === 1 ? 0 : roll - 50 * (roll === 100 ? .5*(((calcMods.max ??= [])[i] ??= [])[j] = true) : 1) * (.75 + (defendMods.evasion-attackMods.accuracy)/(attackMods.accuracy+defendMods.evasion));
@@ -284,7 +290,7 @@ function damage(attacker, defenders, critical, calcMods = {}) {
         }
         if (!dCheck) logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss");
     }
-    return output
+    return output;
 }
 
 function heal(healer, targets, amount, calcMods = {}) {
@@ -306,7 +312,7 @@ function heal(healer, targets, amount, calcMods = {}) {
 }
 
 function hpChange(unit, targets, values) {
-    let defenders = [], damages = [], heals = [];
+    const defenders = [], damages = [], heals = [];
     for (let i = targets.length - 1; i >= 0; i--) {
         if (values[i] < 0) {
             defenders.push(targets.splice(i, 1)[0]);
@@ -349,7 +355,7 @@ function resistDebuff(attacker, defenders, calcMods = {}) {
     const will = [];
     for (let i = 0; i < defenders.length; i++) {
         const defendMods = getModdedStats(defenders[i], calcMods.all, calcMods.defenders?.[i]);
-        let rolls = [];
+        const rolls = [];
         for (let r = 0; r <= Math.abs((calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0)); r++) rolls.push(Math.floor(Math.random() * 100 + 1));
         const roll = (calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0) < 0 ? Math.min(...rolls) : Math.max(...rolls);
         let resistSingle = roll === 1 || roll === 100 ? roll : roll + 50 * ((attackMods.presence + attackMods.focus - defendMods.presence - defendMods.resist) / (attackMods.presence + attackMods.focus + defendMods.presence + defendMods.resist));
@@ -368,8 +374,7 @@ function resourceChange(unit, resources, add = true, drain = false) {
     const context = {unit, resources: actualResources, add, drain};
     if (eventState.resourceChange.length) handleEvent('resourceChange', context);
     for (const resource in context.resources) {
-        let change = (context[resource]?.nil || context.all?.nil) ? 0 : (context.resources[resource] + (context[resource]?.bonus || 0) + (context.all?.bonus || 0))*(context[resource]?.mult || 1)*(context.all?.mult || 1)/(context[resource]?.div || 1)/(context.all?.div || 1) + (context[resource]?.flatBonus || 0) + (context.all?.flatBonus || 0);
-        context.resources[resource] = add ? change : -change;
+        context.resources[resource] = (add ? 1 : -1)(context[resource]?.nil || context.all?.nil) ? 0 : (context.resources[resource] + (context[resource]?.bonus || 0) + (context.all?.bonus || 0))*(context[resource]?.mult || 1)*(context.all?.mult || 1)/(context[resource]?.div || 1)/(context.all?.div || 1) + (context[resource]?.flatBonus || 0) + (context.all?.flatBonus || 0);
         if (!drain && -context.resources[resource] > unit[resource]) return (currentAction.length === 1 && currentAction.at(-1)[1].team === 'player') ? logAction(`Not enough ${resource}!`, "warning") && false : false;
     }
     for (const resource in context.resources) unit[resource] = Math.ceil(Math.max(0, Math.min(unit[resource] + context.resources[resource], unit.base[resource])));

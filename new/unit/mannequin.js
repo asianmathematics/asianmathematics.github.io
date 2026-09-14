@@ -1,10 +1,10 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const Mannequin = new Unit("Mannequin", [800, 45, 22, 140, 130, 150, 70, 145, 50, "mid", 120, 100, 10], 3, ["perfection/precision", "independence/loneliness", "passion/hatred"]);
 
-Mannequin.description = "3-star physical midline unit with high offensive stats and speed but low defense and crit/debuff resist. Has strong attacks with reload mechanics."
+Mannequin.description = "3-star physical midline unit with high offensive stats and speed but low defense and crit/debuff resist. Has strong attacks with reload mechanics.";
 
 Mannequin.skills = {
     special: [
@@ -44,23 +44,23 @@ Mannequin.skills = {
             properties: ["physical", "stamina-block", "stamina", "attack", "multi-target", "pseudo-resource"],
             cost: { stamina: 40, position: "front" },
             description: "Attacks with increased attack to a single target 8 times or two targets 4 times, adds two hits if reloaded",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 2, false) },
-            code(targets) { attack(this, targets, (this.custom?.dualWield ? this.custom.dualWield-- && 10 : 8) / targets.length, { attacker: { attack: { bonus: 25 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 2, false); },
+            code(targets) { attack(this, targets, (this.custom?.dualWield ? this.custom.dualWield-- && 10 : 8) / targets.length, { attacker: { attack: { bonus: 25 } } }); }
         },
         {
             name: "Snipe",
             properties: ["physical", "stamina-block", "stamina", "attack", "pseudo-resource"],
             cost: { stamina: 40, position: "back" },
             description: "Attacks a single target with increased attack/accuracy/focus, can target backline, adds extra attack if reloaded",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.team !== this.team)) },
-            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: this.custom?.snipe ? this.custom.snipe-- && 90 : 60 }, accuracy: { bonus: 70 }, focus: { bonus: 80 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.team !== this.team)); },
+            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: this.custom?.snipe ? this.custom.snipe-- && 90 : 60 }, accuracy: { bonus: 70 }, focus: { bonus: 80 } } }); }
         },
         {
             name: "Focus Fire",
             properties: ["physical", "stamina-block", "stamina", "attack", "pseudo-resource"],
             cost: { stamina: 40 },
             description: "Attacks a single target 4 times with increased attack/accuracy/focus, adds two hits and extra attack if reloaded",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const bonus = this.custom?.focusFire ? !!this.custom.focusFire-- : 0;
                 attack(this, target, 4 + 2*bonus, { attacker: { attack: { bonus: 50*(1 + bonus) }, accuracy: { bonus: 35 }, focus: { bonus: 40 } } });
@@ -121,7 +121,7 @@ Mannequin.skills = {
             properties: ["physical", "stamina-block", "stamina", "heal", "positional"],
             cost: { stamina: 20 },
             description: "Heals lowest hp ally (around ~25% max hp) in the same position",
-            code() { heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [2.5]) }
+            code() { heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [2.5]); }
         },
         {
             name: "Ex-Revolutionary",
@@ -201,7 +201,7 @@ Mannequin.skills = {
             name: "Emergency Aid",
             properties: ["physical", "stamina-block", "heal", "positional"],
             description: "Heals lowest hp ally (around ~15% max hp) in the same position",
-            code() { heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [1.5]) }
+            code() { heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [1.5]); }
         },
         {
             name: "Ex-Revolutionary",
@@ -228,7 +228,7 @@ Mannequin.skills = {
             name: "Switch Position",
             properties: ["physical", "positional"],
             description: "Switch between front and backline positions",
-            code() { this.switchPosition() }
+            code() { this.switchPosition(); }
         }
     ],
     passive: [
@@ -275,7 +275,7 @@ Mannequin.skills = {
             code() {
                 new Modifier("Reload", `Ignores reload mechanic`,
                     { target: this, properties: ["physical", "stamina", "pseudo-resource"], listeners: { turnEnd: true }, cancelListeners: ['turnEnd'], cost: this.skills.passive.cost, focus: true, passive: true},
-                    function() { this.vars.caster.custom = { dualWield: 1, snipe: 1, focusFire: 1 } },
+                    function() { this.vars.caster.custom = { dualWield: 1, snipe: 1, focusFire: 1 }; },
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied) {
                             if (!this.vars.caster.custom.dualWield && resourceChange(this.vars.caster, this.vars.cost, false)) this.vars.caster.custom.dualWield = 1;
@@ -324,7 +324,7 @@ Mannequin.skills = {
             }
         },
     ]
-}
+};
 
 Mannequin.frontDefaultSkills = [
     { category: 'special', name: 'Switch Position' },
@@ -346,13 +346,13 @@ Mannequin.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
         this.base = { ...this.base, attack: 55, evasion: 90, resist: 55, speed: 165, presence: 100 };
-        this.skills = {...this.frontSkills}
+        this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
         this.base = { ...this.base, attack: 45, evasion: 130, resist: 70, speed: 145, presence: 50 };
-        this.skills = {...this.backSkills}
+        this.skills = {...this.backSkills};
     }
     logAction(`${this.name} moves to the ${this.position}line.`, "info");
     resetStat(this, ["attack", "evasion", "resist", "speed", "presence"]);
     if (!silent && eventState.positionChange.length) handleEvent('positionChange', { unit: this, position: this.position });
-}
+};

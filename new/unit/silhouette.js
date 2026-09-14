@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const Silhouette = new Unit("Silhouette", [650, 24, 25, 110, 160, 135, 140, 75, 50, "mid", 80, 80, 10, 100, 16], 3, ["independence/loneliness"]);
@@ -13,20 +13,20 @@ Silhouette.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "mana", "attack"],
             cost: { stamina: 10, mana: 20, position: "front" },
             description: "Makes 4 attacks at a single target with increased accuracy and attack",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
-            code(target) { attack(this, target, 4, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 50 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
+            code(target) { attack(this, target, 4, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 50 } } }); }
         },
         {
             name: "Ball of Darkness",
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana", "mana-block", "attack", "multi-target"],
             cost: { stamina: 10, mana: 20, position: "back" },
             description: "Makes an attack at a single target with double accuracy. On hit, randomly targets another enemy with the attack and continues until miss",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
-                let hit = attack(this, target, 1, { attacker: { accuracy: { mult: 2 } } }), t = target;
-                while (hit[0] > 0) {
+                let hit = attack(this, target, 1, { attacker: { accuracy: { mult: 2 } } })[0], t = target;
+                while (hit > 0) {
                     let list = allUnits.filter(u => u !== t[0] && u.hp && u.position === "front" && u.team !== this.team);
-                    hit = list.length ? attack(this, t = randTarget(list, 1, true), 1, { attacker: { accuracy: { mult: 2 } } }) : 0;
+                    hit = list.length ? attack(this, t = randTarget(list, 1, true), 1, { attacker: { accuracy: { mult: 2 } } })[0] : 0;
                 }
             }
         },
@@ -53,7 +53,7 @@ Silhouette.skills = {
             properties: ["mystic", "mana-block", "mana", "summon", "positional"],
             cost: { mana: 60 },
             description: "Summon shadow clone of a ally unit in the same position with 1 star stats for 6 turns, only one of the same clone can be summoned at a time",
-            target() { specialTarget(this, allUnits.filter(u => u.position === this.position && u.team === this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.position === this.position && u.team === this.team)); },
             code(target) {
                 if (!target || !target.length) {
                     logAction("No shadow clones can be summoned!", "warning");
@@ -68,7 +68,7 @@ Silhouette.skills = {
                     return;
                 }
                 logAction(`${this.name} creates a shadow clone of ${target[0].name}!`, "buff");
-                const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val * 4 / 9)/(1+9*(stat === "hp")))])) }, { ...target[0].skills })
+                const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val * 4 / 9)/(1+9*(stat === "hp")))])) }, { ...target[0].skills });
                 new Modifier("Summon Shadow", "Summon shadow clone of a ally unit in the same position with 1 star stats",
                     { target: clone, duration: 6, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                     function() {},
@@ -99,7 +99,7 @@ Silhouette.skills = {
                 const dur = refreshModifier([{ name: "Friends with the Shadows", vars: { caster: this, target: this, parent: this.skills.special } }], 4)[0];
                 dur ? resourceChange(this, { mana: 10*dur }) : logAction(`${this.name} empowers the shadows!`, "buff") || new Modifier("Friends with the Shadows", "Shadow summons gain a star up equivalent stat increase, except for hp and resources, also gains the Fear of the Dark buff if active",
                     { targets: [], duration: 4, properties: ["mystic", "conditional", "buff"], listeners: { turnStart: true, unitChange: true, modifierStart: true, modifierEnd: true }, cancelListeners: ['modifierStart', 'modifierEnd'], focus: true},
-                    function() { this.changeTarget([], allUnits.filter(u => u.custom?.summoner === this.vars.caster)) },
+                    function() { this.changeTarget([], allUnits.filter(u => u.custom?.summoner === this.vars.caster)); },
                     function(context) {
                         if (context.type === 'summon' && context.unit.custom?.summoner === this.vars.caster) this.changeTarget([], [context.unit]);
                         else if (context.type === 'unsummon' && context.unit.custom?.summoner === this.vars.caster) this.changeTarget([context.unit]);
@@ -111,7 +111,7 @@ Silhouette.skills = {
                     function(cancel, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
-                                if (this.vars.child) [... this.vars.child].forEach(m => removeModifier(m));
+                                [...(this.vars.child || [])].forEach(m => removeModifier(m));
                                 this.vars.applied = false;
                                 for (const listener of this.vars.cancelListeners) {
                                     this.vars.listeners[listener] = false;
@@ -133,7 +133,7 @@ Silhouette.skills = {
                     },
                     function(remove = [], add = []) {
                         if (this.vars.applied || !this.vars.start) {
-                            if (this.vars.child) this.vars.child.filter(m => remove.includes(m.vars.target)).forEach(m => removeModifier(m));
+                            this.vars.child?.filter(m => remove.includes(m.vars.target)).forEach(m => removeModifier(m));
                             for (let i = this.vars.targets.length - 1; i >= 0; i--) if (remove.includes(this.vars.targets[i])) this.vars.targets.splice(i, 1);
                             this.vars.targets.push(...add);
                             const mod = modifiers.find(m => m.name === "Fear of the Dark buff" && m.vars.caster === this.vars.caster);
@@ -165,7 +165,7 @@ Silhouette.skills = {
             cost: { stamina: 15, mana: 25 },
             description: `Spends a shadow to revive for the next 5 turns, first revive is free. If currently active, refresh duration and adds another free use`,
             code() {
-                if (!refreshModifier([{ name: "Accursed Lineage", vars: { caster: this, target: this, parent: this.skills.special } }], 5, function(m) { return m.vars.uses = 1 })[0]) logAction(`${this.name} hangs around the borders of life and death!`, "buff") || new Modifier("Accursed Lineage", `Spend shadow summon to revive, first revive is free`,
+                if (!refreshModifier([{ name: "Accursed Lineage", vars: { caster: this, target: this, parent: this.skills.special } }], 5, function(m) { return m.vars.uses = 1; })[0]) logAction(`${this.name} hangs around the borders of life and death!`, "buff") || new Modifier("Accursed Lineage", `Spend shadow summon to revive, first revive is free`,
                     { target: this, duration: 5, properties: ["physical", "mystic", "conditional", "revive"], listeners: { turnStart: true, unitChange: true }, cancelListeners: ['unitChange'], uses: 1 },
                     function() {},
                     function(context) {
@@ -205,7 +205,7 @@ Silhouette.skills = {
             properties: ["physical", "stamina-block", "mystic", "mana-block", "attack"],
             cost: { position: "front" },
             description: "Makes 2 attacks at a single target with increased accuracy and attack",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 50 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 50 } } }); }
         },
         {
             name: "Ball of Darkness",
@@ -227,7 +227,7 @@ Silhouette.skills = {
                     return;
                 }
                 logAction(`${this.name} creates a shadow.`, "action");
-                const clone = summon(this, new Unit("Shadow", [290, 13, 11, 49, 66, 60, 60, 30, 24, this.position, 16, 10, 1, 40, 8], 1), shadowSkills)
+                const clone = summon(this, new Unit("Shadow", [290, 13, 11, 49, 66, 60, 60, 30, 24, this.position, 16, 10, 1, 40, 8], 1), shadowSkills);
                 new Modifier("Summon Shadow", "Summon 1 star shadow",
                     { target: clone, duration: 4, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                     function() {},
@@ -275,14 +275,14 @@ Silhouette.skills = {
             properties: ["physical", "mana", "attack"],
             cost: { position: "front" },
             description: "Attacks a single target with increased accuracy and attack",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 50 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 50 } } }); }
         },
         {
             name: "Ball of Darkness",
             properties: ["physical", "mystic", "attack", "multi-target"],
             cost: { position: "back" },
             description: "Attacks a single target with double accuracy, attacks again on hit",
-            code() { if (attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { accuracy: { mult: 2 } } })) attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { accuracy: { mult: 2 } } }) }
+            code() { if (attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { accuracy: { mult: 2 } } })) attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { accuracy: { mult: 2 } } }); }
         },
         {
             name: "Fear of the Dark",
@@ -314,7 +314,7 @@ Silhouette.skills = {
             name: "Shadow Shift",
             properties: ["physical", "mystic", "positional"],
             description: "Switch between front and backline positions",
-            code() { this.switchPosition() }
+            code() { this.switchPosition(); }
         }
     ],
     passive: [
@@ -342,7 +342,7 @@ Silhouette.skills = {
             code() {
                 auraModifier("Friends with the Shadows", "Shadow summons get star up equivalent stats except hp and resources",
                     { targets: [], properties: ["mystic", "buff"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
-                    function(target) { basicModifier("Friends with the Shadows buff", "Star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(target.base[k]/2)])) }) },
+                    function(target) { basicModifier("Friends with the Shadows buff", "Star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(target.base[k]/2)])) }); },
                     (u) => u.custom?.summoner === this
                 );
             }
@@ -416,7 +416,7 @@ Silhouette.skills = {
             code() {
                 auraModifier("Friends with the Shadows", "Shadow summons get two star up equivalent stats except hp and resources",
                     { targets: [], properties: ["mystic", "buff"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
-                    function(target) { basicModifier("Friends with the Shadows buff", "Two star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(2.25*target.base[k])])) }) },
+                    function(target) { basicModifier("Friends with the Shadows buff", "Two star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(2.25*target.base[k])])) }); },
                     (u) => u.custom?.summoner === this
                 );
             }
@@ -440,7 +440,7 @@ Silhouette.skills = {
             }
         },
     ]
-}
+};
 
 Silhouette.frontDefaultSkills = [
     { category: 'special', name: 'Friends with the Shadows' },
@@ -462,16 +462,16 @@ Silhouette.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
         this.base = { ...this.base, accuracy: 140, evasion: 95, focus: 170, resist: 100, speed: 85 };
-        this.skills = {...this.frontSkills}
+        this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
         this.base = { ...this.base, accuracy: 110, evasion: 160, focus: 135, resist: 140, speed: 75 };
-        this.skills = {...this.backSkills}
+        this.skills = {...this.backSkills};
     }
     logAction(`${this.name} shifts to the ${this.position}line.`, "info");
     resetStat(this, ["accuracy", "evasion", "focus", "resist", "speed"]);
     if (!silent && eventState.positionChange.length) handleEvent('positionChange', { unit: this, position: this.position });
-}
+};
 
 const shadowSkills = {
     special: {
@@ -487,7 +487,7 @@ const shadowSkills = {
         name: "Strike",
         properties: ["mystic", "attack"],
         description: "Attacks a single target",
-        code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team))) }
+        code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team))); }
     },
     passive: {
         name: "Strength Drain",
@@ -501,16 +501,16 @@ const shadowSkills = {
                     if (context.attacker === this.vars.caster && context.damageSingle > 0) {
                         const will = resistDebuff(this.vars.caster, [context.defender]);
                         if (will >= 2) {
-                            const mod = modifiers.find(m => m.name = "Strength Drain debuff" && m.vars.caster === this.vars.caster && m.vars.target === context.defender);
+                            const mod = modifiers.find(m => m.name === "Strength Drain debuff" && m.vars.caster === this.vars.caster && m.vars.target === context.defender);
                             if (mod) {
                                 mod.cancel(true, true);
                                 mod.vars.stats.attack -= will > 99 ? 6 : Math.ceil(will/25);
                                 mod.cancel(false, true);
-                            } else basicModifier("Strength Drain debuff", "Reduce target attack until caster is out of combat", { target: context.defender, properties: ['mystic', 'debuff'], stats: { attack: -(will > 99 ? 6 : Math.ceil(will/25)) }, debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 2 } });
+                            } else basicModifier("Strength Drain debuff", "Reduce target attack until caster is out of combat", { target: context.defender, properties: ['mystic', 'debuff'], stats: { attack: -(will > 99 ? 6 : Math.ceil(will/25)) }, debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 2; } });
                         }
                     }
                 }
             );
         }
     }
-}
+};

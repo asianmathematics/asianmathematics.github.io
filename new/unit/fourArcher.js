@@ -1,10 +1,10 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const FourArcher = new Unit("4 (Archer)", [800, 36, 16, 50, 80, 70, 140, 85, 160, "back", 110, 40, 7, 160, 24], 3, ["perfection/precision"]);
 
-FourArcher.description = "3-star mystic backline unit with high crit/debuff resist but low in everything else, capable of manipulating RNG to buff self and debuff enemies."
+FourArcher.description = "3-star mystic backline unit with high crit/debuff resist but low in everything else, capable of manipulating RNG to buff self and debuff enemies.";
 
 FourArcher.skills = {
     special: [
@@ -13,8 +13,8 @@ FourArcher.skills = {
             properties: ["mystic", "mana-block", "mana", "attack", "auto-hit", "auto-crit"],
             cost: { mana: 40 },
             description: "Deals a critical hit to a single target, 99% chance to ignore half of defense",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
-            code(target) { damage(this, target, [[4]], { defenders: [{ defense: { div: resistDebuff(this, target)[0] < 2 ? 1 : 2 } }] }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
+            code(target) { damage(this, target, [[4]], { defenders: [{ defense: { div: resistDebuff(this, target)[0] < 2 ? 1 : 2 } }] }); }
         },
         {
             name: "Unnatural Luck",
@@ -71,7 +71,7 @@ FourArcher.skills = {
                             this.vars.attacking = true;
                             let target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
                             if (resistDebuff(this.vars.caster, target)[0] > 70) crit(this.vars.caster, target, [[this.accuracy/2]]);
-                        } else if (context.event === "singleDamage" && context.attacker === this.vars.caster && (currentAction.at(-2)[0].properties?.includes("auto-hit") || currentAction.at(-2)[0].vars?.properties?.includes("auto-hit")) && context.critical < 1) {
+                        } else if (context.event === "singleDamage" && context.attacker === this.vars.caster && (currentAction.at(-2)[0].properties?.includes("auto-hit") || currentAction.at(-2)[0].vars?.properties.includes("auto-hit")) && context.critical < 1) {
                             this.vars.attacking = true;
                             attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, context.calcMods);
                         }
@@ -87,20 +87,20 @@ FourArcher.skills = {
             properties: ["mystic", "mana-block", "mana", "buff"],
             cost: { mana: 40 },
             description: "Increases all alive allies, except self, accuracy/evasion/focus/resist/presence for one of their turns",
-            code() { for (const unit of allUnits.filter(u => u !== this && u.hp && u.team === this.team)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: unit, duration: 2, properties: ["mystic", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }) }
+            code() { for (const unit of allUnits.filter(u => u !== this && u.hp && u.team === this.team)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: unit, duration: 2, properties: ["mystic", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }); }
         },
         {
             name: "Luck Arrow",
             properties: ["mystic", "mana-block", "mana", "attack", "auto-hit", "buff", "debuff"],
             cost: { mana: 20 },
             description: "Makes a guaranteed hit to a single target, gives self advantage to next few attacks/debuffs depending on chance and chance to give disadvantage to target's next few attacks/debuffs, 1% chance to fail to give advantage",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 attack(this, target, 1, { max: [[.5]] });
                 let will = resistDebuff(this, target);
                 new Modifier("Luck Arrow buff", "Gives advantage to next few attacks/debuffs",
                     { target: this, duration: will[0] < 2 ? 0 : will[0] > 99 ? 7 : Math.ceil(will[0]/33), properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
-                    function() { return !this.vars.duration },
+                    function() { return !this.vars.duration; },
                     function(context) {
                         if (context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
                         return this.vars.duration <= 0;
@@ -108,8 +108,8 @@ FourArcher.skills = {
                 );
                 will = resistDebuff(this, target);
                 new Modifier("Luck Arrow debuff", "Gives disadvantage to target's next few attacks/debuffs",
-                    { target: target[0], duration: will[0] > 99 ? 7 : Math.floor(will[0]/25), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 25 } },
-                    function() { return !this.vars.duration },
+                    { target: target[0], duration: will[0] > 99 ? 7 : Math.floor(will[0]/25), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 25; } },
+                    function() { return !this.vars.duration; },
                     function(context) {
                         if (context.attacker === this.vars.target) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) - 1 : context.calcMods.all = { reroll: -1 };
                         return this.vars.duration <= 0;
@@ -122,8 +122,8 @@ FourArcher.skills = {
             properties: ["mystic", "mana-block", "mana", "attack", "multi-target"],
             cost: { mana: 40 },
             description: "Makes a guaranteed hit on up to 4 targets",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 4, false) },
-            code(targets) { attack(this, targets, 1, { max: Array.from({ length: targets.length }, () => [0.5]) }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 4, false); },
+            code(targets) { attack(this, targets, 1, { max: Array.from({ length: targets.length }, () => [0.5]) }); }
         }
     ],
     basic: [
@@ -158,7 +158,7 @@ FourArcher.skills = {
             name: "Lucky Aura",
             properties: ["mystic", "mana-block", "buff"],
             description: "Increases 4 random ally accuracy/evasion/focus/resist/presence for one of their turns",
-            code() { for (const target of randTarget(allUnits.filter(u => u.hp && u.team === this.team), 4, true)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target, duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }) }
+            code() { for (const target of randTarget(allUnits.filter(u => u.hp && u.team === this.team), 4, true)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target, duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }); }
         },
         {
             name: "Luck Arrow",
@@ -170,7 +170,7 @@ FourArcher.skills = {
                     let will = resistDebuff(this, target);
                     new Modifier("Luck Arrow buff", "Gives advantage to next few attacks/debuffs",
                         { target: this, duration: will[0] > 99 ? 7 : Math.ceil(will[0]/25), properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
-                        function() { return !this.vars.duration },
+                        function() { return !this.vars.duration; },
                         function(context) {
                             if (context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
                             return this.vars.duration <= 0;
@@ -178,8 +178,8 @@ FourArcher.skills = {
                     );
                     will = resistDebuff(this, target);
                     new Modifier("Luck Arrow debuff", "Gives disadvantage to target's next few attacks/debuffs",
-                        { target: target[0], duration: will[0] > 99 ? 4 : Math.floor(will[0]/33), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 33 } },
-                        function() { return !this.vars.duration },
+                        { target: target[0], duration: will[0] > 99 ? 4 : Math.floor(will[0]/33), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 33; } },
+                        function() { return !this.vars.duration; },
                         function(context) {
                             if (context.attacker === this.vars.target) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) - 1 : context.calcMods.all = { reroll: -1 };
                             return this.vars.duration <= 0;
@@ -192,7 +192,7 @@ FourArcher.skills = {
             name: "Multi-shot",
             properties: ["mystic", "mana-block", "attack", "multi-target"],
             description: "Makes an attack on up to 4 targets",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 4), 1) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 4), 1); }
         }
     ],
     secondary: [
@@ -200,7 +200,7 @@ FourArcher.skills = {
             name: "Perfect Shot",
             properties: ["mystic", "attack", "auto-hit"],
             description: "Makes a non-crit guaranteed hit to a single target",
-            code() { damage(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), [[.5]]) }
+            code() { damage(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), [[.5]]); }
         },
         {
             name: "Lazing Around",
@@ -224,7 +224,7 @@ FourArcher.skills = {
             name: "Lucky Aura",
             properties: ["mystic", "buff"],
             description: "Increases a random alive ally accuracy/evasion/focus/resist/presence for one of their turns",
-            code() { basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0], duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }) }
+            code() { basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0], duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }); }
         }
     ],
     passive: [
@@ -252,7 +252,7 @@ FourArcher.skills = {
                 new Modifier("Lazing Around", "Reduces speed and regen mana.",
                     { target: this, properties: ["physical", "mana-gain", "penalty", "resource"], stats: { speed: -25 }, penalty: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster && this.vars.applied) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen }) }
+                    function(context) { if (context.unit === this.vars.caster && this.vars.applied) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen }); }
                 );
             }
         },
@@ -271,7 +271,7 @@ FourArcher.skills = {
                             this.vars.attacking = true;
                             let target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
                             if (resistDebuff(this.vars.caster, target)[0] > 70) crit(this.vars.caster, target, [[this.accuracy/4]]);
-                        } else if (context.event === "singleDamage" && context.attacker === this.vars.caster && (currentAction.at(-2)[0].properties?.includes("auto-hit") || currentAction.at(-2)[0].vars?.properties?.includes("auto-hit")) && context.critical < 1 && resourceChange(this.vars.caster, this.vars.cost, false)) {
+                        } else if (context.event === "singleDamage" && context.attacker === this.vars.caster && (currentAction.at(-2)[0].properties?.includes("auto-hit") || currentAction.at(-2)[0].vars?.properties.includes("auto-hit")) && context.critical < 1 && resourceChange(this.vars.caster, this.vars.cost, false)) {
                             this.vars.attacking = true;
                             attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, context.calcMods);
                         }
@@ -287,8 +287,8 @@ FourArcher.skills = {
             code() {
                 new Modifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence",
                     { target: null, properties: ["mystic", "buff"], stats: { accuracy: 5, evasion: 20, focus: 10, resist: 20, presence: 20 }, listeners: { turnStart: true }, passive: true },
-                    function() { this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0]) },
-                    function (context) { if (context.unit === this.vars.caster) this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team))[0]) }
+                    function() { this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0]); },
+                    function (context) { if (context.unit === this.vars.caster) this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team))[0]); }
                 );
             }
         },
@@ -306,15 +306,15 @@ FourArcher.skills = {
                             const will = resistDebuff(this.vars.caster, [context.defender, context.defender]);
                             if (!refreshModifier([{ name: "Luck Arrow buff", vars: { caster: this.vars.caster, target: this.vars.caster } }], -(will[0] > 99 ? 7 : Math.ceil(will[0])/25))[0]) new Modifier("Luck Arrow buff", "Gives advantage to next few attacks/debuffs",
                                 { target: this.vars.caster, duration: will[0] > 99 ? 7 : Math.ceil(will[0]/25), properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
-                                function() { return !this.vars.duration },
+                                function() { return !this.vars.duration; },
                                 function(context) {
                                     if (this.vars.applied && context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
                                     return this.vars.duration <= 0;
                                 }
                             );
                             if (!refreshModifier([{ name: "Luck Arrow debuff", vars: { caster: this.vars.caster, target: context.defender } }], -(will[1] > 99 ? 4 : Math.floor(will[1])/33))[0]) new Modifier("Luck Arrow debuff", "Gives disadvantage to target's next few attacks/debuffs",
-                                { target: context.defender, duration: will[1] > 99 ? 4 : Math.floor(will[1]/33), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 33 } },
-                                function() { return !this.vars.duration },
+                                { target: context.defender, duration: will[1] > 99 ? 4 : Math.floor(will[1]/33), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 33; } },
+                                function() { return !this.vars.duration; },
                                 function(context) {
                                     if (this.vars.applied && context.attacker === this.vars.target) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) - 1 : context.calcMods.all = { reroll: -1 };
                                     return this.vars.duration <= 0;
@@ -369,7 +369,7 @@ FourArcher.skills = {
                 new Modifier("Lazing Around", "Reduces speed and regen mana",
                     { target: this, properties: ["physical", "mana-gain", "penalty", "resource"], stats: { speed: -15 }, listeners: { turnStart: true }, cancelListeners: ['turnStart'], penalty: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen * 1.5 }) }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen * 1.5 }); }
                 );
             }
         },
@@ -380,8 +380,8 @@ FourArcher.skills = {
             code() {
                 new Modifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence",
                     { target: null, properties: ["mystic", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true }, passive: true },
-                    function() { this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team)[0])) },
-                    function (context) { if (context.unit === this.vars.caster) this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team))[0]) },
+                    function() { this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team)[0])); },
+                    function (context) { if (context.unit === this.vars.caster) this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team))[0]); },
                 );
             }
         },
@@ -399,15 +399,15 @@ FourArcher.skills = {
                             const will = resistDebuff(this.vars.caster, [context.defender, context.defender]);
                             if (!refreshModifier([{ name: "Luck Arrow buff", vars: { caster: this.vars.caster, target: this.vars.caster } }], -(will[0] < 2 ? 0 : will[0] > 99 ? 7 : Math.floor(will[0]/33) + 1))[0]) new Modifier("Luck Arrow buff", "Gives advantage to next few attacks/debuffs",
                                 { target: this.vars.caster, duration: will[0] < 2 ? 0 : will[0] > 99 ? 7 : Math.floor(will[0]/33) + 1, properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
-                                function() { return !this.vars.duration },
+                                function() { return !this.vars.duration; },
                                 function(context) {
                                     if (this.vars.applied && context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
                                     return this.vars.duration <= 0;
                                 }
                             );
                             if (!refreshModifier([{ name: "Luck Arrow debuff", vars: { caster: this.vars.caster, target: context.defender } }], -(will[1] > 99 ? 7 : Math.floor(will[1]/25)))[0]) new Modifier("Luck Arrow debuff", "Gives disadvantage to target's next few attacks/debuffs",
-                                { target: context.defender, duration: will[1] > 99 ? 7 : Math.floor(will[1]/25), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 33 } },
-                                function() { return !this.vars.duration },
+                                { target: context.defender, duration: will[1] > 99 ? 7 : Math.floor(will[1]/25), properties: ["mystic", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 33; } },
+                                function() { return !this.vars.duration; },
                                 function(context) {
                                     if (this.vars.applied && context.attacker === this.vars.target) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) - 1 : context.calcMods.all = { reroll: -1 };
                                     return this.vars.duration <= 0;
@@ -419,7 +419,7 @@ FourArcher.skills = {
             }
         }
     ]
-}
+};
 
 FourArcher.defaultSkills = [
     { category: 'special', name: 'Rebound Arc' },

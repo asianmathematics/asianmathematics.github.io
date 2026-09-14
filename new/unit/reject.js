@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const Reject = new Unit("Reject", [660, 30, 28, 60, 40, 60, 80, 40, 70, "front", 66, 60, 8], 2, ["independence/loneliness"]);
@@ -11,15 +11,15 @@ Reject.skills = {
             properties: ["physical", "stamina-block", "stamina", "attack"],
             cost: { stamina: 25 },
             description: "Attacks a single target with increased attack, accuracy, and focus",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
-            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: 40 }, accuracy: { bonus: 120 }, focus: { bonus: 120 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
+            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: 40 }, accuracy: { bonus: 120 }, focus: { bonus: 120 } } }); }
         },
         {
             name: "Regeneration",
             properties: ["physical", "stamina-block", "stamina", "heal"],
             cost: { stamina: 25 },
             description: "Heals a lot (30% max hp)",
-            code() { heal(this, [this], [3]) }
+            code() { heal(this, [this], [3]); }
         },
         {
             name: "Rejected by All",
@@ -47,14 +47,14 @@ Reject.skills = {
             name: "Bite",
             properties: ["physical", "stamina-block", "attack"],
             description: "Attacks a single target with increased attack, accuracy, and focus",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 40 }, accuracy: { bonus: 80 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 40 }, accuracy: { bonus: 80 } } }); }
         },
         {
             name: "Regeneration",
             properties: ["physical", "stamina-block", "stamina", "heal"],
             cost: { stamina: 15 },
             description: "Heals moderately (25% max hp)",
-            code() { heal(this, [this], [2.5]) }
+            code() { heal(this, [this], [2.5]); }
         },
         {
             name: "Rejected by All",
@@ -84,13 +84,13 @@ Reject.skills = {
             name: "Bite",
             properties: ["physical", "attack"],
             description: "Attacks a single target with increased attack, accuracy, and focus",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 40 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 40 } } }); }
         },
         {
             name: "Regeneration",
             properties: ["physical", "stamina-block", "heal"],
             description: "Heals a bit (17.5% max hp)",
-            code() { heal(this, [this], [1.75]) }
+            code() { heal(this, [this], [1.75]); }
         },
         {
             name: "Rejected by All",
@@ -122,7 +122,7 @@ Reject.skills = {
                 new Modifier("Regeneration", `Heals at start of turn`,
                     { target: this, properties: ["physical", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit) heal(this.vars.caster, [this.vars.target], [.25]) }
+                    function(context) { if (this.vars.target === context.unit) heal(this.vars.caster, [this.vars.target], [.25]); }
                 );
             }
         },
@@ -145,7 +145,7 @@ Reject.skills = {
             }
         }
     ]
-}
+};
 
 Reject.defaultSkills = [
     { category: 'special', name: 'Rejected by All' },

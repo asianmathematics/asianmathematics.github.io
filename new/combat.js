@@ -3,6 +3,7 @@ import { FourArcher } from './unit/fourArcher.js';
 import { Mannequin } from './unit/mannequin.js';
 import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
+import { Electric } from './unit/electric.js';
 import { enemy } from './unit/enemy.js';
 import { ArtificialSoldier } from './unit/artificialSoldier.js';
 import { CouncilMagician } from './unit/councilMagician.js';
@@ -16,13 +17,11 @@ import { magitechEnemy } from './unit/magitechEnemy.js';
 import { ChaosAgent } from './unit/chaosAgent.js';
 import { Dreamer } from './unit/dreamer.js';*/
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
 import { Unit, createUnit, cloneUnit, allUnits } from './unit/unit.js';
 
 let turnCounter = 1;
 let wave = 1;
-const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor];
-let selectedUnits = [];
 window.combatSpeedMultiplier = 1;
 
 function initSpeedControls() {
@@ -77,7 +76,7 @@ function updateBattleDisplay() {
 function renderUnitCard(unit, isEnemy = false, inFrontline = false) {
     const card = document.createElement('div');
     const isDefeated = unit.hp <= 0;
-    const isCurrentTurn = unit.name === currentAction[0]?.[1]?.name;
+    const isCurrentTurn = unit.name === currentAction[0]?.[1].name;
     const isStunned = unit.stun;
     const isSpecialReady = unit.specialReady && !isDefeated;
     card.className = `unit ${unit.team === 'player' ? 'player-unit' : 'enemy-unit'} ${unit.position === 'back' ? 'back' : ''} ${isDefeated ? 'defeated' : ''} ${isCurrentTurn ? 'current-turn' : ''} ${isStunned ? 'stunned' : ''} ${isSpecialReady ? 'special-ready' : ''}`;
@@ -188,9 +187,9 @@ function renderUnitDetails(unit) {
         <div style="margin-top:10px;">
             <div style="font-size:12px; color:#888; margin-bottom:5px;">AUTO-BEHAVIOR</div>
             <div class="doctrine-toggle">
-                ${ unit.skills?.basic ? `<button class="doctrine-btn ${unit.autoBehavior === 'basic' ? 'active' : ''}" data-behavior="basic" data-unit="${unit.name}">Basic</button>` : ''}
-                ${ unit.skills?.secondary ?`<button class="doctrine-btn ${unit.autoBehavior === 'secondary' ? 'active' : ''}" data-behavior="secondary" data-unit="${unit.name}">Secondary</button>` : ''}
-                ${ unit.skills?.basic && unit.skills?.secondary ?`<button class="doctrine-btn ${unit.autoBehavior === 'both' ? 'active' : ''}" data-behavior="both" data-unit="${unit.name}">Both</button>` : ''}
+                ${unit.skills?.basic ? `<button class="doctrine-btn ${unit.autoBehavior === 'basic' ? 'active' : ''}" data-behavior="basic" data-unit="${unit.name}">Basic</button>` : ''}
+                ${unit.skills?.secondary ?`<button class="doctrine-btn ${unit.autoBehavior === 'secondary' ? 'active' : ''}" data-behavior="secondary" data-unit="${unit.name}">Secondary</button>` : ''}
+                ${unit.skills?.basic && unit.skills?.secondary ?`<button class="doctrine-btn ${unit.autoBehavior === 'both' ? 'active' : ''}" data-behavior="both" data-unit="${unit.name}">Both</button>` : ''}
                 ${`<button class="doctrine-btn ${unit.autoBehavior === 'none' ? 'active' : ''}" data-behavior="none" data-unit="${unit.name}">None</button>`}
             </div>
         </div>
@@ -201,7 +200,7 @@ function renderUnitDetails(unit) {
             </button>
         `;
     html += `<div style="margin-top:10px; font-size:11px; color:#888;">EQUIPPED SKILLS:</div>`;
-    unit.skills ? Object.entries(unit.skills).forEach(([category, skill]) => { html += `<br><div style="font-size:11px; color:#00aaff; margin:3px 0;" class="skillName">• ${skill.name}<span class="skillDesc">${alterDesc(skill, category)}</span></div>` }) : html += `<div style="font-size:11px; color:#666;">No skills equipped</div>`;
+    unit.skills ? Object.entries(unit.skills).forEach(([category, skill]) => html += `<br><div style="font-size:11px; color:#00aaff; margin:3px 0;" class="skillName">• ${skill.name}<span class="skillDesc">${alterDesc(skill, category)}</span></div>`) : html += `<div style="font-size:11px; color:#666;">No skills equipped</div>`;
     return html;
 }
 
@@ -254,7 +253,7 @@ function updateModifiers() {
             }
             modDisplay += `
                 <li class="modifier-item ${isCancelled ? 'cancelled' : ''}">
-                    <span class="modifier-caster">${modifier.vars.caster?.name || 'System'}'s</span>
+                    <span class="modifier-caster">${modifier.vars.caster.name || 'System'}'s</span>
                     <span class="modifier-name" data-tooltip="${modifier.description}">${modifier.name}.</span>
                     <div class="modifier-targets">Targets: ${targetDisplay}</div>
                     <div class="modifier-duration">${modifier.vars.duration || 'indefinite'} turn(s) left</div>
@@ -273,7 +272,7 @@ function initTabSwitching() {
         button.addEventListener('click', () => {
             tabButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(content => { content.classList.remove('active') });
+            document.querySelectorAll('.tab-content').forEach(content => { content.classList.remove('active'); });
             document.getElementById(`tab-${button.dataset.tab}`).classList.add('active');
         });
     });
@@ -291,7 +290,7 @@ function initInspectorControls() {
         }
         if (e.target.classList.contains('activate-special-btn')) {
             const unit = allUnits.find(u => u.name === e.target.dataset.unit);
-            if (unit?.specialReady) unit.pendingSpecial = true;
+            if (unit.specialReady) unit.pendingSpecial = true;
         }
     });
 }
@@ -304,7 +303,6 @@ function updateTimersOnly(units) {
             if (card.querySelector('.unit-name')?.textContent === unit.name) {
                 const timerBar = card.querySelector('.timer-bar');
                 const readyTextLabel = card.querySelector('.stat-row:last-child .stat-label');
-
                 if (timerBar) timerBar.style.width = `${timerProgress}%`;
                 if (readyTextLabel) readyTextLabel.textContent = unit.timer <= 0 ? 'Ready!' : 'Charging...';
             }
@@ -401,9 +399,9 @@ function executeBoth(unit) {
     if (eventState.actionStart.length) handleEvent('actionStart', {unit, action: 'both'});
     const cost = {};
     for (const [res, attrib] of [['stamina', 'physical'], ['mana', 'mystic'], ['energy', 'techno']]) {
-        let count = unit.skills.basic?.properties?.includes(attrib) + unit.skills.secondary?.properties?.includes(attrib);
+        let count = unit.skills.basic.properties.includes(attrib) + unit.skills.secondary.properties.includes(attrib);
         if (count) cost[res] = count * 10;
-        count = ((unit.skills.basic?.cost?.[res] || 0) + (unit.skills.secondary?.cost?.[res] || 0));
+        count = ((unit.skills.basic.cost?.[res] || 0) + (unit.skills.secondary.cost?.[res] || 0));
         if (count) cost[res] = (cost[res] || 0) + count;
     }
     if (JSON.stringify(cost) === '{}' || resourceChange(unit, cost, false)) {
@@ -474,13 +472,13 @@ function waveCalc(units, mult) {
             enemyPoints.delete(Reject);
         }
     }*/
-    let playerPoints = new Map([
-       [DexSoldier, 81/16], [FourArcher, 81/16], [Mannequin, 81/16], [Silhouette, 81/16], [Doctor, 81/16]
+    const playerPoints = new Map([
+       [DexSoldier, 81/16], [FourArcher, 81/16], [Mannequin, 81/16], [Silhouette, 81/16], [Doctor, 81/16], [Electric, 729/64]
     ]);
     enemyPoints = new Map([[Experiment, 9/4], [Reject, 9/4], [CouncilMagician, 81/16],
             [CouncilScientist, 81/16], [Revolutionary, 81/16], [enemy, 81/16],
             [ArtificialSoldier, 81/16]]);
-    let enemies = [];
+    const enemies = [];
     let points = 0;
     const front = [Experiment, Reject, enemy, ArtificialSoldier].filter(e => enemyPoints.has(e));
     const frontEnem = front[Math.floor(Math.random() * front.length)];
@@ -499,7 +497,7 @@ function waveCalc(units, mult) {
 
 function assignEnemySkills(newUnit, template) {
     newUnit.skills = {};
-    const categories = ['special', 'basic', 'secondary', 'passive', 'augment'];
+    const categories = ['special', 'basic', 'secondary', 'passive', 'augment', 'conditional'];
     const getLoadoutForPosition = (pos) => {
         const defaultLoadout = (pos === 'front' ? template.frontDefaultSkills : template.backDefaultSkills) || template.defaultSkills;
         for (let attempt = 0; attempt < 5; attempt++) {
@@ -534,9 +532,9 @@ function assignEnemySkills(newUnit, template) {
         newUnit.skills = {...newUnit.backSkills};
         if (Math.random() > 0.5) newUnit.switchPosition(true);
     } else newUnit.skills = getLoadoutForPosition(newUnit.position);
-    for (const skill of ['passive', 'augment']) {
+    for (const skill of ['passive', 'augment', 'conditional']) {
         if (newUnit.skills[skill]) {
-            currentAction.push([newUnit.skills[skill], newUnit])
+            currentAction.push([newUnit.skills[skill], newUnit]);
             newUnit.skills[skill].code.call(newUnit);
             currentAction.pop();
         }
@@ -586,7 +584,8 @@ const unitLookup = {
     [FourArcher.name]: FourArcher,
     [Mannequin.name]: Mannequin,
     [Silhouette.name]: Silhouette,
-    [Doctor.name]: Doctor
+    [Doctor.name]: Doctor,
+    [Electric.name]: Electric
 };
 
 function initializeCombatFromSquad(squadData) {
@@ -607,9 +606,9 @@ function initializeCombatFromSquad(squadData) {
             newUnit.skills = {...newUnit.backSkills};
             if (unitConfig.startingPosition === "front") newUnit.switchPosition(true);
         } else for (const skill of unitConfig.skills ) newUnit.skills[skill.category] = ref.skills[skill.category].find(s => s.name === skill.name);
-        for (const skill of ['passive', 'augment']) {
+        for (const skill of ['passive', 'augment', 'conditional']) {
             if (newUnit.skills[skill]) {
-                currentAction.push([newUnit.skills[skill], newUnit])
+                currentAction.push([newUnit.skills[skill], newUnit]);
                 newUnit.skills[skill].code.call(newUnit);
                 currentAction.pop();
             }

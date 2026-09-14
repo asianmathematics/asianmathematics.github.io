@@ -31,23 +31,16 @@ class Unit {
             staminaRegen: 0,
         };
         if (stat[13]) { 
-            this.mana = this.base.mana = stat[13];
+            this.base.mana = stat[13];
             this.base.manaRegen = stat[14];
             this.mult.manaRegen = 0;
         }
         if (stat[15]) { 
-            this.energy = this.base.energy = stat[15];
+            this.base.energy = stat[15];
             this.base.energyRegen = stat[16];
             this.mult.energyRegen = 0;
         }
         this.star = star;
-        this.elements = this.base.elements;
-        this.hp = this.base.hp;
-        this.stamina = this.base.stamina;
-        this.skills = {};
-        this.previousAction = [false, false, false];
-        this.stun = 0;
-        this.cancel = 0;
     }
 }
 
@@ -55,7 +48,7 @@ function createUnit(unit, team) {
     const newUnit = cloneUnit(unit);
     let name = unit.name;
     let dupe = 1;
-    while (allUnits.filter(obj => obj.name.includes(name)).some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}` }
+    while (allUnits.filter(obj => obj.name.includes(name)).some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}`; }
     newUnit.name = name;
     if (newUnit.position === "mid") newUnit.position = "back";
     newUnit.team = team;

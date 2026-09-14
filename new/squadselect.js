@@ -3,11 +3,12 @@ import { FourArcher } from './unit/fourArcher.js';
 import { Mannequin } from './unit/mannequin.js';
 import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
+import { Electric } from './unit/electric.js';
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
 import { Unit, createUnit, cloneUnit, allUnits } from './unit/unit.js';
 
-const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor];
+const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric];
 
 let selectedUnits = [];
 let currentEditingUnit = null;
@@ -62,11 +63,7 @@ function initUnitSelection() {
     });
 }
 
-function getAllSkills(unitTemplate) {
-    let allSkills = [];
-    for (const category in unitTemplate.skills) allSkills.push(...unitTemplate.skills[category]);
-    return allSkills;
-}
+function getAllSkills(unitTemplate) { return Object.values(unitTemplate.skills).forEach(c => unitTemplate.skills[c]).flat(); }
 
 function getDefaultSkills(unitTemplate, position = null) {
     if (unitTemplate.base.position === 'mid' && position) {
@@ -78,7 +75,7 @@ function getDefaultSkills(unitTemplate, position = null) {
     return [];
 }
 
-function resolveDefaultSkills(template, defaultsArray) { return defaultsArray.map(def => template.skills[def.category] ? template.skills[def.category].find(s => s.name === def.name) : null).filter(Boolean) }
+function resolveDefaultSkills(template, defaultsArray) { return defaultsArray.map(def => template.skills[def.category] ? template.skills[def.category].find(s => s.name === def.name) : null).filter(Boolean); }
 
 function openSkillSelection(unitConfig, targetPosition = null) {
     const isUnitChanged = currentEditingUnit !== unitConfig;
@@ -102,8 +99,8 @@ function openSkillSelection(unitConfig, targetPosition = null) {
             <button id="pos-back-btn" style="padding: 5px 15px; background: ${currentEditingPosition === 'back' ? '#060' : '#555'}; color: white; border: none; cursor: pointer; border-radius: 4px;">Backline</button>
         `;
         unitNameHeader.after(toggleDiv);
-        document.getElementById('pos-front-btn').onclick = () => { openSkillSelection(unitConfig, 'front') };
-        document.getElementById('pos-back-btn').onclick = () => { openSkillSelection(unitConfig, 'back') };
+        document.getElementById('pos-front-btn').onclick = () => { openSkillSelection(unitConfig, 'front'); };
+        document.getElementById('pos-back-btn').onclick = () => { openSkillSelection(unitConfig, 'back'); };
     }
     
     renderSkillRoster();
@@ -126,7 +123,7 @@ function openSkillSelection(unitConfig, targetPosition = null) {
         renderSelectedUnits();
     };
     
-    document.getElementById('cancel-skills').onclick = () => { panel.style.display = 'none' };
+    document.getElementById('cancel-skills').onclick = () => { panel.style.display = 'none'; };
     
     document.getElementById('reset-defaults').onclick = () => {
         if (currentEditingPosition) currentEditingUnit.skills[currentEditingPosition] = getDefaultSkills(currentEditingUnit.template, currentEditingPosition);
@@ -189,7 +186,7 @@ function renderSelectedSkills() {
             emptyMsg.style.cssText = 'color: #888; text-align: center; font-size: 12px; margin: 5px 0;';
             emptyMsg.textContent = 'No frontline skills selected';
             list.appendChild(emptyMsg);
-        } else currentEditingUnit.skills.front.forEach((skill, index) => { list.appendChild(createSkillItem(skill, 'front', index)) });
+        } else currentEditingUnit.skills.front.forEach((skill, index) => { list.appendChild(createSkillItem(skill, 'front', index)); });
         const backHeader = document.createElement('h4');
         backHeader.style.cssText = 'color: #2196f3; margin: 15px 0 5px 0; border-bottom: 1px solid #2196f3; padding-bottom: 4px;';
         backHeader.textContent = `Backline (${currentEditingUnit.skills.back.length}/${maxSlots})`;
@@ -199,11 +196,11 @@ function renderSelectedSkills() {
             emptyMsg.style.cssText = 'color: #888; text-align: center; font-size: 12px; margin: 5px 0;';
             emptyMsg.textContent = 'No backline skills selected';
             list.appendChild(emptyMsg);
-        } else currentEditingUnit.skills.back.forEach((skill, index) => { list.appendChild(createSkillItem(skill, 'back', index)) });
+        } else currentEditingUnit.skills.back.forEach((skill, index) => { list.appendChild(createSkillItem(skill, 'back', index)); });
     } else {
         countDisplay.textContent = `Selected Skills (${currentEditingUnit.skills.length}/${maxSlots})`;
         if (currentEditingUnit.skills.length === 0) return list.innerHTML = '<p style="color: #888; text-align: center;">No skills selected (Not Recommended)</p>';
-        currentEditingUnit.skills.forEach((skill, index) => { list.appendChild(createSkillItem(skill, null, index)) });
+        currentEditingUnit.skills.forEach((skill, index) => { list.appendChild(createSkillItem(skill, null, index)); });
     }
 }
 
@@ -319,9 +316,9 @@ function updateInfoDisplay(unit) {
     if (!infoDisplay || !unit) return;
     let html = `<div class="left-column"> <h2>${unit.name}</h2> <p>${unit.description}</p> <h4>Stats (Current)</h4>`;
     for (const statName of Object.keys(unit.base).filter(s => s !== "elements")) {
-        if (['hp', 'stamina', 'mana', 'energy'].includes(statName)) html += `<div class="stat-line"><span><strong>${statName.charAt(0).toUpperCase() + statName.slice(1)}</strong></span><span>${Math.max(0, unit[statName])} / ${unit.base[statName]}</span></div>`  
-        else if (unit[statName] !== undefined) html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit[statName]}</span></div>`  
-        else if (unit.base[statName] !== undefined) html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit.base[statName]}</span></div>`
+        if (['hp', 'stamina', 'mana', 'energy'].includes(statName)) html += `<div class="stat-line"><span><strong>${statName.charAt(0).toUpperCase() + statName.slice(1)}</strong></span><span>${Math.max(0, unit[statName])} / ${unit.base[statName]}</span></div>`;  
+        else if (unit[statName] !== undefined) html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit[statName]}</span></div>`;  
+        else if (unit.base[statName] !== undefined) html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit.base[statName]}</span></div>`;
     }
     html += `</div>`;
     html += `<div class="right-column"><h3>Skills</h3>`;

@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const Experiment = new Unit("Experiment", [700, 24, 10, 70, 45, 70, 45, 45, 80, "front", 80, 70, 7], 2, ["independence/loneliness"]);
@@ -11,15 +11,15 @@ Experiment.skills = {
             properties: ["physical", "stamina-block", "stamina", "attack"],
             cost: { stamina: 30 },
             description: "Attacks a single target 3 times with increased attack and accuracy",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
-            code(target) { attack(this, target, 3, { attacker: { attack: { bonus: 25 }, accuracy: { bonus: 35 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
+            code(target) { attack(this, target, 3, { attacker: { attack: { bonus: 25 }, accuracy: { bonus: 35 } } }); }
         },
         {
             name: "Brain Eating",
             properties: ["physical", "stamina-block", "stamina", "attack", "fatal"],
             cost: { stamina: 50 },
             description: "Makes an attack on alive target. If attack reduced half of target's current hp or target is downed, chance to kill target",
-            target() { specialTarget(this, allUnits.filter(u => u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.position === "front" && u.team !== this.team)); },
             code(target) {
                 if ((!target[0].hp || attack(this, target)[0] >= target[0].hp) && resistDebuff(this, target)[0] > 50) {
                     allUnits.splice(allUnits.indexOf(target[0]), 1);
@@ -55,7 +55,7 @@ Experiment.skills = {
             name: "Tooth and Nail",
             properties: ["physical", "stamina-block", "attack"],
             description: "Attacks a single target 3 times",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 3) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 3); }
         },
         {
             name: "Brain Eating",
@@ -100,7 +100,7 @@ Experiment.skills = {
             name: "Tooth and Nail",
             properties: ["physical", "attack"],
             description: "Attacks a single target 2 times",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2); }
         },
         {
             name: "Imperfect Abomination",
@@ -176,7 +176,7 @@ Experiment.skills = {
             }
         }
     ]
-}
+};
 
 Experiment.defaultSkills = [
     { category: 'special', name: 'Brain Eating' },

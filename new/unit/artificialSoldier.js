@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 22, 25, 85, 60, 80, 60, 90, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
@@ -11,16 +11,16 @@ ArtificialSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "mana", "attack"],
             cost: { stamina: 20, mana: 30 },
             description: "Attacks a single target twice with increased attack, accuracy, and focus",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
-            code(target) { attack(this, target, 2, { attacker: { attack: { bonus: 24 }, accuracy: { bonus: 80 }, focus: { bonus: 60 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
+            code(target) { attack(this, target, 2, { attacker: { attack: { bonus: 24 }, accuracy: { bonus: 80 }, focus: { bonus: 60 } } }); }
         },
         {
             name: "Energy Rifle",
             properties: ["physical", "stamina-block", "stamina", "techno", "energy-block", "energy", "attack"],
             cost: { stamina: 30, energy: 20 },
             description: "Attacks a single target 4 times with increased attack and accuracy",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
-            code(target) { attack(this, target, 4, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 60 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
+            code(target) { attack(this, target, 4, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 60 } } }); }
         },
         {
             name: "Recharge",
@@ -37,7 +37,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "buff"],
             cost: { stamina: 30 },
             description: "Increases accuracy, evasion, and focus for 5 turns",
-            code() { basicModifier("Perfect Form", "Accuracy, evasion, and focus increase", { target: this, duration: 6, properties: ["physical", "buff"], stats: { accuracy: 80, evasion: 50, focus: 80 }, listeners: { turnEnd: true }, focus: true }) }
+            code() { basicModifier("Perfect Form", "Accuracy, evasion, and focus increase", { target: this, duration: 6, properties: ["physical", "buff"], stats: { accuracy: 80, evasion: 50, focus: 80 }, listeners: { turnEnd: true }, focus: true }); }
         },
         {
             name: "Made to Serve",
@@ -55,13 +55,13 @@ ArtificialSoldier.skills = {
             name: "Magic Weapon",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "attack", "conditional", "mana"],
             description: "Attacks a single target twice with increased accuracy and focus, can spend 15 mana to increase attack",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -15 }) ? 16 : 0 }, accuracy: { bonus: 60 }, focus: { bonus: 30 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -15 }) ? 16 : 0 }, accuracy: { bonus: 60 }, focus: { bonus: 30 } } }); }
         },
         {
             name: "Energy Rifle",
             properties: ["physical", "stamina-block", "techno", "energy-block", "attack", "conditional", "energy"],
             description: "Attacks a single target 4 times with increased attack, can spend 10 energy to increase accuracy",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { attack: { bonus: 8 }, accuracy: { bonus: resourceChange(this, { energy: -10 }) ? 30 : 0 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { attack: { bonus: 8 }, accuracy: { bonus: resourceChange(this, { energy: -10 }) ? 30 : 0 } } }); }
         },
         {
             name: "Recharge",
@@ -77,7 +77,7 @@ ArtificialSoldier.skills = {
             name: "Perfect Form",
             properties: ["physical", "stamina-block", "buff"],
             description: "Increases accuracy, evasion, and focus for 2 turns. If currently active, refreshes duration and allow stamina regen next turn",
-            code() { refreshModifier([{ name: "Perfect Form", vars: { caster: this, target: this, parent: this.skills.basic } }])[0] ? this.previousAction[0] = false : basicModifier("Perfect Form", "Accuracy, evasion, and focus increase", { target: this, duration: 3, properties: ["physical", "buff"], stats: { accuracy: 60, evasion: 20, focus: 50 }, listeners: { turnEnd: true }, focus: true }) }
+            code() { refreshModifier([{ name: "Perfect Form", vars: { caster: this, target: this, parent: this.skills.basic } }])[0] ? this.previousAction[0] = false : basicModifier("Perfect Form", "Accuracy, evasion, and focus increase", { target: this, duration: 3, properties: ["physical", "buff"], stats: { accuracy: 60, evasion: 20, focus: 50 }, listeners: { turnEnd: true }, focus: true }); }
         },
         {
             name: "Made to Serve",
@@ -96,13 +96,13 @@ ArtificialSoldier.skills = {
             name: "Magic Weapon",
             properties: ["physical", "mystic", "mana-block", "attack", "conditional", "mana"],
             description: "Attacks a single target twice with increased accuracy, can spend 10 mana to increase attack",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -10 }) ? 12 : 0 }, accuracy: { bonus: 40 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -10 }) ? 12 : 0 }, accuracy: { bonus: 40 } } }); }
         },
         {
             name: "Energy Rifle",
             properties: ["physical", "techno", "energy-block", "attack", "conditional", "energy"],
             description: "Attacks a single target 4 times, can spend 5 energy to increase accuracy",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { accuracy: { bonus: resourceChange(this, { energy: -5 }) ? 20 : 0 } } }) }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { accuracy: { bonus: resourceChange(this, { energy: -5 }) ? 20 : 0 } } }); }
         },
         {
             name: "Recharge",
@@ -117,7 +117,7 @@ ArtificialSoldier.skills = {
             name: "Perfect Form",
             properties: ["physical", "buff"],
             description: "Increases accuracy and focus for 1 turn",
-            code() { if (!refreshModifier([{ name: "Perfect Form", vars: { caster: this, target: this, parent: this.skills.secondary } }], 2)[0]) basicModifier("Perfect Form", "Accuracy and focus increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { accuracy: 40, focus: 30 }, listeners: { turnEnd: true }, focus: true }) }
+            code() { if (!refreshModifier([{ name: "Perfect Form", vars: { caster: this, target: this, parent: this.skills.secondary } }], 2)[0]) basicModifier("Perfect Form", "Accuracy and focus increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { accuracy: 40, focus: 30 }, listeners: { turnEnd: true }, focus: true }); }
         },
         {
             name: "Made to Serve",
@@ -139,7 +139,7 @@ ArtificialSoldier.skills = {
                 new Modifier("Recharge", "Regens some mana or stamina depending which one is lower, regen is 5% max resource per 25% of stamina remaining",
                     { caster: this, target: this, properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 })}
+                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 });}
                 );
             }
         },
@@ -147,7 +147,7 @@ ArtificialSoldier.skills = {
             name: "Perfect Form",
             properties: ["physical", "buff"],
             description: "Increases accuracy and focus",
-            code() { basicModifier("Perfect Form", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 30, focus: 20 }, focus: true, passive: true }) }
+            code() { basicModifier("Perfect Form", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 30, focus: 20 }, focus: true, passive: true }); }
         },
         {
             name: "Made to Serve",
@@ -168,7 +168,7 @@ ArtificialSoldier.skills = {
                 new Modifier("Recharge", "Regens some mana or stamina depending which one is lower, regen is 5% max resource per 25% of stamina remaining",
                     { caster: this, target: this, properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*.75 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*.75 })}
+                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*.75 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*.75 });}
                 );
             }
         },
@@ -176,7 +176,7 @@ ArtificialSoldier.skills = {
             name: "Perfect Form",
             properties: ["physical", "buff"],
             description: "Increases accuracy, evasion, and focus",
-            code() { basicModifier("Perfect Form", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 45, evasion: 15, focus: 30 }, focus: true, passive: true }) }
+            code() { basicModifier("Perfect Form", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 45, evasion: 15, focus: 30 }, focus: true, passive: true }); }
         },
         {
             name: "Made to Serve",
@@ -188,7 +188,7 @@ ArtificialSoldier.skills = {
             }
         }
     ]
-}
+};
 
 ArtificialSoldier.defaultSkills = [
     { category: 'special', name: 'Perfect Form' },

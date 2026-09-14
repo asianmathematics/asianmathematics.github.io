@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js'
+import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
 export const Revolutionary = new Unit("Revolutionary", [850, 50, 20, 130, 90, 150, 65, 90, 55, "mid", 75, 150, 18], 3, ["passion/hatred"]);
@@ -11,7 +11,7 @@ Revolutionary.skills = {
             properties: ["physical", "stamina-block", "attack", "pseudo-resource"],
             cost: { stamina: 40 },
             description: "Attacks a single target 4 times with increased attack/accuracy/focus, adds two attacks and extra attack if reloaded",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const bonus = this.custom?.focusFire ? !!this.custom.focusFire-- : 0;
                 attack(this, target, 4 + 2*bonus, { attacker: { attack: { bonus: 50*(1 + bonus) }, accuracy: { bonus: 35 }, focus: { bonus: 40 } } });
@@ -22,12 +22,12 @@ Revolutionary.skills = {
             properties: ["physical", "stamina-block", "stamina", "debuff", "stun"],
             cost: { stamina: 40, position: "front" },
             description: "Decrease target accuracy/evasion/speed for a few turns depending on chance and stuns target for 1 turn, 1% chance to fail, increases stun duration by 1 if reloaded",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const will = resistDebuff(this, target)[0];
                 if (will >= 2) {
-                    basicModifier("Flashbang debuff", "Accuracy, evasion, and speed decrease", { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { accuracy: -30, evasion: -60, speed: -25 }, listeners: { turnStart: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2 } });
-                    stunModifier("Flashbang", { target: target[0], duration: this.custom?.flashbang ? this.custom.flashbang-- && 2 : 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2 } });
+                    basicModifier("Flashbang debuff", "Accuracy, evasion, and speed decrease", { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { accuracy: -30, evasion: -60, speed: -25 }, listeners: { turnStart: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } });
+                    stunModifier("Flashbang", { target: target[0], duration: this.custom?.flashbang ? this.custom.flashbang-- && 2 : 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } });
                 } else logAction(`${target[0].name} resists the flashbang!`, "miss");
             }
         },
@@ -36,8 +36,8 @@ Revolutionary.skills = {
             properties: ["physical", "stamina-block", "stamina", "attack", "pseudo-resource"],
             cost: { stamina: 40, position: "back" },
             description: "Attacks a single target with increased attack/accuracy/focus, can target backline, adds extra attack if reloaded",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.team !== this.team)) },
-            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: this.custom?.snipe ? this.custom.snipe-- && 90 : 60 }, accuracy: { bonus: 70 }, focus: { bonus: 80 } } }) }
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.team !== this.team)); },
+            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: this.custom?.snipe ? this.custom.snipe-- && 90 : 60 }, accuracy: { bonus: 70 }, focus: { bonus: 80 } } }); }
         },
         {
             name: "Reload",
@@ -71,13 +71,13 @@ Revolutionary.skills = {
             properties: ["physical", "stamina-block", "stamina", "debuff"],
             cost: { stamina: 20 },
             description: "Decreases target evasion, focus, and resist and increase chance for caster to be targeted by target for a few turns, 1% chance to fail, can target backline if at frontline",
-            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)) },
+            target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 let will = resistDebuff(this, target)[0];
                 if (will >= 2) {
                     logAction(`${this.name} taunts ${target[0].name}!`, "debuff");
                     new Modifier("Taunt", "Decreases target evasion, focus, and resist and increase chance for caster to be targeted by target",
-                       { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -20, focus: -35, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2 } },
+                       { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -20, focus: -35, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } },
                         function() {},
                         function(context) {
                             let i;
@@ -142,9 +142,9 @@ Revolutionary.skills = {
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
                     switch (true) {
                         case will >= 50:
-                            stunModifier("Flashbang", { target: target[0], duration: 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 75 } });
+                            stunModifier("Flashbang", { target: target[0], duration: 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 75; } });
                         case will >= 20:
-                            basicModifier("Flashbang debuff", "Evasion, and speed decrease", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/50), properties: ["physical", "debuff"], stats: { evasion: -30, speed: -15 }, listeners: { turnStart: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 20 } });
+                            basicModifier("Flashbang debuff", "Evasion, and speed decrease", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/50), properties: ["physical", "debuff"], stats: { evasion: -30, speed: -15 }, listeners: { turnStart: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 20; } });
                             break;
                         default:
                             logAction(`${target[0].name} resists the flashbang!`, "miss");
@@ -180,7 +180,7 @@ Revolutionary.skills = {
                 if (will >= 20) {
                     logAction(`${this.name} distracts ${target[0].name}`, "debuff");
                     new Modifier("Taunt", "Decreases target focus, and resist and doubles the chance for caster to be targeted by target",
-                       { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -25, resist: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 20 } },
+                       { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -25, resist: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 20; } },
                         function() {},
                         function(context) {
                             let i;
@@ -245,7 +245,7 @@ Revolutionary.skills = {
                 if (will > 33) {
                     logAction(`${this.name} distracts ${target[0].name}`, "debuff");
                     new Modifier("Taunt", "Decreases target evasion, focus, and resist and doubles the chance for caster to be targeted by target",
-                       { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33 } },
+                       { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33; } },
                         function() {},
                         function(context) {
                             let i;
@@ -281,7 +281,7 @@ Revolutionary.skills = {
             name: "Switch Position",
             properties: ["physical", "positional"],
             description: "Switch between front and backline positions",
-            code() { this.switchPosition() }
+            code() { this.switchPosition(); }
         }
     ],
     passive: [
@@ -293,7 +293,7 @@ Revolutionary.skills = {
             code() {
                 new Modifier("Reload", `Ignores reload mechanic`,
                    { target: this, properties: ["physical", "stamina", "pseudo-resource"], listeners: { turnEnd: true }, cancelListeners: ['turnEnd'], cost: this.skills.passive.cost, focus: true, passive: true},
-                    function() { this.vars.caster.custom = { flashbang: 1, snipe: 1, focusFire: 1 } },
+                    function() { this.vars.caster.custom = { flashbang: 1, snipe: 1, focusFire: 1 }; },
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied) {
                             if (!this.vars.caster.custom.flashbang && resourceChange(this.vars.caster, this.vars.cost, false)) this.vars.caster.custom.flashbang = 1;
@@ -310,7 +310,7 @@ Revolutionary.skills = {
             description: "Start of turn, chooses a target and has a chance to decrease target focus and resist and double the chance for caster to be targeted by target, can target backline if at frontline",
             code() {
                 new Modifier("Taunt", "Decreases target focus, and resist and double the chance for caster to be targeted by target",
-                   { target: null, duration: 1, properties: ["physical", "debuff"], stats: { focus: -25, resist: -15 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33 }, fail: false },
+                   { target: null, properties: ["physical", "debuff"], stats: { focus: -25, resist: -15 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33; }, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -324,6 +324,7 @@ Revolutionary.skills = {
                     }, undefined,
                     function(unit) {
                         if (!this.vars.target) resetStat(unit, Object.keys(this.vars.stats), Object.values(this.vars.stats));
+                        else if (this.vars.target === unit) unit = null;
                         if (this.vars.applied) {
                             this.cancel(true, true);
                             this.vars.target = unit;
@@ -359,7 +360,7 @@ Revolutionary.skills = {
             description: "Start of turn, chooses a target and has a chance to decrease target focus and resist and double the chance for caster to be targeted by target, can target backline if at frontline",
             code() {
                 new Modifier("Taunt", "Decreases target focus, and resist and double the chance for caster to be targeted by target",
-                   { target: null, duration: 1, properties: ["physical", "debuff"], stats: { focus: -40, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33 }, fail: false },
+                   { target: null, properties: ["physical", "debuff"], stats: { focus: -40, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33; }, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -373,6 +374,7 @@ Revolutionary.skills = {
                     }, undefined,
                     function(unit) {
                         if (!this.vars.target) resetStat(unit, Object.keys(this.vars.stats), Object.values(this.vars.stats));
+                        else if (this.vars.target === unit) unit = null;
                         if (this.vars.applied) {
                             this.cancel(true, true);
                             this.vars.target = unit;
@@ -401,7 +403,7 @@ Revolutionary.skills = {
             }
         }
     ]
-}
+};
 
 Revolutionary.frontDefaultSkills = [
     { category: 'special', name: 'Focus Fire' },
@@ -423,13 +425,13 @@ Revolutionary.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
         this.base = { ...this.base, attack: 60, evasion: 50, resist: 50, speed: 110, presence: 105 };
-        this.skills = {...this.frontSkills}
+        this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
         this.base = { ...this.base, attack: 50, evasion: 90, resist: 65, speed: 90, presence: 55 };
-        this.skills = {...this.backSkills}
+        this.skills = {...this.backSkills};
     }
     logAction(`${this.name} moves to the ${this.position}line.`, "info");
     resetStat(this, ["attack", "evasion", "resist", "speed", "presence"]);
     if (!silent && eventState.positionChange.length) handleEvent('positionChange', { unit: this, position: this.position });
-}
+};
