@@ -287,8 +287,16 @@ FourArcher.skills = {
             code() {
                 new Modifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence",
                     { target: null, properties: ["mystic", "buff"], stats: { accuracy: 5, evasion: 20, focus: 10, resist: 20, presence: 20 }, listeners: { turnStart: true }, passive: true },
-                    function() { this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0]); },
-                    function (context) { if (context.unit === this.vars.caster) this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team))[0]); }
+                    function() {
+                        const target = randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0];
+                        if (target !== this.vars.target) this.changeTarget(target);
+                    },
+                    function (context) {
+                        if (context.unit === this.vars.caster) {
+                            const target = randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0];
+                            if (target !== this.vars.target) this.changeTarget(target);
+                        }
+                    }
                 );
             }
         },
@@ -380,8 +388,16 @@ FourArcher.skills = {
             code() {
                 new Modifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence",
                     { target: null, properties: ["mystic", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true }, passive: true },
-                    function() { this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team)[0])); },
-                    function (context) { if (context.unit === this.vars.caster) this.changeTarget(randTarget(allUnits.filter(u => u.hp && u.team === this.team))[0]); },
+                    function() {
+                        const target = randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0];
+                        if (target !== this.vars.target) this.changeTarget(target);
+                    },
+                    function (context) {
+                        if (context.unit === this.vars.caster) {
+                            const target = randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0];
+                            if (target !== this.vars.target) this.changeTarget(target);
+                        }
+                    }
                 );
             }
         },

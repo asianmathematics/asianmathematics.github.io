@@ -459,7 +459,7 @@ Electric.skills = {
                     function(context) {
                         if (context.unit === this.vars.caster) {
                             const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team))[0], mod = modifiers.find(m => m.name === "Electrostatic Discharge" && m.vars.caster === this.vars.caster && m.vars.applied), will = (mod ? attack(this.vars.caster, [target], 1, mod.vars.bonus)[0] : 0) || this.vars.debuff.call(this, target);
-                            this.changeTarget(target);
+                            if (target !== this.vars.target) this.changeTarget(target);
                             if (this.vars.fail && will) this.cancel(this.vars.fail = false);
                             if (!this.vars.fail && !will) this.cancel(this.vars.fail = true);
                         }
@@ -804,7 +804,7 @@ Electric.skills = {
                     function(context) {
                         if (context.unit === this.vars.caster) {
                             const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team))[0], mod = modifiers.find(m => m.name === "Electrostatic Discharge" && m.vars.caster === this.vars.caster && m.vars.applied), will = (mod ? attack(this.vars.caster, [target], 1, mod.vars.bonus)[0] : 0) || this.vars.debuff.call(this, target);
-                            this.changeTarget(target);
+                            if (target !== this.vars.target) this.changeTarget(target);
                             if (this.vars.fail && will) this.cancel(this.vars.fail = false);
                             if (!this.vars.fail && !will) this.cancel(this.vars.fail = true);
                         }

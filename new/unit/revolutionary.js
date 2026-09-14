@@ -314,8 +314,8 @@ Revolutionary.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            let target = randTarget(allUnits.filter(u => u.hp && u.team !== this.team && (this.position === "front" || u.position === "front"))), will = resistDebuff(this.vars.caster, target)[0];
-                            this.changeTarget(target[0]);
+                            const target = randTarget(allUnits.filter(u => u.hp && u.team !== this.team && (this.position === "front" || u.position === "front"))), will = resistDebuff(this.vars.caster, target)[0];
+                            if (target !== this.vars.target) this.changeTarget(target[0]);
                             if (this.vars.fail && will > 33) this.cancel(this.vars.fail = false);
                             if (!this.vars.fail && will <= 33) this.cancel(this.vars.fail = true);
                         }
@@ -364,8 +364,8 @@ Revolutionary.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            let target = randTarget(allUnits.filter(u => u.hp && u.team !== this.team && (this.position === "front" || u.position === "front"))), will = resistDebuff(this.vars.caster, target)[0];
-                            this.changeTarget(target[0]);
+                            const target = randTarget(allUnits.filter(u => u.hp && u.team !== this.team && (this.position === "front" || u.position === "front"))), will = resistDebuff(this.vars.caster, target)[0];
+                            if (target !== this.vars.target) this.changeTarget(target[0]);
                             if (this.vars.fail && will > 33) this.cancel(this.vars.fail = false);
                             if (!this.vars.fail && will <= 33) this.cancel(this.vars.fail = true);
                         }
