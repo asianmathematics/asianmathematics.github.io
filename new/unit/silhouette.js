@@ -343,7 +343,7 @@ Silhouette.skills = {
                 auraModifier("Friends with the Shadows", "Shadow summons get star up equivalent stats except hp and resources",
                     { targets: [], properties: ["mystic", "buff"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function(target) { basicModifier("Friends with the Shadows buff", "Star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(target.base[k]/2)])) }); },
-                    function(unit) { return unit.custom?.summoner === this; }
+                    function(unit) { return unit.custom?.summoner === this.vars.caster; }
                 );
             }
         },
@@ -417,7 +417,7 @@ Silhouette.skills = {
                 auraModifier("Friends with the Shadows", "Shadow summons get two star up equivalent stats except hp and resources",
                     { targets: [], properties: ["mystic", "buff"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function(target) { basicModifier("Friends with the Shadows buff", "Two star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(2.25*target.base[k])])) }); },
-                    function(unit) { return unit.custom?.summoner === this; }
+                    function(unit) { return unit.custom?.summoner === this.vars.caster; }
                 );
             }
         },

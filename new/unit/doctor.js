@@ -181,7 +181,7 @@ Doctor.skills = {
                 auraModifier("Caring is Sharing", "Increased heal factor for allies",
                     { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
                     function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 50 } }); },
-                    function(unit) { return unit.team === this.team && unit !== this; }
+                    function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
         },
@@ -194,7 +194,7 @@ Doctor.skills = {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",
                     { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
                     function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack: 15, accuracy: 40, focus: 40 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 15, evasion: 40, presence: 100 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 80, speed: 50 } }); },
-                    function(unit) { return unit.team === this.team && unit !== this; }
+                    function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
         },
@@ -231,7 +231,7 @@ Doctor.skills = {
                 auraModifier("Caring is Sharing", "Increased heal factor for allies",
                     { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
                     function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 75 } }); },
-                    function(unit) { return unit.team === this.team && unit !== this; }
+                    function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
         },
@@ -244,7 +244,7 @@ Doctor.skills = {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",
                     { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
                     function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack:215, accuracy: 80, focus: 80 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 25, evasion: 80, presence: 180 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 140, speed: 90 } }); },
-                    function(unit) { return unit.team === this.team && unit !== this; }
+                    function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
         },

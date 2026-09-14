@@ -278,7 +278,7 @@ function wildMagic(buff) {
             auraModifier(`Wild Magic: Defense${buff ? '' : ' backfire'}`, `Increases defense and resist of all frontline ${buff ? "allies" : "enemies"}`,
                 { targets: allUnits.filter(u => u.position === "front" && buff === (u.team === this.team)), duration: 1, properties: ["mystic", "buff"], listeners: { turnStart: true, positionChange: true }, cancelListeners: ['positionChange'] },
                 function(target) { basicModifier("Wild Magic: Defense buff", "Increases defense and resist", {target, properties: ["mystic", "buff"], stats: { defense: 30, resist: 100 } }); },
-                function (unit) { return unit.position === "front" && buff === (unit.team === this.team); }
+                function (unit) { return unit.position === "front" && buff === (unit.team === this.vars.caster.team); }
             );
             break;
         case 3:
