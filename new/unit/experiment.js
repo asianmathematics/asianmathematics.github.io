@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit } from './unit.js';
 
 export const Experiment = new Unit("Experiment", [700, 24, 10, 70, 45, 70, 45, 45, 80, "front", 80, 70, 7], 2, ["independence/loneliness"]);
 

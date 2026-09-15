@@ -1,5 +1,5 @@
-import { allUnits, createUnit } from "./unit/unit.js";
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
+import { createUnit } from "./unit/unit.js";
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
 const elements = ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"];
 
 function regenerateResources(unit) {
@@ -48,6 +48,8 @@ function executeEnemyAction(unit, action) {
 function randTarget(unitList = allUnits, count = 1, trueRand = false) {
     const context = { unitList, count, trueRand, targetMods: {} };
     if (eventState.targetStart.length) handleEvent('targetStart', context);
+    count = context.count;
+    trueRand = context.trueRand;
     if (count >= unitList.length) {
         if (eventState.targets.length) handleEvent('targets', { selectedTargets: unitList, count, trueRand });
         return unitList;
@@ -211,21 +213,26 @@ function showMessage(message, type = 'info', elementId = 'message-container', du
 }
 
 function attack(attacker, defenders, num = 1, calcMods = {}) {
-    if (eventState.attackStart.length) handleEvent('attackStart', {attacker, defenders, num, calcMods});
+    if (typeof num === "number") num = Array(defenders.length).fill(num);
+    if (num.length !== defenders.length) throw new TypeError(`Defender (${defenders}) and attack (${num}) array lengths are not equal`);
+    let context = {attacker, defenders, num, calcMods}
+    if (eventState.attackStart.length) handleEvent('attackStart', context);
+    calcMods = context.calcMods;
     const attackMods = getModdedStats(attacker, calcMods.attacker);
     const array = [];
     for (let i = 0; i < defenders.length; i++) {
         const defendMods = getModdedStats(defenders[i], calcMods.all, calcMods.defenders?.[i]);
         const hit = [];
-        for (let j = 0; j < num; j++) {
+        for (let j = 0; j < num[i]; j++) {
             const rolls = [];
             for (let r = 0; r <= Math.abs((calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0)); r++) rolls.push(Math.floor(Math.random() * 100 + 1));
             const roll = (calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0) < 0 ? Math.min(...rolls) : Math.max(...rolls);
             let hitSingle = roll === 1 ? 0 : roll - 50 * (roll === 100 ? .5*(((calcMods.max ??= [])[i] ??= [])[j] = true) : 1) * (.75 + (defendMods.evasion-attackMods.accuracy)/(attackMods.accuracy+defendMods.evasion));
             if (eventState.singleAttack.length) {
-                const context = {attacker, defender: defenders[i], hitSingle, roll, calcMods, index: [i, j]};
+                context = {attacker, defender: defenders[i], hitSingle, roll, calcMods, index: [i, j]};
                 handleEvent('singleAttack', context);
-                hitSingle = context.nil ? 0 : (hitSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0);
+                hitSingle = context.nil ? 0 : (context.hitSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0);
+                calcMods = context.calcMods;
             }
             hit.push(hitSingle);
         }
@@ -234,9 +241,12 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
     return crit(attacker, defenders, array, calcMods);
 }
 
-function crit(attacker, defenders, hit, calcMods = {}) {
+function crit(attacker, defenders, hit = 20, calcMods = {}) {
+    if (typeof hit === "number" || typeof hit[0] === "number") hit = Array(defenders.length).fill(typeof hit === "number" ? [hit] : hit);
     if (hit.length !== defenders.length) throw new TypeError(`Defender (${defenders}) and hit (${hit}) array lengths are not equal`);
-    if (eventState.critStart.length) handleEvent('critStart', {attacker, defenders, hit, calcMods});
+    let context = {attacker, defenders, hit, calcMods};
+    if (eventState.critStart.length) handleEvent('critStart', context);
+    calcMods = context.calcMods;
     const attackMods = getModdedStats(attacker, calcMods.attacker);
     const array = [];
     for (let i = 0; i < defenders.length; i++) {
@@ -245,9 +255,10 @@ function crit(attacker, defenders, hit, calcMods = {}) {
         for (let j = 0; j < hit[i].length; j++) {
             let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (25-10*(attackMods.focus-defendMods.resist)/(attackMods.focus+defendMods.resist)), (calcMods.max?.[i]?.[j] || 0));
             if (eventState.singleCrit.length) {
-                const context = {attacker, defender: defenders[i], critSingle, hit: hit[i][j], calcMods, index: [i, j]};
+                context = {attacker, defender: defenders[i], critSingle, hit: hit[i][j], calcMods, index: [i, j]};
                 handleEvent('singleCrit', context);
-                critSingle = context.nil ? 0 : (critSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0);
+                critSingle = context.nil ? 0 : (context.critSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0);
+                calcMods = context.calcMods;
             }
             critical.push(critSingle);
         }
@@ -256,9 +267,12 @@ function crit(attacker, defenders, hit, calcMods = {}) {
     return damage(attacker, defenders, array, calcMods);
 }
 
-function damage(attacker, defenders, critical, calcMods = {}) {
+function damage(attacker, defenders, critical = .5, calcMods = {}) {
+    if (typeof critical === "number" || typeof critical[0] === "number") critical = Array(defenders.length).fill(typeof critical === "number" ? [critical] : critical);
     if (critical.length !== defenders.length) throw new TypeError(`Defender (${defenders}) and critical (${critical}) array lengths are not equal`);
-    if (eventState.damageStart.length) handleEvent('damageStart', {attacker, defenders, critical, calcMods});
+    let context = {attacker, defenders, critical, calcMods};
+    if (eventState.damageStart.length) handleEvent('damageStart', context);
+    calcMods = context.calcMods;
     const attackMods = getModdedStats(attacker, calcMods.attacker);
     const output = [];
     for (let i = 0; i < defenders.length; i++) {
@@ -270,9 +284,10 @@ function damage(attacker, defenders, critical, calcMods = {}) {
             for (let j = 0; j < critical[i].length; j++) {
                 let damageSingle = (critical[i][j] <= 0) ? 0 : Math.ceil(Math.max(((Math.random() * 0.5) + 0.75) * ((critical[i][j] < 1 ? 1 : critical[i][j] + 1) * ((2 * attackMods.attack) - defendMods.defense)), (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1))/8));
                 if (eventState.singleDamage.length) {
-                    const context = {attacker, defender: defenders[i], damageSingle, critical: critical[i][j], calcMods, index: [i, j]};
+                    context = {attacker, defender: defenders[i], damageSingle, critical: critical[i][j], calcMods, index: [i, j]};
                     handleEvent('singleDamage', context);
-                    damageSingle = context.nil ? 0 : Math.ceil(Math.max((damageSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), damageSingle ? (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1))/8 : 0));
+                    damageSingle = context.nil ? 0 : Math.ceil(Math.max((context.damageSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), damageSingle ? (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1))/8 : 0));
+                    calcMods = context.calcMods;
                 }
                 hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
                 output.push(damageSingle);
@@ -294,14 +309,18 @@ function damage(attacker, defenders, critical, calcMods = {}) {
 }
 
 function heal(healer, targets, amount, calcMods = {}) {
-    if (eventState.healStart.length) handleEvent('healStart', {healer, targets, calcMods});
+    if (typeof amount === "number") amount = Array(targets.length).fill(amount);
+    let context = {healer, targets, amount, calcMods};
+    if (eventState.healStart.length) handleEvent('healStart', context);
+    calcMods = context.calcMods;
     const heal = [];
     for (let i = 0; i < targets.length; i++) {
         let healSingle = getModdedStats(targets[i], calcMods.all, calcMods.targets?.[i]).healFactor * amount[i];
         if (eventState.singleHeal.length) {
-            const context = {healer, target: targets[i], healSingle, calcMods, index: [i]};
+            context = {healer, target: targets[i], healSingle, calcMods, index: [i]};
             handleEvent('singleHeal', context);
-            healSingle = context.nil ? 0 : Math.ceil(Math.max((healSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
+            healSingle = context.nil ? 0 : Math.ceil(Math.max((context.healSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
+            calcMods = context.calcMods;
         }
         const revive = !targets[i].hp && healSingle;
         targets[i].hp = Math.min(Math.ceil(targets[i].hp + healSingle), targets[i].base.hp);
@@ -312,6 +331,7 @@ function heal(healer, targets, amount, calcMods = {}) {
 }
 
 function hpChange(unit, targets, values) {
+    if (typeof values === "number") values = Array(targets.length).fill(values);
     const defenders = [], damages = [], heals = [];
     for (let i = targets.length - 1; i >= 0; i--) {
         if (values[i] < 0) {
@@ -319,13 +339,14 @@ function hpChange(unit, targets, values) {
             damages.push(-values[i]);
         } else heals.unshift(values[i]);
     }
-    if (eventState.damageStart.length) handleEvent('damageStart', {attacker: unit, defenders, damages, direct: true});
+    let context = {attacker: unit, defenders, damages, direct: true};
+    if (eventState.damageStart.length) handleEvent('damageStart', context);
     for (let i = 0; i < defenders.length; i++) {
         let damageSingle = damages[i];
         if (eventState.singleDamage.length) {
-            const context = {attacker: unit, defender: defenders[i], damageSingle, index: [i], direct: true};
+            context = {attacker: unit, defender: defenders[i], damageSingle, index: [i], direct: true};
             handleEvent('singleDamage', context);
-            damageSingle = context.nil ? 0 : Math.ceil(Math.max((damageSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
+            damageSingle = context.nil ? 0 : Math.ceil(Math.max((context.damageSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
         }
         defenders[i].hp = Math.max(defenders[i].hp - damageSingle, 0);
         if (defenders[i].hp === 0) {
@@ -334,13 +355,14 @@ function hpChange(unit, targets, values) {
         }
         logAction(`${unit.name} dealt ${damageSingle} damage to ${defenders[i].name}!`, "hit");
     }
-    if (eventState.healStart.length) handleEvent('healStart', {healer: unit, targets, heals, direct: true});
+    context = {healer: unit, targets, heals, direct: true};
+    if (eventState.healStart.length) handleEvent('healStart', context);
     for (let i = 0; i < targets.length; i++) {
         let healSingle = heals[i];
         if (eventState.singleHeal.length) {
-            const context = {healer: unit, target: targets[i], healSingle, index: [i], direct: true};
+            context = {healer: unit, target: targets[i], healSingle, index: [i], direct: true};
             handleEvent('singleHeal', context);
-            healSingle = context.nil ? 0 : Math.ceil(Math.max((healSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
+            healSingle = context.nil ? 0 : Math.ceil(Math.max((context.healSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
         }
         const revive = !targets[i].hp && healSingle;
         targets[i].hp = Math.min(targets[i].hp + healSingle, targets[i].base.hp);
@@ -350,7 +372,9 @@ function hpChange(unit, targets, values) {
 }
 
 function resistDebuff(attacker, defenders, calcMods = {}) {
-    if (eventState.resistStart.length) handleEvent('resistStart', {attacker, defenders, calcMods});
+    let context = {attacker, defenders, calcMods}
+    if (eventState.resistStart.length) handleEvent('resistStart', context);
+    calcMods = context.calcMods;
     const attackMods = getModdedStats(attacker, calcMods.attacker);
     const will = [];
     for (let i = 0; i < defenders.length; i++) {
@@ -360,9 +384,10 @@ function resistDebuff(attacker, defenders, calcMods = {}) {
         const roll = (calcMods.all?.reroll || 0) + (calcMods.defenders?.[i]?.reroll || 0) < 0 ? Math.min(...rolls) : Math.max(...rolls);
         let resistSingle = roll === 1 || roll === 100 ? roll : roll + 50 * ((attackMods.presence + attackMods.focus - defendMods.presence - defendMods.resist) / (attackMods.presence + attackMods.focus + defendMods.presence + defendMods.resist));
         if (eventState.singleResist.length) {
-            const context = {attacker, defender: defenders[i], resistSingle, calcMods, index: [i]};
+            context = {attacker, defender: defenders[i], resistSingle, calcMods, index: [i]};
             handleEvent('singleResist', context);
-            resistSingle = context.nil ? 0 : (resistSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0);
+            resistSingle = context.nil ? 0 : (context.resistSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0);
+            calcMods = context.calcMods;
         }
         will.push(Math.min(resistSingle, 100));
     }
@@ -404,6 +429,7 @@ function getStat(unit, statName, type = 'number') {
 function unitByStat(units, statName, type = 'number', max = true, count = 1) {
     const context = { unitList: units, count, statName, type, max };
     if (eventState.targetStart.length) handleEvent('targetStart', context);
+    ({ count, statName, type, max } = context);
     const sorted = [...units].sort((a, b) => {
         const valA = getStat(a, statName, type);
         const valB = getStat(b, statName, type);
@@ -428,6 +454,13 @@ function summon(summoner, unit, skills = {}) {
     clone.skills = skills;
     clone.custom = { ...clone.custom, summoner };
     if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: clone });
+    for (const skill of ['passive', 'augment', 'conditional']) {
+        if (clone.skills?.[skill]) {
+            currentAction.push([clone.skills[skill], clone]);
+            clone.skills[skill].code.call(clone);
+            currentAction.pop();
+        }
+    }
     return clone;
 }
 

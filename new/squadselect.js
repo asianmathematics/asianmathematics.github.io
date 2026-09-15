@@ -5,8 +5,7 @@ import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
 import { Electric } from './unit/electric.js';
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
-import { Unit, createUnit, cloneUnit, allUnits } from './unit/unit.js';
+
 
 const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric];
 

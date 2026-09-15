@@ -1,4 +1,5 @@
 const allUnits = [];
+
 class Unit {
     constructor(name, stat, star, elements = []) {
         this.name = name;

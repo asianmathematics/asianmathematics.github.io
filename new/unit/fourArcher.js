@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit } from './unit.js';
 
 export const FourArcher = new Unit("4 (Archer)", [800, 36, 16, 50, 80, 70, 140, 85, 160, "back", 110, 40, 7, 160, 24], 3, ["perfection/precision"]);
 

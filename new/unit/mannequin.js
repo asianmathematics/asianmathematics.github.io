@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit } from './unit.js';
 
 export const Mannequin = new Unit("Mannequin", [800, 45, 22, 140, 130, 150, 70, 145, 50, "mid", 120, 100, 10], 3, ["perfection/precision", "independence/loneliness", "passion/hatred"]);
 
@@ -23,11 +23,7 @@ Mannequin.skills = {
             properties: ["physical", "stamina-block", "stamina", "heal", "positional"],
             cost: { stamina: 50 },
             description: "Heals self and all allies (around ~25% max hp) in the same position",
-            code() {
-                const targets = allUnits.filter(u => u.position === this.position && u.team === this.team);
-                if (eventState.targets.length) handleEvent('targets', { selectedTargets: targets, count: targets.length });
-                heal(this, targets, Array(targets.length).fill(2.5));
-            }
+            code() { heal(this, allUnits.filter(u => u.position === this.position && u.team === this.team), 2.5); }
         },
         {
             name: "Ex-Revolutionary",
@@ -76,6 +72,7 @@ Mannequin.skills = {
                 dur ? resourceChange(this, { stamina: 10*dur }) : logAction(`${this.name}'s weapons turn automatic!`, "buff") || new Modifier("Reload", `Ignores reload mechanic`,
                     { target: this, duration: 5, properties: ["physical", "pseudo-resource"], listeners: { turnStart: true }, focus: true },
                     function() {
+                        if (this.vars.cancel) return;
                         this.custom?.dualWield !== undefined && (this.custom.dualWield = 1);
                         this.custom?.snipe !== undefined && (this.custom.snipe = 1);
                         this.custom?.focusFire !== undefined && (this.custom.focusFire = 1);
@@ -208,7 +205,7 @@ Mannequin.skills = {
             properties: ["physical", "buff", "penalty"],
             description: "Increased attack & accuracy and decreased evasion/resist/presence for 1 turn",
             code() {
-                const mod = refreshModifier([{ name: "Ex-Revolutionary buff", vars: { caster: this, target: this, parent: secondary } }, { name: "Ex-Revolutionary penalty", vars: { caster: this, target: this, parent: this.skills.secondary } }]);
+                const mod = refreshModifier([{ name: "Ex-Revolutionary buff", vars: { caster: this, target: this, parent: this.skills.secondary } }, { name: "Ex-Revolutionary penalty", vars: { caster: this, target: this, parent: this.skills.secondary } }]);
                 if (!mod[0]) basicModifier("Ex-Revolutionary buff", "Attack and accuracy increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { attack: 30, accuracy: 20 }, listeners: { turnEnd: true }, focus: true });
                 if (!mod[1]) basicModifier("Ex-Revolutionary penalty", "Evasion, resist, and presence decrease", { target: this, duration: 2, properties: ["physical", "penalty"], stats: { evasion: -10, resist: -30, presence: -50 }, listeners: { turnEnd: true }, focus: true, penalty: true });
             }
@@ -275,7 +272,7 @@ Mannequin.skills = {
             code() {
                 new Modifier("Reload", `Ignores reload mechanic`,
                     { target: this, properties: ["physical", "stamina", "pseudo-resource"], listeners: { turnEnd: true }, cancelListeners: ['turnEnd'], cost: this.skills.passive.cost, focus: true, passive: true},
-                    function() { this.vars.caster.custom = { dualWield: 1, snipe: 1, focusFire: 1 }; },
+                    function() { this.vars.caster.custom = { dualWield: !this.vars.cancel, snipe: !this.vars.cancel, focusFire: !this.vars.cancel }; },
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied) {
                             if (!this.vars.caster.custom.dualWield && resourceChange(this.vars.caster, this.vars.cost, false)) this.vars.caster.custom.dualWield = 1;

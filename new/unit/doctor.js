@@ -13,11 +13,7 @@ Doctor.skills = {
             properties: ["techno", "energy-block", "energy", "heal"],
             cost: { energy: 50 },
             description: "Heal all allies (~10% max HP)",
-            code() { 
-                const targets = allUnits.filter(u => u.team === this.team);
-                if (eventState.targets.length) handleEvent('targets', { selectedTargets: targets, count: targets.length });
-                heal(this, targets, Array(targets.length).fill(1));
-            }
+            code() { heal(this, allUnits.filter(u => u.team === this.team), 1); }
         },
         {
             name: "Caring is Sharing",

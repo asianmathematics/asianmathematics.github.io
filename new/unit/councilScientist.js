@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits, createUnit } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit, createUnit } from './unit.js';
 
 export const CouncilScientist = new Unit("Science Council Member", [1000, 21, 28, 100, 80, 120, 80, 80, 130, "back", 100, 70, 6, , , 80, 9], 3, ["independence/loneliness"]);
 
@@ -39,11 +39,7 @@ CouncilScientist.skills = {
                     hpChange(this, [drone.vars.target], [drone.vars.target.base.hp]);
                     resourceChange(drone.vars.target, { stamina: drone.vars.target.base.stamina, energy: drone.vars.target.base.energy });
                 } else {
-                    drone = createUnit({ ...Drone, name: "Deka Drone", star: 2 }, this.team);
-                    drone.skills = droneSkills(this);
-                    drone.custom = { ...drone.custom, summoner: this };
-                    Object.keys(drone.base).filter(stat => stat !== "position" && stat !== "elements").forEach(stat => { drone.base[stat] = Math.ceil(drone.base[stat] * 1.5); });
-                    resetStat(drone, Object.keys(drone.base).filter(s => s !== "position" && s !== "elements" ));
+                    drone = summon(this, { ...Drone, name: "Deka Drone", star: 2, base: Object.fromEntries(Object.entries(Drone.base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val * 1.5))])) }, droneSkills(this));
                     if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
                     new Modifier("Drone", "Summon 2-star drone",
                         { target: drone, duration: 5, properties: ["techno", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
@@ -93,11 +89,7 @@ CouncilScientist.skills = {
             properties: ["techno", "energy-block", "energy", "heal"],
             cost: { energy: 50 },
             description: "Heal all allies (~10% max HP)",
-            code() { 
-                const targets = allUnits.filter(u => u.team === this.team);
-                if (eventState.targets.length) handleEvent('targets', { selectedTargets: targets, count: targets.length });
-                heal(this, targets, Array(targets.length).fill(1));
-            }
+            code() { heal(this, allUnits.filter(u => u.team === this.team), 1); }
         },
         {
             name: "Pursuit of Knowledge",
@@ -142,9 +134,7 @@ CouncilScientist.skills = {
                     hpChange(this, [drone.vars.target], [drone.vars.target.base.hp]);
                     resourceChange(drone.vars.target, { stamina: drone.vars.target.base.stamina, energy: drone.vars.target.base.energy });
                 } else {
-                    drone = createUnit(Drone, this.team);
-                    drone.skills = droneSkills(this);
-                    drone.custom = { ...drone.custom, summoner: this };
+                    drone = summon(this, Drone, droneSkills(this));
                     if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
                     new Modifier("Drone", "Summon 2-star drone",
                         { target: drone, duration: 3, properties: ["techno", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
@@ -272,10 +262,7 @@ CouncilScientist.skills = {
             reduction: { energy: 20, energyRegen: 2 },
             description: "Summons a 1-star drone to the frontline.",
             code() {
-                const drone = createUnit(Drone, this.team);
-                drone.skills = droneSkills(this);
-                drone.custom = { ...drone.custom, summoner: this };
-                if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
+                const drone = summon(this, Drone, droneSkills(this));
                 new Modifier("Drone", "Summon 2-star drone",
                     { target: drone, properties: ["techno", "summon"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, perm: true },
                     function() {},

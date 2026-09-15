@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit } from './unit.js';
 
 export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 80, 100, 140, 80, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
 
@@ -282,14 +282,14 @@ function wildMagic(buff) {
             );
             break;
         case 3:
-            currentAction.push([this, CouncilMagician.skills.special[0]]);
+            currentAction.push([CouncilMagician.skills.special[0], this]);
             CouncilMagician.skills.special[0].code.call(this, buff ? randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 1, true) : [this]);
             currentAction.pop();
             break;
         case 4:
             new Modifier(`Wild Magic: Poison${buff ? '' : ' backfire'}`, 'Immediate and start of turn poison damage until resisted',
                 { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], properties: ["mystic", "attack", "dot", "poison"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } },
-                function() { return this.vars.debuff.call(this, this.vars.target) ? damage(this.vars.caster, [this.vars.target], [[.5]]) && false : logAction(`${this.vars.target.name} resisted ${this.vars.caster.name}'s wild magic poison`, 'miss') || true; },
+                function() { return this.vars.cancel ? false : this.vars.debuff.call(this, this.vars.target) ? damage(this.vars.caster, [this.vars.target], [[.5]]) && false : logAction(`${this.vars.target.name} resisted ${this.vars.caster.name}'s wild magic poison`, 'miss') || true; },
                 function(context) { if (context.unit === this.vars.target) return resistDebuff(this.vars.caster, [this.vars.target]) >= 50 ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[.5]]) && false : true; }
             );
             break;

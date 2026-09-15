@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit } from './unit.js';
 
 export const DexSoldier = new Unit("DeX (Soldier)", [1800, 25, 55, 70, 50, 60, 80, 55, 200, "front", 250, 120, 24, 30, 5], 3, ["perfection/precision"]);
 
@@ -104,11 +104,7 @@ DexSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "mana", "attack", "aoe", "multi-target"],
             cost: { stamina: 30, mana: 10 },
             description: "Makes two AOE attacks on enemy frontline",
-            code() {
-                const targets = allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team);
-                if (eventState.targets.length) handleEvent('targets', { selectedTargets: targets, count: targets.length });
-                attack(this, targets, 2);
-            }
+            code() { attack(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 2); }
         }
     ],
     basic: [
@@ -176,11 +172,7 @@ DexSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "attack", "aoe", "multi-target"],
             cost: { stamina: 10 },
             description: "Makes an AOE attack on enemy frontline with reduced attack and focus",
-            code() {
-                const targets = allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team);
-                if (eventState.targets.length) handleEvent('targets', { selectedTargets: targets, count: targets.length });
-                attack(this, targets, 1, { attacker: { attack: { bonus: -8 }, focus: { bonus: -20 } } });
-            }
+            code() { attack(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1, { attacker: { attack: { bonus: -8 }, focus: { bonus: -20 } } }); }
         }
     ],
     secondary: [

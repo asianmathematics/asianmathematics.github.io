@@ -17,8 +17,8 @@ import { magitechEnemy } from './unit/magitechEnemy.js';
 import { ChaosAgent } from './unit/chaosAgent.js';
 import { Dreamer } from './unit/dreamer.js';*/
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
-import { Unit, createUnit, cloneUnit, allUnits } from './unit/unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
+import { Unit, createUnit, cloneUnit } from './unit/unit.js';
 
 let turnCounter = 1;
 let wave = 1;
@@ -363,7 +363,7 @@ export async function combatTick() {
             } else {
                 const behavior = turn.autoBehavior || (turn.skills.basic ? 'basic' : turn.skills.secondary ? 'secondary' : 'none');
                 if (behavior === 'none') {
-                    if (eventState.actionStart.length) handleEvent('actionStart', {unit, action: 'skip'});
+                    if (eventState.actionStart.length) handleEvent('actionStart', { unit: turn, action: 'skip'});
                     logAction(`${turn.name} is resting!`, 'info');
                     regenerateResources(turn);
                     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
@@ -542,26 +542,36 @@ function assignEnemySkills(newUnit, template) {
 }
 
 function frontTest() {
+    const infinite = false;
+    if (infinite) clearLogs();
     if (!allUnits.filter(u => u.hp && u.position === 'front' && u.team === 'player').length) {
-        const midLine = allUnits.filter(u => u.hp && u.position === 'mid' && u.team === 'player');
+        const midLine = allUnits.filter(u => u.hp && u.base.position === 'mid' && u.team === 'player');
         if (midLine.length) {
             for (const unit of midLine) {
                 unit.switchPosition();
                 unit.timer += 1000;
             }
             logAction(`All player midline units moved to the frontline!`, 'turn');
-        } else return !!showMessage('Defeat!', 'error', 'message-container', 0);
+        } else if (infinite) allUnits.forEach(u => u.team === "player" && hpChange(u, [u], [u.base.hp]));
+        else return !!showMessage('Defeat!', 'error', 'message-container', 0);
     }
     if (!allUnits.filter(u => u.hp && u.position === 'front' && u.team === 'enemy').length) {
-        const midLine = allUnits.filter(u => u.hp && u.position === 'mid' && u.team === 'enemy');
+        const midLine = allUnits.filter(u => u.hp && u.base.position === 'mid' && u.team === 'enemy');
         if (midLine.length) {
             for (const unit of midLine) {
                 unit.switchPosition();
                 unit.timer += 1000;
             }
             logAction(`All enemy midline units moved to the frontline!`, 'turn');
-        } else if (advanceWave() && !allUnits.filter(u => u.hp && u.position === 'front' && u.team === 'enemy').length) return !!showMessage('Victory!', 'success', 'message-container', 0);
+        } else if (advanceWave(infinite ? 1 : 0) && !allUnits.filter(u => u.hp && u.position === 'front' && u.team === 'enemy').length) return !!showMessage('Victory!', 'success', 'message-container', 0);
     }
+}
+
+function clearLogs() {
+    const logContainer = document.getElementById('action-log');
+    if (!logContainer) return;
+    const entries = logContainer.children;
+    while (entries.length > (window.innerWidth < 800 ? 1000 : 3000)) logContainer.removeChild(entries[0]);
 }
 
 window.combatTick = combatTick;

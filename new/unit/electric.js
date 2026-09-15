@@ -1,6 +1,6 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
-import { Unit, allUnits } from './unit.js';
+import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { Unit } from './unit.js';
 
 export const Electric = new Unit("Electric", [1400, 30, 42, 140, 164, 175, 160, 120, 150, "front", 120, 80, 7, 60, 7, 150, 20], 4);
 
@@ -42,7 +42,7 @@ Electric.skills = {
                         this.description = Object.keys(this.vars.stats).filter(s => this.vars.stats[s]).join(", ") + " increase";
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier?.caster === this.vars.caster) {
                             if (context.modifier.name === "High Tech Headphones") {
                                 this.cancel(true, true);
@@ -147,7 +147,7 @@ Electric.skills = {
                         this.description = Object.keys(this.vars.stats).filter(s => this.vars.stats[s]).join(", ") + " increase";
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier?.caster === this.vars.caster) {
                             if (context.modifier.name === "High Tech Headphones") {
                                 this.cancel(true, true);
@@ -248,7 +248,7 @@ Electric.skills = {
                         this.description = Object.keys(this.vars.stats).filter(s => this.vars.stats[s]).join(", ") + " increase";
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier?.caster === this.vars.caster) {
                             if (context.modifier.name === "High Tech Headphones") {
                                 this.cancel(true, true);
@@ -323,12 +323,12 @@ Electric.skills = {
                     { target: this, properties: ["physical", "mystic", "techno", "counter-attack", "auto-hit", "conditional", "stun"], listeners: { turnEnd: true, singleDamage: true }, cancelListeners: ["turnEnd", "singleDamage"], reduction: this.skills.passive.reduction, focus: true, counterMap: {}, bonus: { focus: { mult: 3 } },},
                     function() {},
                     function(context) {
-                        if (currentAction.at(-2)[0].vars.counterMap) return;
+                        if (currentAction.at(-2)?.[0].vars?.counterMap) return;
                         if (context.unit) {
                             Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0]/2 || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= i.vars.bonus; } }) );
                             this.vars.counterMap = {};
                         }
-                        if (this.vars.target === context.defender && context.damageSingle) this.vars.counterMap[currentAction.at(-2)[1].name] = (this.vars.counterMap[currentAction.at(-2)[1].name] ?? 0) + 1;
+                        if (this.vars.target === context.defender && context.attacker.position === "front" && context.damageSingle) this.vars.counterMap[currentAction.at(-2)[1].name] = (this.vars.counterMap[currentAction.at(-2)[1].name] ?? 0) + 1;
                     },
                     function(cancel, temp) {
                         if (!temp) {
@@ -338,7 +338,7 @@ Electric.skills = {
                                 this.vars.applied = false;
                                 for (const listener of this.vars.cancelListeners) {
                                     this.vars.listeners[listener] = false;
-                                    if (i > -1) eventState[listener].splice(eventState[listener].indexOf(this), 1);
+                                    eventState[listener].splice(eventState[listener].indexOf(this), 1);
                                 }
                             } else if (!this.vars.cancel && !this.vars.applied) {
                                 this.vars.applied = true;
@@ -372,7 +372,7 @@ Electric.skills = {
                         this.description = Object.keys(this.vars.stats).filter(s => this.vars.stats[s]).join(", ") + " increase";
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier?.caster === this.vars.caster) {
                             if (context.modifier.name === "High Tech Headphones") {
                                 this.cancel(true, true);
@@ -549,7 +549,7 @@ Electric.skills = {
                         if (mod) for (const stat in this.vars.stats) this.vars.stats[stat] += (mod.vars.bonus[0]+mod.vars.bonus[1])/5;
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier.caster === this.vars.caster && context.modifier.name === "Generate Charge") {
                             this.cancel(true, true);
                             for (const stat in this.vars.stats) this.vars.stats[stat] += ((context.event === "modifierStart") || (context.cancel === false) ? 1 : -1)*(context.modifier.vars.bonus[0]+context.modifier.vars.bonus[1])/5;
@@ -581,7 +581,7 @@ Electric.skills = {
                         this.description = Object.keys(this.vars.stats).filter(s => this.vars.stats[s]).join(", ") + " increase";
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier?.caster === this.vars.caster) {
                             if (context.modifier.name === "High Tech Headphones") {
                                 this.cancel(true, true);
@@ -646,7 +646,7 @@ Electric.skills = {
                         if (mod) for (const stat in this.vars.stats) this.vars.stats[stat] += (mod.vars.bonus[0]+mod.vars.bonus[1])/5;
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier.caster === this.vars.caster && context.modifier.name === "Generate Charge") {
                             this.cancel(true, true);
                             for (const stat in this.vars.stats) this.vars.stats[stat] += ((context.event === "modifierStart") || (context.cancel === false) ? 1 : -1)*(context.modifier.vars.bonus[0]+context.modifier.vars.bonus[1])/5;
@@ -668,12 +668,12 @@ Electric.skills = {
                     { target: this, properties: ["physical", "mystic", "techno", "counter-attack", "auto-hit", "conditional", "stun"], listeners: { turnEnd: true, singleDamage: true }, cancelListeners: ["turnEnd", "singleDamage"], reduction: this.skills.passive.reduction, focus: true, counterMap: {}, bonus: { focus: { mult: 3 } },},
                     function() {},
                     function(context) {
-                        if (currentAction.at(-2)[0].vars.counterMap) return;
+                        if (currentAction.at(-2)?.[0].vars?.counterMap) return;
                         if (context.unit) {
                             Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*1.5 || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0] || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus-10 && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= i.vars.bonus-10; } }) );
                             this.vars.counterMap = {};
                         }
-                        if (this.vars.target === context.defender && context.damageSingle) this.vars.counterMap[currentAction.at(-2)[1].name] = (this.vars.counterMap[currentAction.at(-2)[1].name] ?? 0) + 1;
+                        if (this.vars.target === context.defender && context.attacker.position === "front" && context.damageSingle) this.vars.counterMap[currentAction.at(-2)[1].name] = (this.vars.counterMap[currentAction.at(-2)[1].name] ?? 0) + 1;
                     },
                     function(cancel, temp) {
                         if (!temp) {
@@ -683,7 +683,7 @@ Electric.skills = {
                                 this.vars.applied = false;
                                 for (const listener of this.vars.cancelListeners) {
                                     this.vars.listeners[listener] = false;
-                                    if (i > -1) eventState[listener].splice(eventState[listener].indexOf(this), 1);
+                                    eventState[listener].splice(eventState[listener].indexOf(this), 1);
                                 }
                             } else if (!this.vars.cancel && !this.vars.applied) {
                                 this.vars.applied = true;
@@ -717,7 +717,7 @@ Electric.skills = {
                         this.description = Object.keys(this.vars.stats).filter(s => this.vars.stats[s]).join(", ") + " increase";
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier?.caster === this.vars.caster) {
                             if (context.modifier.name === "High Tech Headphones") {
                                 this.cancel(true, true);
@@ -894,7 +894,7 @@ Electric.skills = {
                         if (mod) for (const stat in this.vars.stats) this.vars.stats[stat] += 2*(mod.vars.bonus[0]+mod.vars.bonus[1])/5;
                     },
                     function(context) {
-                        if (context.temp) return;
+                        if (context.temp || context.modifier === this) return;
                         if (context.modifier.caster === this.vars.caster && context.modifier.name === "Generate Charge") {
                             this.cancel(true, true);
                             for (const stat in this.vars.stats) this.vars.stats[stat] += ((context.event === "modifierStart") || (context.cancel === false) ? 1 : -1)*(context.modifier.vars.bonus[0]+context.modifier.vars.bonus[1])/5;
