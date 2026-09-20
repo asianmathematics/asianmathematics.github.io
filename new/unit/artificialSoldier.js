@@ -27,10 +27,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
             description: "Drains additional stamina by staminaRegen to regen missing mana and energy by regen amounts",
-            code() {
-                resourceChange(this, { stamina: Math.min(5.5-(this.base.mana-this.mana)/this.manaRegen - (this.base.energy-this.energy)/this.energyRegen, 0), mana: this.base.mana/this.manaRegen, energy: this.base.energy/this.energyRegen}, true, true);
-                logAction(`${this.name} recharges resources!`, 'info');
-            }
+            code() { resourceChange(this, { stamina: Math.min(5.5-(this.base.mana-this.mana)/this.manaRegen - (this.base.energy-this.energy)/this.energyRegen, 0), mana: this.base.mana/this.manaRegen, energy: this.base.energy/this.energyRegen}, true, true, true); }
         },
         {
             name: "Perfect Form",
@@ -68,10 +65,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
             description: "Regen mana and energy based on which is lower (40% and 15% max resource)",
-            code() {
-                resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1.5, energy: 4 } : { mana: 4, energy: 1.5 });
-                logAction(`${this.name} recharges resources.`, 'info');
-            }
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1.5, energy: 4 } : { mana: 4, energy: 1.5 }, true); }
         },
         {
             name: "Perfect Form",
@@ -108,10 +102,7 @@ ArtificialSoldier.skills = {
             name: "Recharge",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             description: "Regen mana and energy based on which is lower (35% and 10% max resource)",
-            code() {
-                resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1, energy: 3.5 } : { mana: 3.5, energy: 1 });
-                logAction(`${this.name} recharges resources.`, 'info');
-            }
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1, energy: 3.5 } : { mana: 3.5, energy: 1 }, true); }
         },
         {
             name: "Perfect Form",
@@ -139,7 +130,7 @@ ArtificialSoldier.skills = {
                 new Modifier("Recharge", "Regens some mana or stamina depending which one is lower, regen is 5% max resource per 25% of stamina remaining",
                     { caster: this, target: this, properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 });}
+                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 }, true); }
                 );
             }
         },

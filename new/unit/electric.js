@@ -2,9 +2,9 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const Electric = new Unit("Electric", [1400, 30, 42, 140, 164, 175, 160, 120, 150, "front", 120, 80, 7, 60, 7, 150, 20], 4);
+export const Electric = new Unit("Electric", [1400, 30, 42, 140, 164, 175, 160, 140, 150, "front", 120, 80, 7, 60, 7, 150, 20], 4);
 
-Electric.description = "4-star physical magitech unit with alot of buff/debuff abilities and self buff skills";
+Electric.description = "4-star physical magitech unit with a lot of buff/debuff abilities and self buff skills";
 
 Electric.skills = {
     special: [
@@ -17,7 +17,7 @@ Electric.skills = {
             code(target) {
                 const mod = [modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied), modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied), modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)];
                 attack(this, target, 12, { attacker: { accuracy: { bonus: 50+(mod[0]?.vars.bonus[0] || 0)+(mod[1]?.vars.bonus[0] || 0)}, focus: { bonus: 75+(mod[0]?.vars.bonus[1] || 0)+(mod[1]?.vars.bonus[1] || 0) }} });
-                if (mod[2] && resistDebuff(this, target)[0] >= mod[2].vars.bonus) stunModifier("Electrostatic Discharge: Stun", { target: target[0], duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= mod[1].vars.bonus; } });
+                if (mod[2] && resistDebuff(this, target)[0] >= mod[2].vars.bonus) stunModifier("Electrostatic Discharge: Stun", { target: target[0], duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= mod[1].vars.bonus; } });
                 basicModifier("Electrostatic Discharge", "Buffs certain skills", { target: this, duration: 2, properties: ["physical", "mystic", "techno"], listeners: { turnEnd: true }, focus: true , bonus: { accuracy: { mult: 2 }, focus: { mult: 3 } } });
             }
         },
@@ -70,7 +70,7 @@ Electric.skills = {
             cost: { mana: 10, energy: 40 },
             description: "Ends non-passive techno modifiers target is focusing, cancels techno modifiers on target, and disables energy regen until resist at end of turn, 1% chance to fail. Adds additional targets depending on how many Sick Beat are active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1+Math.floor(Math.sqrt(2*modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length))); },
-            code(targets) { targets.forEach(u => resistDebuff(this, [u])[0] >= 2 && attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; }, focus: true, bonus: [75, 90, 1] }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 25-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; })); }
+            code(targets) { targets.forEach(u => resistDebuff(this, [u])[0] >= 2 && attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; }, focus: true, bonus: [75, 90, 1] }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 25-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; })); }
         },
         {
             name: "Paralytic Shock",
@@ -80,7 +80,7 @@ Electric.skills = {
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const mod = modifiers.find(m => m.name === "Electrostatic Discharge" && m.vars.caster === this && m.vars.applied);
-                if ((mod && attack(this, target, 1, { attacker: mod.vars.bonus })[0]) || resistDebuff(this, target)[0] >= 2) stunModifier("Paralytic Shock", { target: target[0], properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; }, bonus: 35 }, function(target) { return resistDebuff(this.vars.caster, [target])[0] < 35-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]); });
+                if ((mod && attack(this, target, 1, { attacker: mod.vars.bonus })[0]) || resistDebuff(this, target)[0] >= 2) stunModifier("Paralytic Shock", { target: target[0], properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; }, bonus: 35 }, function(target) { return resistDebuff(this.vars.caster, [target])[0] < 35-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]); });
             }
         },
         {
@@ -89,8 +89,7 @@ Electric.skills = {
             cost: { mana: 20 },
             description: "Regen a lot of energy (~40% max energy). Increases energy gain if Electromagnetic Interference is active",
             code() {
-                resourceChange(this, { energy: this.energyRegen*(4+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) });
-                logAction(`${this.name} generates electricity!`, "buff");
+                resourceChange(this, { energy: this.energyRegen*(4+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }, true);
                 basicModifier("Generate Charge", "Buffs certain skills", { target: this, duration: 2, properties: ["mystic", "techno"], listeners: { turnEnd: true }, focus: true, bonus: [50, 75] });
             }
         },
@@ -121,7 +120,7 @@ Electric.skills = {
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), mod = [modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied), modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied), modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)];
                 attack(this, target, 7, { attacker: { accuracy: { bonus: (mod[0]?.vars.bonus[0] || 0)+(mod[1]?.vars.bonus[0] || 0) }, focus: { bonus: 50+(mod[0]?.vars.bonus[1] || 0)+(mod[1]?.vars.bonus[1] || 0) }} });
-                if (mod[2] && resistDebuff(this, target)[0] >= mod[2].vars.bonus) stunModifier("Electrostatic Discharge: Stun", { target: target[0], duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= mod[1].vars.bonus; } });
+                if (mod[2] && resistDebuff(this, target)[0] >= mod[2].vars.bonus) stunModifier("Electrostatic Discharge: Stun", { target: target[0], duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= mod[1].vars.bonus; } });
                 basicModifier("Electrostatic Discharge", "Buffs certain skills", { target: this, duration: 2, properties: ["physical", "mystic", "techno"], listeners: { turnEnd: true }, focus: true, bonus: { focus: { mult: 3 } } });
             }
         },
@@ -174,7 +173,7 @@ Electric.skills = {
             properties: ["mystic", "mana-block", "techno", "energy-block", "energy", "debuff", "cancel", "conditional"],
             cost: { energy: 20 },
             description: "Chance to end non-passive techno modifiers target is focusing, cancel techno modifiers on target, and disable energy regen until resist at end of turn. Adds additional targets depending on how many Sick Beat are active and makes end of turn debuff harder to resist if High Tech Headphones is active",
-            code() { randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1+Math.floor(Math.sqrt(2*modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length))).forEach(u => resistDebuff(this, [u])[0] >= 25 && attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 25; }, focus: true, bonus: [50, 60, .5] }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 25-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; })); }
+            code() { randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1+Math.floor(Math.sqrt(2*modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length))).forEach(u => resistDebuff(this, [u])[0] >= 25 && attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 25; }, focus: true, bonus: [50, 60, .5] }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 25-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; })); }
         },
         {
             name: "Paralytic Shock",
@@ -183,7 +182,7 @@ Electric.skills = {
             description: "Chance to stun target until resist at end of turn. Can make an attack and skip chance to fail on hit if Electrostatic Discharge is active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), mod = modifiers.find(m => m.name === "Electrostatic Discharge" && m.vars.caster === this && m.vars.applied);
-                if ((mod && attack(this, target, 1, { attacker: mod.vars.bonus })[0]) || resistDebuff(this, target)[0] >= 35) stunModifier("Paralytic Shock", { target: target[0], properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 35; }, bonus: 35 }, function(target) { return resistDebuff(this.vars.caster, [target])[0] < 35-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]); });
+                if ((mod && attack(this, target, 1, { attacker: mod.vars.bonus })[0]) || resistDebuff(this, target)[0] >= 35) stunModifier("Paralytic Shock", { target: target[0], properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 35; }, bonus: 35 }, function(target) { return resistDebuff(this.vars.caster, [target])[0] < 35-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]); });
             }
         },
         {
@@ -192,8 +191,7 @@ Electric.skills = {
             cost: { mana: 10 },
             description: "Regen a lot of energy (~30% max energy). Increases energy gain if Electromagnetic Interference is active",
             code() {
-                resourceChange(this, { energy: this.energyRegen*(3+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) });
-                logAction(`${this.name} generates electricity!`, "buff");
+                resourceChange(this, { energy: this.energyRegen*(3+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }, true);
                 basicModifier("Generate Charge", "Buffs certain skills", { target: this, duration: 2, properties: ["mystic", "techno"], listeners: { turnEnd: true }, focus: true, bonus: [30, 50] });
             }
         },
@@ -222,7 +220,7 @@ Electric.skills = {
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), mod = [modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied), modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied), modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)];
                 attack(this, target, 4, { attacker: { accuracy: { bonus: (mod[0]?.vars.bonus[0] || 0)+(mod[1]?.vars.bonus[0] || 0) }, focus: { bonus: 25+(mod[0]?.vars.bonus[1] || 0)+(mod[1]?.vars.bonus[1] || 0) } } });
-                if (mod[2] && resistDebuff(this, target)[0] >= mod[2].vars.bonus) stunModifier("Electrostatic Discharge: Stun", { target: target[0], duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= mod[1].vars.bonus; } });
+                if (mod[2] && resistDebuff(this, target)[0] >= mod[2].vars.bonus) stunModifier("Electrostatic Discharge: Stun", { target: target[0], duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= mod[1].vars.bonus; } });
                 basicModifier("Electrostatic Discharge", "Buffs certain skills", { target: this, duration: 2, properties: ["physical", "mystic", "techno"], listeners: { turnEnd: true }, focus: true, bonus: { focus: { mult: 2 } } });
             }
         },
@@ -274,7 +272,7 @@ Electric.skills = {
             name: "Electromagnetic Interference",
             properties: ["mystic", "techno", "energy-block", "energy", "debuff", "cancel", "conditional"],
             description: "Chance to end non-passive techno modifiers target is focusing, cancel techno modifiers on target, and disable energy regen until resist at end of turn. Adds additional targets depending on how many Sick Beat are active and makes end of turn debuff harder to resist if High Tech Headphones is active",
-            code() { randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1+Math.floor(Math.sqrt(2*modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length))).forEach(u => resistDebuff(this, [u])[0] >= 40 && attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 40; }, focus: true, bonus: [25, 30, .25] }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 40-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; })); }
+            code() { randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1+Math.floor(Math.sqrt(2*modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length))).forEach(u => resistDebuff(this, [u])[0] >= 40 && attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 40; }, focus: true, bonus: [25, 30, .25] }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 40-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; })); }
         },
         {
             name: "Paralytic Shock",
@@ -282,7 +280,7 @@ Electric.skills = {
             description: "Chance to stun target until resist at end of turn. Can make an attack and skip chance to fail on hit if Electrostatic Discharge is active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), mod = modifiers.find(m => m.name === "Electrostatic Discharge" && m.vars.caster === this && m.vars.applied);
-                if ((mod && attack(this, target, 1, { attacker: mod.vars.bonus })[0]) || resistDebuff(this, target)[0] >= 50) stunModifier("Paralytic Shock", { target: target[0], properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 50; }, bonus: 50 }, function(target) { return resistDebuff(this.vars.caster, [target])[0] < 50-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]); });
+                if ((mod && attack(this, target, 1, { attacker: mod.vars.bonus })[0]) || resistDebuff(this, target)[0] >= 50) stunModifier("Paralytic Shock", { target: target[0], properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 50; }, bonus: 50 }, function(target) { return resistDebuff(this.vars.caster, [target])[0] < 50-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]); });
             }
         },
         {
@@ -290,8 +288,7 @@ Electric.skills = {
             properties: ["mystic", "mana-block", "mana", "energy-gain", "conditional"],
             description: "Regen a lot of energy (~20% max energy). Increases energy gain if Electromagnetic Interference is active",
             code() {
-                resourceChange(this, { energy: this.energyRegen*(2+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) });
-                logAction(`${this.name} generates electricity!`, "buff");
+                resourceChange(this, { energy: this.energyRegen*(2+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }, true);
                 basicModifier("Generate Charge", "Buffs certain skills", { target: this, duration: 2, properties: ["mystic", "techno"], listeners: { turnEnd: true }, focus: true, bonus: [15, 25] });
             }
         },
@@ -325,7 +322,7 @@ Electric.skills = {
                     function(context) {
                         if (currentAction.at(-2)?.[0].vars?.counterMap) return;
                         if (context.unit) {
-                            Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0]/2 || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= i.vars.bonus; } }) );
+                            Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0]/2 || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= i.vars.bonus; } }) );
                             this.vars.counterMap = {};
                         }
                         if (this.vars.target === context.defender && context.attacker.position === "front" && context.damageSingle) this.vars.counterMap[currentAction.at(-2)[1].name] = (this.vars.counterMap[currentAction.at(-2)[1].name] ?? 0) + 1;
@@ -418,7 +415,7 @@ Electric.skills = {
             description: "At start of turn, chooses a target and has a chance to end non-passive techno modifiers target is focusing, cancel techno modifiers on target, and disable energy regen until resist at end of turn. Maximum active target depending on how many Sick Beat are active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             code() {
                 new Modifier("Electromagnetic Interference", "Chance to apply cancel modifiers to targets at start of turn",
-                    { targets: [], properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(targets) { return resistDebuff(this.vars.caster, targets).forEach(w => w >= 50); }, focus: true, bonus: [20, 20, .25] },
+                    { targets: [], properties: ["mystic", "techno", "debuff", "cancel", "mana-block"], listeners: { turnEnd: true }, debuff: function(targets, calcMods) { return resistDebuff(this.vars.caster, targets, calcMods).forEach(w => w >= 50); }, focus: true, bonus: [20, 20, .25] },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.child?.length < Math.floor(Math.sqrt(2*modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length+1))) {
@@ -432,7 +429,7 @@ Electric.skills = {
                                 [...(this.vars.child || [])].forEach(m => removeModifier(m));
                                 this.vars.applied = false;
                             } else if (!this.vars.cancel && !this.vars.applied) {
-                                this.vars.targets.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 50; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 50-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
+                                this.vars.targets.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 50; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 50-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
                                 this.vars.applied = true;
                             }
                         }
@@ -440,7 +437,7 @@ Electric.skills = {
                     function(remove = [], add = []) {
                         if (this.vars.applied) {
                             this.vars.child?.filter(m => remove.includes(m.vars.target)).forEach(m => removeModifier(m));
-                            add.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 50; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 50-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
+                            add.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 50; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 50-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
                         }
                         this.vars.targets = [...this.vars.targets.filter(target => !remove.includes(target)), ...add];
                     }
@@ -454,7 +451,7 @@ Electric.skills = {
             description: "At start of turn, chooses a target and has a chance to stun target until resist at end of turn. Can make an attack and skip chance to fail on hit if Electrostatic Discharge is active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             code() {
                 new Modifier("Paralytic Shock", "Chance to stun a target at start of turn",
-                    { target: null, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnStart: true }, reduction: this.skills.passive.reduction, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 65-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, bonus: 65, fail: false },
+                    { target: null, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnStart: true }, reduction: this.skills.passive.reduction, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 65-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2] || 0); }, bonus: 65, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -526,14 +523,14 @@ Electric.skills = {
         },
         {
             name: "Generate Charge",
-            properties: ["mystic", "mana-block", "mana", "energy-gain", "conditional"],
+            properties: ["mystic", "mana", "energy-gain", "conditional"],
             reduction: { mana: 15, manaRegen: 2 },
             description: "Regen energy (~15% max energy). Increases energy gain if Electromagnetic Interference is active",
             code() {
                 new Modifier("Backup Power", `Regen energy (~15% max energy) each turn`,
                     { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, bonus: [10, 20], focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen*(1.5+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen*(1.5+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }, true); }
                 );
             }
         },
@@ -623,14 +620,14 @@ Electric.skills = {
         },
         {
             name: "Generate Charge",
-            properties: ["mystic", "mana-block", "mana", "energy-gain", "conditional"],
+            properties: ["mystic", "mana", "energy-gain", "conditional"],
             reduction: { mana: 15, manaRegen: 2 },
             description: "Regen energy (~20% max energy). Increases energy gain if Electromagnetic Interference is active",
             code() {
                 new Modifier("Backup Power", `Regen energy (~15% max energy) each turn`,
-                    { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, bonus: [20, 40], focus: true, passive: true },
+                    { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, bonus: [20, 40], focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen*(2+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen*(2+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2] || 0)) }, true); }
                 );
             }
         },
@@ -665,12 +662,12 @@ Electric.skills = {
             description: "When hit with an attack against a frontline unit, deals counterdamage to the attacker. Adds a chance to stun for 1 turn if Paralytic Shock is active and increases damage if Generate Charge or High Tech Headphones is active",
             code() {
                 new Modifier("Electrostatic Discharge", "Deals counterdamage when hit by frontline unit",
-                    { target: this, properties: ["physical", "mystic", "techno", "counter-attack", "auto-hit", "conditional", "stun"], listeners: { turnEnd: true, singleDamage: true }, cancelListeners: ["turnEnd", "singleDamage"], reduction: this.skills.passive.reduction, focus: true, counterMap: {}, bonus: { focus: { mult: 3 } },},
+                    { target: this, properties: ["physical", "mystic", "techno", "counter-attack", "auto-hit", "conditional", "stun"], listeners: { turnEnd: true, singleDamage: true }, cancelListeners: ["turnEnd", "singleDamage"], reduction: this.skills.conditional.reduction, focus: true, counterMap: {}, bonus: { focus: { mult: 3 } },},
                     function() {},
                     function(context) {
                         if (currentAction.at(-2)?.[0].vars?.counterMap) return;
                         if (context.unit) {
-                            Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*1.5 || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0] || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus-10 && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= i.vars.bonus-10; } }) );
+                            Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*1.5 || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0] || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus-10 && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= i.vars.bonus-10; } }) );
                             this.vars.counterMap = {};
                         }
                         if (this.vars.target === context.defender && context.attacker.position === "front" && context.damageSingle) this.vars.counterMap[currentAction.at(-2)[1].name] = (this.vars.counterMap[currentAction.at(-2)[1].name] ?? 0) + 1;
@@ -678,7 +675,7 @@ Electric.skills = {
                     function(cancel, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
-                                Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*1.5 || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0] || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus-10 && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= i.vars.bonus-10; } }) );
+                                Object.keys(this.vars.counterMap).forEach((k, i) => damage(this.vars.target, [allUnits.find(u => u.name === k)], [Array(this.vars.counterMap[k]).fill(0.5)], { attacker: { damage: (modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*1.5 || 0)+(modifiers.find(m => m.name === "Generate Charge" && m.vars.caster === this && m.vars.applied)?.vars.bonus[0] || 0) } }) && (i = modifiers.find(m => m.name === "Paralytic Shock" && m.vars.caster === this && m.vars.applied)) && resistDebuff(this, [k])[0] >= i.vars.bonus-10 && stunModifier("Electrostatic Discharge: Stun", { target: k, duration: 1, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= i.vars.bonus-10; } }) );
                                 this.vars.counterMap = {};
                                 this.vars.applied = false;
                                 for (const listener of this.vars.cancelListeners) {
@@ -763,7 +760,7 @@ Electric.skills = {
             description: "At start of turn, chooses a target and has a chance to end non-passive techno modifiers target is focusing, cancel techno modifiers on target, and disable energy regen until resist at end of turn. Maximum active target depending on how many Sick Beat are active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             code() {
                 new Modifier("Electromagnetic Interference", "Chance to apply cancel modifiers to targets at start of turn",
-                    { targets: [], properties: ["mystic", "techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(targets) { return resistDebuff(this.vars.caster, targets).forEach(w => w >= 40); }, focus: true, bonus: [20, 20, .25] },
+                    { targets: [], properties: ["mystic", "techno", "debuff", "cancel", "mana-block"], listeners: { turnEnd: true }, debuff: function(targets, calcMods) { return resistDebuff(this.vars.caster, targets, calcMods).forEach(w => w >= 40); }, focus: true, bonus: [20, 20, .25] },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.child?.length < Math.floor(modifiers.filter(m => m.name.includes("Sick Beats") && m.vars.caster === this && m.vars.applied).length/2)+1) {
@@ -777,7 +774,7 @@ Electric.skills = {
                                 [...(this.vars.child || [])].forEach(m => removeModifier(m));
                                 this.vars.applied = false;
                             } else if (!this.vars.cancel && !this.vars.applied) {
-                                this.vars.targets.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 40; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 40-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]*7/5 || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
+                                this.vars.targets.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 40; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 40-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]*7/5 || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
                                 this.vars.applied = true;
                             }
                         }
@@ -785,7 +782,7 @@ Electric.skills = {
                     function(remove = [], add = []) {
                         if (this.vars.applied) {
                             this.vars.child?.filter(m => remove.includes(m.vars.target)).forEach(m => removeModifier(m));
-                            add.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 40; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 40-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]*7/5 || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
+                            add.forEach(u => attribCancelMod("Electromagnetic Interference", { target: u, properties: ["mystic", "techno", "debuff", "cancel"], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 40; } }, "techno", function(target) { return resistDebuff(this.vars.caster, [target])[0] < 40-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]*7/5 || 0); }, function (mod) { return mod.vars.caster === this.vars.caster; }));
                         }
                         this.vars.targets = [...this.vars.targets.filter(target => !remove.includes(target)), ...add];
                     }
@@ -799,7 +796,7 @@ Electric.skills = {
             description: "At start of turn, chooses a target and has a chance to stun target until resist at end of turn. Can make an attack and skip chance to fail on hit if Electrostatic Discharge is active and makes end of turn debuff harder to resist if High Tech Headphones is active",
             code() {
                 new Modifier("Paralytic Shock", "Chance to stun a target at start of turn",
-                    { target: null, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnStart: true }, reduction: this.skills.passive.reduction, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 45-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]*7/5 || 0); }, bonus: 45, fail: false },
+                    { target: null, properties: ["physical", "mystic", "techno", "stun"], listeners: { turnStart: true }, reduction: this.skills.conditional.reduction, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 45-(modifiers.find(m => m.name === "High Tech Headphones" && m.vars.caster === this.vars.caster && m.vars.applied)?.vars.bonus[2]*7/5 || 0); }, bonus: 45, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -871,14 +868,14 @@ Electric.skills = {
         },
         {
             name: "Generate Charge",
-            properties: ["mystic", "mana-block", "mana", "energy-gain", "conditional"],
+            properties: ["mystic", "energy-gain", "conditional"],
             reduction: { mana: 15, manaRegen: 2 },
             description: "Regen energy (~15% max energy). Increases energy gain if Electromagnetic Interference is active",
             code() {
                 new Modifier("Backup Power", `Regen energy (~15% max energy) each turn`,
-                    { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, bonus: [10, 20], focus: true, passive: true },
+                    { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.conditional.reduction, bonus: [10, 20], focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen*(1.5+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*2 || 0)) }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen*(1.5+(modifiers.find(m => m.name === "Electromagnetic Interference" && m.vars.caster === this && m.vars.applied)?.vars.bonus[2]*2 || 0)) }, true); }
                 );
             }
         },

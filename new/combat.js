@@ -384,7 +384,7 @@ export async function combatTick() {
 
 function executeAutoAction(unit, action) {
     if (eventState.actionStart.length) handleEvent('actionStart', {unit, action});
-    if (!unit.skills[action].cost || resourceChange(unit, unit.skills[action].cost, false)) {
+    if (!unit.skills[action].cost || resourceChange(unit, unit.skills[action].cost, false, false)) {
         unit.previousAction = [unit.previousAction[0] || unit.skills[action].properties.includes('stamina-block'), unit.previousAction[1] || unit.skills[action].properties.includes('mana-block'), unit.previousAction[2] || unit.skills[action].properties.includes('energy-block')];
         currentAction.push([unit.skills[action], unit]);
         unit.skills[action].code.call(unit);
@@ -404,7 +404,7 @@ function executeBoth(unit) {
         count = ((unit.skills.basic.cost?.[res] || 0) + (unit.skills.secondary.cost?.[res] || 0));
         if (count) cost[res] = (cost[res] || 0) + count;
     }
-    if (JSON.stringify(cost) === '{}' || resourceChange(unit, cost, false)) {
+    if (JSON.stringify(cost) === '{}' || resourceChange(unit, cost, false, false)) {
         unit.previousAction = [true, true, true];
         currentAction.push([unit.skills.basic, unit]);
         unit.skills.basic.code.call(unit);
@@ -422,7 +422,7 @@ function executeSpecialAction(unit, specialSkill) {
     if (eventState.actionStart.length) handleEvent('actionStart', {unit, action: 'special'});
     if (specialSkill.target) specialSkill.target.call(unit);
     else {
-        if (specialSkill.cost && !resourceChange(unit, specialSkill.cost, false)) {
+        if (specialSkill.cost && !resourceChange(unit, specialSkill.cost, false, false)) {
             logAction(`${unit.name}'s special was canceled!`, 'error');
             return setTimeout(combatTick, 2000/window.combatSpeedMultiplier);
         }
@@ -495,12 +495,11 @@ function waveCalc(units, mult) {
     return enemies;
 }
 
-function assignEnemySkills(newUnit, template) {
-    newUnit.skills = {};
+export function assignEnemySkills(newUnit, template) {
     const categories = ['special', 'basic', 'secondary', 'passive', 'augment', 'conditional'];
     const getLoadoutForPosition = (pos) => {
         const defaultLoadout = (pos === 'front' ? template.frontDefaultSkills : template.backDefaultSkills) || template.defaultSkills;
-        for (let attempt = 0; attempt < 5; attempt++) {
+        for (let attempt = 0;; attempt++) {
             const loadout = {};
             const usedNames = new Set();
             let isFullLoadout = true;
@@ -525,6 +524,8 @@ function assignEnemySkills(newUnit, template) {
             if (isFullLoadout || attempt === 4) return loadout;
         }
     };
+    if (!newUnit) return template.base.position === 'mid' ? [getLoadoutForPosition('front'), getLoadoutForPosition('back')] : getLoadoutForPosition(template.base.position);
+    newUnit.skills = {};
     if (template.base.position === 'mid') {
         newUnit.position = 'back'; 
         newUnit.frontSkills = getLoadoutForPosition('front');

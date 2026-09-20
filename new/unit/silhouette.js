@@ -53,29 +53,45 @@ Silhouette.skills = {
             properties: ["mystic", "mana-block", "mana", "summon", "positional"],
             cost: { mana: 60 },
             description: "Summon shadow clone of a ally unit in the same position with 1 star stats for 6 turns, only one of the same clone can be summoned at a time",
-            target() { specialTarget(this, allUnits.filter(u => u.position === this.position && u.team === this.team)); },
+            target() { specialTarget(this, allUnits.filter(u => u.position === this.position && u.team === this.team && u.custom?.summoner !== this)); },
             code(target) {
-                if (!target || !target.length) {
-                    logAction("No shadow clones can be summoned!", "warning");
-                    resourceChange(this, this.skills.special.cost);
-                    this.previousAction[1] = false;
-                    return;
-                }
-                if (allUnits.find(obj => obj.custom?.summoner === this && obj.name === target[0].name + " (Shadow)")) {
-                    logAction("A shadow clone of this unit is already summoned!", "warning");
+                if (!target?.length || allUnits.find(obj => obj.custom?.summoner === this && obj.name === target[0].name + " (Shadow)")) {
+                    logAction(!target?.length ? "No shadow clones can be summoned!" : "A shadow clone of this unit is already summoned!", "warning");
                     resourceChange(this, this.skills.special.cost);
                     this.previousAction[1] = false;
                     return;
                 }
                 logAction(`${this.name} creates a shadow clone of ${target[0].name}!`, "buff");
-                const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val * 4 / 9)/(1+9*(stat === "hp")))])) }, { ...target[0].skills });
+                const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val/(1.5**(target[0].star-1)))/(1+9*(stat === "hp")))])) }, { ...target[0].skills }, this.position);
+                (clone.trait ??= []).push(trait);
+                trait.code.call(clone);
                 new Modifier("Summon Shadow", "Summon shadow clone of a ally unit in the same position with 1 star stats",
                     { target: clone, duration: 6, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
-                    function() {},
+                    function() {
+                        if (this.vars.target.base.position === 'mid') {
+                            this.vars.listeners.positionChange = true;
+                            const { position, elements, ...statObj } = this.vars.target.base;
+                            this.vars.statObj = statObj;
+                        }
+                    },
                     function(context) {
                         if (context.unit === this.vars.target) {
                             if (context.type === "death") return !(this.vars.perm = false);
                             if (context.event === "turnEnd") this.vars.duration--;
+                            if (context.position) {
+                                for (const stat in this.vars.statObj) if (this.vars.target.base[stat] !== this.vars.statObj[stat]) this.vars.target.base[stat] = Math.ceil((this.vars.target.base[stat](1.5**(this.vars.target.star-1)))/(1+9*(stat === "hp")));
+                                for (const mod of modifiers.filter(m => m.name === "Friends with the Shadows" && m.vars.targets.includes(this.vars.target))) {
+                                    currentAction.push([mod, mod.vars.caster]);
+                                    if (mod.vars.targets.length === 1) {
+                                        mod.cancel(true, true);
+                                        mod.cancel(false, true);
+                                    } else {
+                                        mod.changeTarget([this.vars.target]);
+                                        mod.changeTarget([], [this.vars.target]);
+                                    }
+                                    currentAction.pop();
+                                }
+                            }
                         }
                         if (this.vars.duration <= 0 && this.vars.perm) {
                             this.vars.perm = false;
@@ -155,8 +171,8 @@ Silhouette.skills = {
             cost: { stamina: 20 },
             description: `Regen a lot of mana (~35% max mana). If in backline, spends double the cost to moderately heal (~10% max hp)`,
             code() {
-                resourceChange(this, { mana: 3.5 * this.manaRegen });
-                this.position === 'back' && resourceChange(this, this.skills.special.cost) ? heal(this, [this], [1]) : logAction(`${this.name}'s amulet radiates with power!`, "buff");
+                resourceChange(this, { mana: 3.5 * this.manaRegen }, true);
+                if (this.position === 'back' && resourceChange(this, this.skills.special.cost)) heal(this, [this], [1]);
             }
         },
         {
@@ -228,6 +244,8 @@ Silhouette.skills = {
                 }
                 logAction(`${this.name} creates a shadow.`, "action");
                 const clone = summon(this, new Unit("Shadow", [290, 13, 11, 49, 66, 60, 60, 30, 24, this.position, 16, 10, 1, 40, 8], 1), shadowSkills);
+                (clone.trait ??= []).push(trait);
+                trait.code.call(clone);
                 new Modifier("Summon Shadow", "Summon 1 star shadow",
                     { target: clone, duration: 4, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                     function() {},
@@ -255,8 +273,8 @@ Silhouette.skills = {
             cost: { stamina: 10 },
             description: `Regen a lot of mana (~25% max mana). If in backline, spends double the cost to heal slightly (~5% max hp)`,
             code() {
-                resourceChange(this, { mana: 2.5 * this.manaRegen });
-                this.position === 'back' && resourceChange(this, this.skills.basic.cost) ? heal(this, [this], [0.5]) : logAction(`${this.name}'s amulet is covered in shadow`, "buff");
+                resourceChange(this, { mana: 2.5 * this.manaRegen }, true);
+                if (this.position === 'back' && resourceChange(this, this.skills.basic.cost)) heal(this, [this], [0.5]);
             }
         },
         {
@@ -306,8 +324,8 @@ Silhouette.skills = {
             properties: ["physical", "mana-gain", "positional", "heal"],
             description: `Regen a lot of mana (~15% max mana). If in backline, disable stamina regen to heal slightly (~5% max hp)`,
             code() {
-                resourceChange(this, { mana: 1.5 * this.manaRegen });
-                this.position === 'back' ? (this.previousAction[0] = true && heal(this, [this], [.5])) : logAction(`${this.name}'s amulet flickers`, "buff");
+                resourceChange(this, { mana: 1.5 * this.manaRegen }, true);
+                if (this.position === 'back') (this.previousAction[0] = true) && heal(this, [this], [.5]);
             }
         },
         {
@@ -358,7 +376,7 @@ Silhouette.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied ){
-                            resourceChange(this.vars.target, { mana: this.vars.target.manaRegen });
+                            resourceChange(this.vars.target, { mana: this.vars.target.manaRegen }, true);
                             if (this.vars.caster.position === 'back') heal(this.vars.caster, [this.vars.target], [0.5]);
                         }
                     }
@@ -416,7 +434,7 @@ Silhouette.skills = {
             code() {
                 auraModifier("Friends with the Shadows", "Shadow summons get two star up equivalent stats except hp and resources",
                     { targets: [], properties: ["mystic", "buff"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
-                    function(target) { basicModifier("Friends with the Shadows buff", "Two star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(2.25*target.base[k])])) }); },
+                    function(target) { basicModifier("Friends with the Shadows buff", "Two star up equivalent stat increase except hp and resources", { target, properties: ["mystic", "buff"], stats: Object.fromEntries(Object.keys(target.mult).map(k => [k, Math.ceil(1.25*target.base[k])])) }); },
                     function(unit) { return unit.custom?.summoner === this.vars.caster; }
                 );
             }
@@ -432,7 +450,7 @@ Silhouette.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied ){
-                            resourceChange(this.vars.target, { mana: this.vars.target.manaRegen * 1.5 });
+                            resourceChange(this.vars.target, { mana: this.vars.target.manaRegen * 1.5 }, true);
                             if (this.vars.caster.position === 'back') heal(this.vars.caster, [this.vars.target], [0.75]);
                         }
                     }
@@ -499,14 +517,14 @@ const shadowSkills = {
                 function() {},
                 function(context) {
                     if (context.attacker === this.vars.caster && context.damageSingle > 0) {
-                        const will = resistDebuff(this.vars.caster, [context.defender]);
+                        const will = resistDebuff(this.vars.caster, [context.defender])[0];
                         if (will >= 2) {
                             const mod = modifiers.find(m => m.name === "Strength Drain debuff" && m.vars.caster === this.vars.caster && m.vars.target === context.defender);
                             if (mod) {
                                 mod.cancel(true, true);
                                 mod.vars.stats.attack -= will > 99 ? 6 : Math.ceil(will/25);
                                 mod.cancel(false, true);
-                            } else basicModifier("Strength Drain debuff", "Reduce target attack until caster is out of combat", { target: context.defender, properties: ['mystic', 'debuff'], stats: { attack: -(will > 99 ? 6 : Math.ceil(will/25)) }, debuff: function(target) { return resistDebuff(this.vars.caster.vars.caster, [target])[0] >= 2; } });
+                            } else basicModifier("Strength Drain debuff", "Reduce target attack until caster is out of combat", { target: context.defender, properties: ['mystic', 'debuff'], stats: { attack: -(will > 99 ? 6 : Math.ceil(will/25)) }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
                         }
                     }
                 }
@@ -514,3 +532,51 @@ const shadowSkills = {
         }
     }
 };
+
+const trait = {
+    name: "Shadow Construct",
+    properties: ["trait", "mystic", "conditional", "stun"],
+    description: "More resistant to mana-block effects, but a successfun mana-block effect stuns",
+    code() {
+        new Modifier("Shadow Construct", "More resistant to mana-block effects, but a successfun mana-block effect stuns",
+            { target: this, properties: ["mystic", "conditional", "stun"], listeners: { modifierStart: true, modifierEnd: false }, modifiers: [], passive: true, trait: true },
+            function() {
+                for (const mod of modifiers.filter(m => m.vars.properties.includes('mana-block') && m.vars.target === this.vars.target)) mod.vars.debuff(this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
+                if (this.vars.modifiers.length) {
+                    stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
+                    this.vars.listeners.modifierEnd = true;
+                }
+            },
+            function(context) {
+                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets.includes(this.vars.target))) {
+                    if (context.event === 'modifierStart') {
+                        if (context.modifier.vars.debuff(this.vars.target)) {
+                            if (!this.vars.modifiers.length) {
+                                if (this.vars.applied) stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
+                                this.vars.listeners.modifierEnd = true;
+                            }
+                            this.vars.modifiers.push(context.modifier);
+                        } else context.modifier.vars.parent.vars?.targets.includes(this.vars.target) ? context.modifier.vars.parent.changeTarget([this.vars.target]) : context.modifier.changeTarget(this.vars.target);
+                    } else {
+                        this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1);
+                        if (!this.vars.modifiers.length) {
+                            if (this.vars.applied) removeModifier(this.vars.child[0]);
+                            this.vars.listeners.modifierEnd = false;
+                        }
+                    }
+                }
+            },
+            function(cancel, temp) {
+                if (!temp) {
+                    if (this.vars.cancel && this.vars.applied) {
+                        this.vars.applied = false;
+                        if (this.vars.modifiers.length) removeModifier(this.vars.child[0]);
+                    } else if (!this.vars.cancel && !this.vars.applied) {
+                        this.vars.applied = true;
+                        if (this.vars.modifiers.length) stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
+                    }
+                }
+            }
+        )
+    }
+}

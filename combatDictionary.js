@@ -81,8 +81,7 @@ function handleEvent(eventType, context) {
                 currentAction.pop();
                 continue;
             }
-            context.event = eventType;
-            if (eventState[eventType][i].onTurn(context)) { removeModifier(eventState[eventType][i]) }
+            if (eventState[eventType][i].onTurn({ ...context, event: eventType })) { removeModifier(eventState[eventType][i]) }
         } catch (e) {
             console.error(`Error in ${eventType} listener (${eventState[eventType][i]?.name}):`, e);
             try {
@@ -91,9 +90,10 @@ function handleEvent(eventType, context) {
             } catch (err) {
                 logAction('A major error occurred with a modifier, event list has been purged', "error");
                 modifiers.splice(0, modifiers.length, ...modifiers.filter(mod => mod !== eventState[eventType][i]));
-                for (const event of events) { if (eventState[event].length) { eventState[event] = eventState[event].filter(mod => mod !== eventState[eventType][i]) } }
+                for (const event of events) { if (eventState[event].length) { eventState[event].filter(mod => mod !== eventState[eventType][i]) } }
             }
-        } finally { currentAction.pop() }
+        }
+        currentAction.pop();
     }
     window.updateModifiers();
 }
@@ -108,14 +108,13 @@ function removeModifier(modifier) {
         return;
     }
     if (eventState.modifierEnd.length) { handleEvent('modifierEnd', { modifier }) }
-    if (modifier.vars?.applied) {
+    if (modifier.vars.applied) {
         currentAction.push(modifier);
         modifier.cancel();
         currentAction.pop();
     }
-    if (modifier.vars?.listeners) {for (const event in modifier.vars.listeners) { if (modifier.vars.listeners[event] && eventState[event].indexOf(modifier) > -1) { eventState[event].splice(eventState[event].indexOf(modifier), 1) } } }
-    const index = modifiers.indexOf(modifier);
-    if (index !== -1) { modifiers.splice(index, 1) }
+    if (modifier.vars && modifier.vars.listeners) { for (const event in modifier.vars.listeners) { if (modifier.vars.listeners[event]) { eventState[event].splice(eventState[event].indexOf(modifier), 1) } } }
+    modifiers.splice(modifiers.indexOf(modifier), 1);
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
@@ -138,10 +137,8 @@ function resistDebuff(attacker, defenders) {
     if (eventState.resistStart.length) { handleEvent('resistStart', {attacker, defenders}) }
     const will = [];
     for (const unit of defenders) {
-        let rolls = [];
-        for (let r = 0; r <= Math.abs(calcMods.reroll); r++) { rolls.push(Math.floor(Math.random() * 100 + 1)) }
-        const roll = calcMods.reroll < 0 ? Math.min(...rolls) : Math.max(...rolls);
-        const resistSingle = roll === 1 || roll === 100 ? roll : roll * ((attacker.presence + attacker.focus) / (unit.presence +  unit.resist));
+        const roll = Math.floor(Math.random() * 100 + 1);
+        const resistSingle = roll === 1 || roll === 100 ? roll : roll * ((attacker.presence + attacker.focus) / (unit.presence + (2 * unit.resist)));
         if (eventState.singleResist.length) { handleEvent('singleResist', {attacker, defender: unit, resistSingle}) }
         will.push(resistSingle);
     }
@@ -188,7 +185,11 @@ function enemyTurn(unit) {
                     break;
                 }
             }
-        } if (useable) { totalWeight += availableActions[action] = unit.actions.actionWeight[action] }
+        }
+        if (useable) {
+            availableActions[action] = unit.actions.actionWeight[action];
+            totalWeight += unit.actions.actionWeight[action];
+        }
     }
     if (totalWeight === 0) {
         showMessage(`${unit.name} has no available actions!`, "warning", "message-container");
@@ -244,7 +245,8 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
             selectedUnit = availableUnits[randomIndex];
             availableUnits.splice(randomIndex, 1);
         } else {
-            const randChoice = Math.random() * availableUnits.reduce((sum, obj) => sum + obj.presence, 0);
+            const totalPresence = availableUnits.reduce((sum, obj) => sum + obj.presence, 0);
+            const randChoice = Math.random() * totalPresence;
             let cumulativePresence = 0;
             for (let j = 0; j < availableUnits.length; j++) {
                 cumulativePresence += availableUnits[j].presence;
@@ -391,10 +393,7 @@ function selectTarget(action, back, target, targetType = 'unit') {
         setTimeout(window.combatTick, 500);
     }
 
-    function exitTargetSelection () {
-        if (back) { back() }
-        else { showMessage("Can't go back.", "warning", "message-container") }
-    }
+    function exitTargetSelection () { back(); }
     window.checkTargetSelection = checkTargetSelection;
     window.submitTargetSelection = submitTargetSelection;
     window.exitTargetSelection = exitTargetSelection;
@@ -416,7 +415,12 @@ function showMessage(message, type = 'info', elementId = 'message-container', du
     return messageElement;
 }
 
-function cleanupGlobalHandlers() { window.checkTargetSelection = window.submitTargetSelection = window.exitTargetSelection = window.handleActionClick = null }
+function cleanupGlobalHandlers() {
+    window.checkTargetSelection = null;
+    window.submitTargetSelection = null;
+    window.exitTargetSelection = null;
+    window.handleActionClick = null;
+}
 
 function attack(attacker, defenders, num = 1, calcMods = {}) {
     if (eventState.attackStart.length) { handleEvent('attackStart', {attacker, defenders, num, calcMods}) }
@@ -426,11 +430,14 @@ function attack(attacker, defenders, num = 1, calcMods = {}) {
         const defendMods = { ...unit, ...calcMods.defender };
         const hit = [];
         for (let i = 0; i < num; i++) {
-            let rolls = [];
-            for (let r = 0; r <= Math.abs(calcMods.reroll); r++) { rolls.push(Math.floor(Math.random() * 100 + 1)) }
-            const roll = calcMods.reroll < 0 ? Math.min(...rolls) : Math.max(...rolls);
-            let hitSingle = roll === 1 ? 0 : roll - 50 * (.75 + (roll === 100 ? .5*(calcMods.max = true) : 1) * (defendMods.evasion-attackMods.accuracy)/(attackMods.accuracy+defendMods.evasion));
-            if (eventState.singleAttack.length) { handleEvent('singleAttack', {attacker, defender: unit, hitSingle, roll, calcMods}) }
+            const roll = Math.floor(Math.random() * 100 + 1);
+            let hitSingle = roll === 1 ? 0 : 20 * ((roll === 100 ? 2 * attackMods.accuracy : attackMods.accuracy) / defendMods.evasion ) + roll - 80;
+            if (roll === 100) { hitSingle = Math.min(-hitSingle, -100) }
+            if (eventState.singleAttack.length) { handleEvent('singleAttack', {attacker, defender: unit, hitSingle}) }
+             if (attacker.cancel) {
+                hitSingle = 0;
+                attacker.cancel = false;
+            }
             hit.push(hitSingle);
         }
         array.push(hit);
@@ -447,8 +454,17 @@ function crit(attacker, defenders, hit, calcMods = {}) {
         const defendMods = { ...defenders[i], ...calcMods.defender };
         const critical = [];
         for (let j = 0; j < hit[i].length; j++) {
-            let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (25-10*(attackMods.focus-defendMods.resist)/(attackMods.focus+defendMods.resist)), (calcMods.max || 0));
-            if (eventState.singleCrit.length) { handleEvent('singleCrit', {attacker, defender: defenders[i], critSingle, calcMods}) }
+            let max = false;
+            if (hit[i][j] <= -100) {
+                hit[i][j] *= -1;
+                max = true;
+            }
+            let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (Math.max((3 * defendMods.resist) - attackMods.focus, 20)), max);
+            if (eventState.singleCrit.length) { handleEvent('singleCrit', {attacker, defender: defenders[i], critSingle}) }
+            if (attacker.cancel) {
+                critSingle = 0;
+                attacker.cancel = false;
+            }
             critical.push(critSingle);
         }
         array.push(critical);
@@ -461,14 +477,15 @@ function damage(attacker, defenders, critical, calcMods = {}) {
     if (eventState.damageStart.length) { handleEvent('damageStart', {attacker, defenders, critical, calcMods}) }
     const attackMods = { ...attacker, ...calcMods.attacker };
     for (let i = 0; i < defenders.length; i++) {
-        let dCheck = 0;
+        let dCheck = false;
         if (critical[i].some(c => c > 0)) {
+            const doubleDamage = elementDamage(attacker, defenders[i], calcMods?.actionOverride || null);
             const defendMods = { ...defenders[i], ...calcMods.defender };
             const hit = [];
             let total = 0;
             for (let j = 0; j < critical[i].length; j++) {
-                let damageSingle = (critical[i][j] <= 0) ? 0 : Math.ceil(Math.max(((Math.random() * 0.5) + 0.75) * ((critical[i][j] < 1 ? 1 : critical[i][j] + 1) * ((2 * attackMods.attack) - defendMods.defense)), (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1))/8));
-                if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle, calcMods}) }
+                let damageSingle = (critical[i][j] <= 0) ? 0 : (doubleDamage + 1) * Math.ceil(Math.max(((Math.random() * 0.5) + 0.75) * ((critical[i][j] < 1 ? 1 : critical[i][j] + 1) * (attackMods.attack - defendMods.defense)), (critical[i][j] < 1 ? attackMods.attack : attackMods.attack * (critical[i][j] + 1))/8));
+                if (eventState.singleDamage.length) { handleEvent('singleDamage', {attacker, defender: defenders[i], damageSingle}) }
                 hit.push(`${critical[i][j] <= 0 ? '<i>0</i>' : critical[i][j] >= 1 ? `<b>${damageSingle}</b>` : damageSingle}`);
                 total += damageSingle;
             }
@@ -478,8 +495,8 @@ function damage(attacker, defenders, critical, calcMods = {}) {
                     if (eventState.unitChange.length) { handleEvent('unitChange', {type: 'downed', unit: defenders[i]}) }
                     if (defenders[i].hp === 0) { for (const mod of modifiers) { if (mod.vars.caster === defenders[i] && (mod.vars.focus || mod.vars.penalty)) { removeModifier(mod) } } }
                 }
-                critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit");
-                dCheck++;
+                critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} ${doubleDamage ? "elemental " : ""}damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} ${doubleDamage ? "elemental " : ""}damage!`, "hit");
+                dCheck = true;
             }
         }
         if (!dCheck) { logAction(`${attacker.name} missed ${critical[i].length > 1 ? `all ${critical[i].length} attacks on ` : '' }${defenders[i].name}!`, "miss") }
@@ -487,16 +504,17 @@ function damage(attacker, defenders, critical, calcMods = {}) {
 }
 
 function elementDamage(attacker, defender, actionOverride) {
-    const elementSource = actionOverride || currentAction.at(-1);
+   const elementSource = actionOverride || currentAction.at(-1);
     const properties = elementSource?.vars?.elements || elementSource?.properties || [];
-    if (properties.length === 0 || !baseElements.some(element => properties.includes(element))) { return false }
+    if (properties.length === 0) { return false }
     for (const prop of properties) {
         if (baseElements.includes(prop)) {
             if (defender.shield.includes(prop)) { defender.shield.splice(defender.shield.indexOf(prop), 1) }
             else if (defender.absorb.filter(e => e === prop).length < 2) { defender.absorb.push(prop) }
         }
     }
-    let doubleDamage = false, comboElement = null;
+    let doubleDamage = false;
+    let comboElement = null;
     const comboKeys = Object.keys(elementCombo);
     for (const unitElement of defender.elements || []) {
         const comboKey = comboKeys.find(key => key === unitElement);

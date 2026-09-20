@@ -5,7 +5,7 @@ import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
 import { Electric } from './unit/electric.js';
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
-
+import { assignEnemySkills } from './combat.js';
 
 const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric];
 
@@ -14,11 +14,12 @@ let currentEditingUnit = null;
 let currentEditingPosition = null;
 
 const categoryColors = {
-    special: '#ff9800',   // Orange
-    basic: '#4caf50',     // Green
-    secondary: '#2196f3', // Blue
-    passive: '#9c27b0',   // Purple
-    augment: '#f44336'    // Red
+    special: '#ff9800',    // Orange
+    basic: '#4caf50',      // Green
+    secondary: '#2196f3',  // Blue
+    passive: '#9c27b0',    // Purple
+    augment: '#f44336',    // Red
+    conditional: '#f3f200' // Yellow
 };
 
 function initUnitSelection() {
@@ -65,22 +66,16 @@ function initUnitSelection() {
 function getAllSkills(unitTemplate) { return Object.values(unitTemplate.skills).forEach(c => unitTemplate.skills[c]).flat(); }
 
 function getDefaultSkills(unitTemplate, position = null) {
-    if (unitTemplate.base.position === 'mid' && position) {
-        const key = `${position}DefaultSkills`;
-        if (unitTemplate[key]) return resolveDefaultSkills(unitTemplate, unitTemplate[key]);
-        return [];
-    }
-    if (unitTemplate.defaultSkills && Array.isArray(unitTemplate.defaultSkills)) return resolveDefaultSkills(unitTemplate, unitTemplate.defaultSkills);
+    if (unitTemplate.base.position === 'mid' && position && unitTemplate[`${position}DefaultSkills`]) return unitTemplate[`${position}DefaultSkills`].map(def => unitTemplate.skills[def.category] ? unitTemplate.skills[def.category].find(s => s.name === def.name) : null).filter(Boolean);
+    if (unitTemplate.defaultSkills && Array.isArray(unitTemplate.defaultSkills)) return unitTemplate.defaultSkills.map(def => unitTemplate.skills[def.category] ? unitTemplate.skills[def.category].find(s => s.name === def.name) : null).filter(Boolean);
     return [];
 }
-
-function resolveDefaultSkills(template, defaultsArray) { return defaultsArray.map(def => template.skills[def.category] ? template.skills[def.category].find(s => s.name === def.name) : null).filter(Boolean); }
 
 function openSkillSelection(unitConfig, targetPosition = null) {
     const isUnitChanged = currentEditingUnit !== unitConfig;
     currentEditingUnit = unitConfig;
     if (targetPosition) currentEditingPosition = targetPosition;
-    else if (unitConfig.template.base.position === 'mid') if (isUnitChanged || !currentEditingPosition) currentEditingPosition = unitConfig.startingPosition;
+    else if (unitConfig.template.base.position === 'mid') { if (isUnitChanged) currentEditingPosition ??= unitConfig.startingPosition; }
     else currentEditingPosition = null;
     const panel = document.getElementById('skill-selection-panel');
     panel.style.display = 'block';
@@ -123,10 +118,15 @@ function openSkillSelection(unitConfig, targetPosition = null) {
     };
     
     document.getElementById('cancel-skills').onclick = () => { panel.style.display = 'none'; };
-    
     document.getElementById('reset-defaults').onclick = () => {
         if (currentEditingPosition) currentEditingUnit.skills[currentEditingPosition] = getDefaultSkills(currentEditingUnit.template, currentEditingPosition);
         else currentEditingUnit.skills = getDefaultSkills(currentEditingUnit.template);
+        renderSelectedSkills();
+        renderSkillRoster();
+    };
+    document.getElementById('rand-skill').onclick = () => {
+        if (currentEditingPosition) currentEditingUnit.skills[currentEditingPosition] = Object.values(assignEnemySkills(null, currentEditingUnit.template)[currentEditingPosition === 'front' ? 0 : 1]);
+        else currentEditingUnit.skills = Object.values(assignEnemySkills(null, currentEditingUnit.template));
         renderSelectedSkills();
         renderSkillRoster();
     };
@@ -140,7 +140,8 @@ function getSkillCategory(template, skillObj) {
 function renderSkillRoster() {
     const roster = document.getElementById('skill-roster');
     roster.innerHTML = '';
-    if (currentEditingUnit.template.base.position === 'mid' && !currentEditingPosition) currentEditingPosition = currentEditingUnit.startingPosition;
+    if (currentEditingUnit.template.base.position === 'mid') currentEditingPosition ??= currentEditingUnit.startingPosition;
+    else currentEditingPosition = null;
     const activeSkills = currentEditingUnit.template.base.position === 'mid' ? currentEditingUnit.skills[currentEditingPosition] : currentEditingUnit.skills;
     for (const category of Object.keys(currentEditingUnit.template.skills)) {
         if (!currentEditingUnit.template.skills[category] || currentEditingUnit.template.skills[category].length === 0) continue;
@@ -203,7 +204,6 @@ function renderSelectedSkills() {
     }
 }
 
-// Helper function to generate the HTML for a selected skill card
 function createSkillItem(skill, position, index) {
     const category = getSkillCategory(currentEditingUnit.template, skill);
     const color = categoryColors[category] || '#888';
@@ -297,16 +297,12 @@ function renderSelectedUnits() {
 }
 
 function startCombatWithSelected() {
-    // 1. Serialize the squad data (Names + Skill Categories to handle duplicate names)
     const squadData = selectedUnits.map(config => {
         const extractSkillInfo = (skill) => ({ name: skill.name, category: getSkillCategory(config.template, skill) });
-        // Handle midline front/back skills or standard skills
         const skillsData = config.template.base.position === 'mid' ? { front: config.skills.front.map(extractSkillInfo), back: config.skills.back.map(extractSkillInfo) } : config.skills.map(extractSkillInfo);
         return { templateName: config.template.name, startingPosition: config.startingPosition, skills: skillsData, autoBehavior: config.autoBehavior };
     });
-    // 2. Save to localStorage
     localStorage.setItem('pendingSquad', JSON.stringify(squadData));
-    // 3. Navigate to the combat page
     window.location.href = 'combat.html';
 }
 

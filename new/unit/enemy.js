@@ -50,7 +50,7 @@ enemy.skills = {
                 if (will >= 2) {
                     logAction(`${this.name} taunts ${target[0].name}!`, "debuff");
                     new Modifier("Taunt", "Decreases target evasion, focus, and resist and increase chance for caster to be targeted by target",
-                        { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -20, focus: -35, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } },
+                        { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -20, focus: -35, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } },
                         function() {},
                         function(context) {
                             let i;
@@ -169,7 +169,7 @@ enemy.skills = {
                 if (will > 33) {
                     logAction(`${this.name} distracts ${target[0].name}`, "debuff");
                     new Modifier("Taunt", "Decreases target evasion, focus, and resist and doubles the chance for caster to be targeted by target",
-                        { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33; } },
+                        { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; } },
                         function() {},
                         function(context) {
                             let i;
@@ -236,7 +236,7 @@ enemy.skills = {
             description: "At start of turn, chooses a target and has a chance to decrease target focus and resist and double the chance for caster to be targeted by target, can target backline",
             code() {
                 new Modifier("Taunt", "Decreases target focus and resist and double the chance for caster to be targeted by target",
-                    { target: null, properties: ["physical", "debuff"], stats: { focus: -25, resist: -15 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33; }, fail: false },
+                    { target: null, properties: ["physical", "debuff"], stats: { focus: -25, resist: -15 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; }, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -322,7 +322,7 @@ enemy.skills = {
             description: "At start of turn, chooses a target and has a chance to decrease target focus and resist and double the chance for caster to be targeted by target, can target backline",
             code() {
                 new Modifier("Taunt", "Decreases target focus, and resist and double the chance for caster to be targeted by target",
-                    { target: null, properties: ["physical", "debuff"], stats: { focus: -40, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] > 33; }, fail: false },
+                    { target: null, properties: ["physical", "debuff"], stats: { focus: -40, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; }, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {

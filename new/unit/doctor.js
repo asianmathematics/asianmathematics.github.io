@@ -4,7 +4,7 @@ import { Unit, allUnits } from './unit.js';
 
 export const Doctor = new Unit("Doctor", [1200, 18, 25, 140, 70, 140, 70, 100, 60, "back", 150, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
 
-Doctor.description = "3-star techno backline unit wih healing and buff abilities";
+Doctor.description = "3-star techno backline unit with healing and buff abilities";
 
 Doctor.skills = {
     special: [
@@ -30,7 +30,7 @@ Doctor.skills = {
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 if (attack(this, target, 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 100 }, focus: { bonus: 200 } } })[0]) new Modifier("Medical Malpractice", "Critical amage start of turn until resist", 
-                    { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true}, debuff: function(target) { return resistDebuff(this, [target])[0] >= 50; } },
+                    { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true}, debuff: function(target, calcMods) { return resistDebuff(this, [target], calcMods)[0] >= 50; } },
                     function() {},
                     function(context) { if (context.unit === this.vars.target) return this.vars.debuff.call(this, this.vars.target) ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[1]]) && false : true; }
                 );
@@ -78,7 +78,7 @@ Doctor.skills = {
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
                 if (attack(this, target, 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 100 }, focus: { bonus: 50 } } })[0]) new Modifier("Medical Malpractice", "Damage start of turn until resist", 
-                    { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true }, debuff: function(target) { return resistDebuff(this, [target]) >= 50; } },
+                    { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this, [target], calcMods)[0] >= 50; } },
                     function() {},
                     function(context) { if (context.unit === this.vars.target) return this.vars.debuff.call(this, this.vars.target) ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[.5]]) && false : true; }
                 );
@@ -90,7 +90,7 @@ Doctor.skills = {
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for 4 random allies, except self, for 3 turns",
             code() {
                 let vars = { duration: 3, properties: ["techno", "buff"], listeners: { turnEnd: true } }, mod;
-                randTarget(allUnits.filter(u => !this && u.team === this.team).filter(u => u !== this), 4, true).forEach(u => (mod = modifiers.find(m => m.name.includes("Prescription Stimulant") && m.vars.caster === this && m.vars.target === u)) ? (mod.vars.duration = 3) && logAction(`${this.name} refreshes ${mod.name}`) : (u.attack >= 37.5*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { ...vars, target: u, stats: { attack: 20, accuracy: 60, focus: 60 } }) : u.defense >= 37.5*1.5**(u.star-3) || u.evasion >= 125*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { ...vars, target: u, stats: { defense: 20, evasion: 60, presence: 150 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { ...vars, target: u, stats: { evasion: 120, speed: 75 } })));
+                randTarget(allUnits.filter(u => u !== this && u.team === this.team), 4, true).forEach(u => (mod = modifiers.find(m => m.name.includes("Prescription Stimulant") && m.vars.caster === this && m.vars.target === u)) ? (mod.vars.duration = 3) && logAction(`${this.name} refreshes ${mod.name}`) : (u.attack >= 37.5*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { ...vars, target: u, stats: { attack: 20, accuracy: 60, focus: 60 } }) : u.defense >= 37.5*1.5**(u.star-3) || u.evasion >= 125*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { ...vars, target: u, stats: { defense: 20, evasion: 60, presence: 150 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { ...vars, target: u, stats: { evasion: 120, speed: 75 } })));
             }
         },
         {
@@ -115,7 +115,7 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["physical", "buff"],
-            description: "Increases heal factor of the lowest hp ally by half of heal factor for 3 turns, if already active, regen resources",
+            description: "Increases heal factor of the lowest hp ally by half of heal factor for 3 turns, if already active, refresh duration and regen resources",
             code() {
                 const mods = modifiers.filter(m => m.name === "Caring is Sharing" && m.vars.caster === this).map(m => m.vars.target), targets = allUnits.filter(u => u.team === this.team && !mods.includes(u));
                 targets.length ? basicModifier("Caring is Sharing", "Increased heal factor", { target: unitByStat(targets, 'hp', 'percent', false)[0], duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 2 }, listeners: { turnEnd: true } }) : regenerateResources(this) || logAction(`${this.name} rests.`);
@@ -128,7 +128,7 @@ Doctor.skills = {
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
                 if (attack(this, target, 1, { attacker: { attack: { bonus: 20 }, accuracy: { bonus: 50 } } })[0]) new Modifier("Medical Malpractice", "Damage start of turn until resist", 
-                    { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true}, debuff: function(target) { return resistDebuff(this, [target]) >= 50; } },
+                    { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true}, debuff: function(target, calcMods) { return resistDebuff(this, [target], calcMods)[0] >= 50; } },
                     function() {},
                     function(context) { if (context.unit === this.vars.target) return this.vars.debuff.call(this, this.vars.target) ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[.5]]) && false : true; }
                 );
@@ -140,7 +140,7 @@ Doctor.skills = {
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for a random ally, except self, for 3 turns",
             code() {
                 let vars = { duration: 3, properties: ["techno", "buff"], listeners: { turnEnd: true } }, mod;
-                randTarget(allUnits.filter(u => !this && u.team === this.team), 2, true).forEach(u => (mod = modifiers.find(m => m.name.includes("Prescription Stimulant") && m.vars.caster === this && m.vars.target === u)) ?( mod.vars.duration = 3) && logAction(`${this.name} refreshes ${mod.name}`) : (u.attack >= 37.5*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { ...vars, target: u, stats: { attack: 20, accuracy: 60, focus: 60 } }) : u.defense >= 37.5*1.5**(u.star-3) || u.evasion >= 125*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { ...vars, target: u, stats: { defense: 20, evasion: 60, presence: 150 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { ...vars, target: u, stats: { evasion: 120, speed: 75 } })));
+                randTarget(allUnits.filter(u => u !== this && u.team === this.team), 2, true).forEach(u => (mod = modifiers.find(m => m.name.includes("Prescription Stimulant") && m.vars.caster === this && m.vars.target === u)) ?( mod.vars.duration = 3) && logAction(`${this.name} refreshes ${mod.name}`) : (u.attack >= 37.5*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { ...vars, target: u, stats: { attack: 20, accuracy: 60, focus: 60 } }) : u.defense >= 37.5*1.5**(u.star-3) || u.evasion >= 125*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { ...vars, target: u, stats: { defense: 20, evasion: 60, presence: 150 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { ...vars, target: u, stats: { evasion: 120, speed: 75 } })));
             }
         },
         {
@@ -239,7 +239,7 @@ Doctor.skills = {
             code() {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",
                     { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
-                    function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack:215, accuracy: 80, focus: 80 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 25, evasion: 80, presence: 180 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 140, speed: 90 } }); },
+                    function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack: 25, accuracy: 80, focus: 80 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 25, evasion: 80, presence: 180 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 140, speed: 90 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }

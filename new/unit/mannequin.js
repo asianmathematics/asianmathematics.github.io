@@ -85,7 +85,7 @@ Mannequin.skills = {
                             this.custom?.focusFire !== undefined && (this.custom.focusFire = 1);
                             this.vars.duration--;
                         }
-                        if (this.vars.duration <= 0);
+                        return this.vars.duration <= 0;
                     }
                 );
             }
@@ -275,9 +275,9 @@ Mannequin.skills = {
                     function() { this.vars.caster.custom = { dualWield: !this.vars.cancel, snipe: !this.vars.cancel, focusFire: !this.vars.cancel }; },
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied) {
-                            if (!this.vars.caster.custom.dualWield && resourceChange(this.vars.caster, this.vars.cost, false)) this.vars.caster.custom.dualWield = 1;
-                            if (!this.vars.caster.custom.snipe && resourceChange(this.vars.caster, this.vars.cost, false)) this.vars.caster.custom.snipe = 1;
-                            if (!this.vars.caster.custom.focusFire && resourceChange(this.vars.caster, this.vars.cost, false)) this.vars.caster.custom.focusFire = 1;
+                            if (!this.vars.caster.custom.dualWield && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.dualWield = 1;
+                            if (!this.vars.caster.custom.snipe && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.snipe = 1;
+                            if (!this.vars.caster.custom.focusFire && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.focusFire = 1;
                         }
                     }
                 );

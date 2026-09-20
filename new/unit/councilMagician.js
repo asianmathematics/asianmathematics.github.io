@@ -13,8 +13,8 @@ CouncilMagician.skills = {
             description: "Attacks target and a random number of random targets (including allies) twice with increased attack and halved accuracy",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) { 
-                const front = allUnits.filter(u => u.hp && u.position === target[0].position);
-                attack(this, target.concat(randTarget(front, Math.floor((front.length-1)*Math.min(Math.random(), Math.random(), Math.random())+1), true)), 2, { attack: { bonus: 50 }, accuracy: { div: 2 }});
+                const front = allUnits.filter(u => u.hp && u.position === target[0].position && (target[0].position === 'back' ?  u.team === target[0].team : true));
+                attack(this, target.concat(randTarget(front, Math.floor((front.length-1)*Math.min(Math.random(), Math.random(), Math.random())+1), true)), 2, { attacker: { attack: { bonus: 50 }, accuracy: { div: 2 } } });
             }
         },
         {
@@ -33,7 +33,7 @@ CouncilMagician.skills = {
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const will = resistDebuff(this, target)[0];
-                will >= 2 ? attribCancelMod("Dispel", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["mystic", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'mystic' ) : logAction(`${target[0].name} resists Dispel!`, 'miss');
+                will >= 2 ? attribCancelMod("Dispel", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["mystic", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'mystic' ) : logAction(`${target[0].name} resists Dispel!`, 'miss');
             }
         },
         {
@@ -41,10 +41,7 @@ CouncilMagician.skills = {
             properties: ["physical", "stamina-block", "stamina", "mana-gain"],
             cost: { stamina: 30 },
             description: "Recover a lot of mana (~45% max mana)",
-            code() {
-                resourceChange(this, { mana: 4.5 * this.manaRegen });
-                logAction(`${this.name} recovers mana!`, "buff");
-            }
+            code() { resourceChange(this, { mana: 4.5 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -69,7 +66,7 @@ CouncilMagician.skills = {
             name: "Fireball",
             properties: ["mystic", "mana-block", "attack", "fire"],
             description: "Attacks target 2 times with increased damage",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attack: { bonus: 50 } }); }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: 50 } } }); }
         },
         {
             name: "Arcane Missile",
@@ -84,11 +81,11 @@ CouncilMagician.skills = {
         {
             name: "Dispel",
             properties: ["mystic", "mana-block", "mana", "debuff", "cancel"],
-            cost: { energy: 10 },
+            cost: { mana: 10 },
             description: "Chance to end non-passive mystic modifiers target is focusing, cancel mystic modifiers on target, and disables mana regen for 1 turn",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
-                resistDebuff(this, target)[0] >= 25 ? attribCancelMod("Dispel", { target: target[0], duration: 1, properties: ["mystic", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 25; } }, 'mystic') : logAction(`${target[0].name} resists Dispel!`, 'miss');
+                resistDebuff(this, target)[0] >= 25 ? attribCancelMod("Dispel", { target: target[0], duration: 1, properties: ["mystic", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 25; } }, 'mystic') : logAction(`${target[0].name} resists Dispel!`, 'miss');
             }
         },
         {
@@ -96,10 +93,7 @@ CouncilMagician.skills = {
             properties: ["physical", "stamina-block", "stamina", "mana-gain"],
             cost: { stamina: 10 },
             description: "Recover a lot of mana (~25% max mana)",
-            code() {
-                resourceChange(this, { mana: 2.5 * this.manaRegen });
-                logAction(`${this.name} recovers mana!`, "buff");
-            }
+            code() { resourceChange(this, { mana: 2.5 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -125,7 +119,7 @@ CouncilMagician.skills = {
             name: "Fireball",
             properties: ["mystic", "attack", "fire"],
             description: "Attacks target 2 times with increased damage",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attack: { bonus: 25 } }); }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: 25 } } }); }
         },
         {
             name: "Arcane Missile",
@@ -140,10 +134,7 @@ CouncilMagician.skills = {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "mana-gain"],
             description: "Recover a lot of mana (~15% max mana)",
-            code() {
-                resourceChange(this, { mana: 1.5 * this.manaRegen });
-                logAction(`${this.name} recovers mana!`, "buff");
-            }
+            code() { resourceChange(this, { mana: 1.5 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -172,7 +163,7 @@ CouncilMagician.skills = {
                 new Modifier("Restore Mana", `Regen mana (~10% max mana) each turn`,
                     { target: this, properties: ["physical", "mana-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: this.vars.target.manaRegen }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: this.vars.target.manaRegen }, true); }
                 );
             }
         },
@@ -208,7 +199,7 @@ CouncilMagician.skills = {
                 new Modifier("Restore Mana", `Regen mana (~10% max mana) each turn`,
                     { target: this, properties: ["physical", "mana-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: this.vars.target.manaRegen * 1.5 }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: this.vars.target.manaRegen * 1.5 }, true); }
                 );
             }
         },
@@ -288,9 +279,9 @@ function wildMagic(buff) {
             break;
         case 4:
             new Modifier(`Wild Magic: Poison${buff ? '' : ' backfire'}`, 'Immediate and start of turn poison damage until resisted',
-                { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], properties: ["mystic", "attack", "dot", "poison"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } },
+                { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], properties: ["mystic", "attack", "dot", "poison"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } },
                 function() { return this.vars.cancel ? false : this.vars.debuff.call(this, this.vars.target) ? damage(this.vars.caster, [this.vars.target], [[.5]]) && false : logAction(`${this.vars.target.name} resisted ${this.vars.caster.name}'s wild magic poison`, 'miss') || true; },
-                function(context) { if (context.unit === this.vars.target) return resistDebuff(this.vars.caster, [this.vars.target]) >= 50 ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[.5]]) && false : true; }
+                function(context) { if (context.unit === this.vars.target) return resistDebuff(this.vars.caster, [this.vars.target])[0] >= 50 ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[.5]]) && false : true; }
             );
             break;
         case 5: {
@@ -299,14 +290,14 @@ function wildMagic(buff) {
             break;
         }
         case 6:
-            blockModifier(`Wild Magic: Resource Block${buff ? '' : ' backfire'}`, { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], duration: 2, properties: ["mystic", "debuff"], listeners: { turnEnd: true }, cancelListeners: ['resourceChange'], debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'all');
+            blockModifier(`Wild Magic: Resource Block${buff ? '' : ' backfire'}`, { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], duration: 2, properties: ["mystic", "debuff"], listeners: { turnEnd: true }, cancelListeners: ['resourceChange'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'all');
             break;
         case 7:
             attack(randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true), 3);
             break;
         case 8: {
-            const target = randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team), '', false), 1, true);
-            if (resistDebuff(this, target)[0] >= 2) stunModifier(`Wild Magic: Stun${buff ? '' : ' backfire'}`, { target: target[0], duration: 1, properties: ["mystic", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } });
+            const target = randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true);
+            if (resistDebuff(this, target)[0] >= 2) stunModifier(`Wild Magic: Stun${buff ? '' : ' backfire'}`, { target: target[0], duration: 1, properties: ["mystic", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
         }
     }
 }

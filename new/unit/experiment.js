@@ -61,7 +61,7 @@ Experiment.skills = {
             name: "Brain Eating",
             properties: ["physical", "stamina-block", "stamina", "attack", "fatal"],
             cost: { stamina: 30 },
-            description: "Makes an attack on alive target. If attack reduced half of target's current hp or target is downed, chance to kill target",
+            description: "Makes an attack on alive target. If attack downed target, chance to kill target",
             code() {
                 const target = randTarget(allUnits.filter(u => u.position === "front" && u.team !== this.team));
                 if ((!target[0].hp || (attack(this, target) && !target[0].hp)) && resistDebuff(this, target)[0] > 75) {

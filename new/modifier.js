@@ -294,6 +294,7 @@ function blockModifier(name, vari, res, dur = "target", regen = false) {
         function() {
             this.vars.listeners ? this.vars.listeners.resourceChange = true : this.vars.listeners = { resourceChange: true };
             if (!(this.vars.cancelListeners ??= []).includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
+            this.vars.properties.push(...(res === 'all' ? ['stamina-block', 'mana-block', 'energy-block'] : [res + '-block'] ));
         },
         function(context) {
             if (regen && regen.includes(context.event)) this.vars.uses = regen[0];
@@ -320,12 +321,13 @@ function blockModifier(name, vari, res, dur = "target", regen = false) {
 }
 
 function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
-    return new Modifier(name, `Ends non-passive ${attrib} modifiers target is focusing, cancels ${attrib} modifiers on target, and disables ${attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy'} regen`, vari,
+    const res = attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy';
+    return new Modifier(name, `Ends non-passive ${attrib} modifiers target is focusing, cancels ${attrib} modifiers on target, and disables ${res} regen`, vari,
         function() {
             this.vars.modifiers = [];
             if (ignore) this.vars.ignore = modifiers.filter(m => ignore.call(this, m));
             if (!this.vars.cancel) {
-                for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes(m) && m.vars.properties.includes(attrib) && !m.vars.perm && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
+                for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes(m) && m.vars.properties.includes(attrib) && !m.vars.perm && !m.vars.trait && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
                     if (mod.vars.caster === this.vars.target && mod.vars.focus && !mod.vars.passive) removeModifier(mod);
                     else if (mod.vars.target === this.vars.target || mod.vars.focus) {
                         this.vars.modifiers.push(mod);
@@ -334,10 +336,11 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
                         currentAction.pop();
                     }
                 }
-                logAction(`${this.vars.target}'s ${attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy'} is disabled!`, "debuff");
+                logAction(`${this.vars.target}'s ${res} is disabled!`, "debuff");
             }
             this.vars.listeners ? this.vars.listeners.resourceChange = this.vars.listeners.modifierEnd = this.vars.listeners.modifierStart = this.vars.listeners.targetChange = true : this.vars.listeners = { targetChange: true, modifierStart: true, modifierEnd: true, resourceChange: true };
             if (!(this.vars.cancelListeners ??= []).includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
+            this.vars.properties.push(...(res === 'all' ? ['stamina-block', 'mana-block', 'energy-block'] : [res + '-block'] ));
         },
         function(context) {
             if (context.modifier === this || this.vars.ignore?.includes(context.modifier)) return;
@@ -355,7 +358,7 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
                     currentAction.pop();
                 }
             }
-            if (context.event === 'modifierStart' && context.modifier.vars.properties.includes(attrib) && !context.modifier.vars.perm && (context.modifier.vars.caster === this.vars.target || context.modifier.vars.target === this.vars.target)) {
+            if (context.event === 'modifierStart' && context.modifier.vars.properties.includes(attrib) && !context.modifier.vars.perm && !context.modifier.vars.trait && (context.modifier.vars.caster === this.vars.target || context.modifier.vars.target === this.vars.target)) {
                 if (context.modifier.vars.caster === this.vars.target && context.modifier.vars.focus && !context.modifier.vars.passive) removeModifier(context.modifier);
                 else if (context.modifier.vars.target === this.vars.target || context.modifier.vars.focus) {
                     this.vars.modifiers.push(context.modifier);
@@ -364,8 +367,8 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
                     currentAction.pop();
                 }
             }
-            if (context.event === 'modifierEnd' && this.vars.modifiers.includes(context.modifier)) { this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1); }
-            if (this.vars.applied && context.unit === this.vars.target && context.resources?.[attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy'] * (context.add ? 1 : -1) > 0) (context[attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy'] ??= {}).nil = (context[attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy'].nil || 0) + 1;
+            if (context.event === 'modifierEnd' && this.vars.modifiers.includes(context.modifier)) this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1);
+            if (this.vars.applied && context.unit === this.vars.target && context.resources?.[res] * (context.add ? 1 : -1) > 0) (context[res] ??= {}).nil = (context[res].nil || 0) + 1;
             if (typeof dur === "function") return !dur.call(this, this.vars.target);
             else {
                 if (context.event !== 'resourceChange' && this.vars[dur] === context.unit) this.vars.duration--;
@@ -393,7 +396,7 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
                         this.vars.listeners[listener] = true;
                         eventState[listener].push(this);
                     }
-                    for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes?.(m) && m.vars.properties.includes(attrib) && !m.vars.perm && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
+                    for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes(m) && m.vars.properties.includes(attrib) && !m.vars.perm && !m.vars.trait && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
                         if (mod.vars.caster === this.vars.target && mod.vars.focus && !mod.vars.passive) removeModifier(mod);
                         else if (mod.vars.target === this.vars.target || mod.vars.focus) {
                             this.vars.modifiers.push(mod);
@@ -488,7 +491,7 @@ function resetStat(unit, statList, values = [], add = true) {
                 continue;
             }
             unit.mult[statList[i]] += add ? values[i] : -values[i];
-            (add ? values[i] : -values[i]) > 0 ? inc.push(statList[i]) : dec.push(statList[i]);
+            ((add ? 1 : -1)*values[i] > 0 ? inc : dec).push(statList[i]);
         }
         if (!turnOffStatLog && (inc.length + dec.length)) !dec.length ? logAction(`${unit.name}'s ${inc.join(", ")} increased.`, 'buff') : !inc.length ? logAction(`${unit.name}'s ${dec.join(", ")} decreased.`, 'debuff') : logAction(`${unit.name}'s ${inc.join(", ")} increased, and ${dec.join(", ")} decreased.`, 'info');
     }

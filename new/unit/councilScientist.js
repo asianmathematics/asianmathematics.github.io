@@ -34,12 +34,14 @@ CouncilScientist.skills = {
             code() {
                 let drone = modifiers.find(m => m.name === "Drone" && m.vars.caster === this);
                 if (drone) {
-                    resourceChange(this, { stamina: drone.vars.duration * 10 });
+                    resourceChange(this, { energy: drone.vars.duration * 10 });
                     drone.vars.duration = 5;
                     hpChange(this, [drone.vars.target], [drone.vars.target.base.hp]);
                     resourceChange(drone.vars.target, { stamina: drone.vars.target.base.stamina, energy: drone.vars.target.base.energy });
                 } else {
                     drone = summon(this, { ...Drone, name: "Deka Drone", star: 2, base: Object.fromEntries(Object.entries(Drone.base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val * 1.5))])) }, droneSkills(this));
+                    (drone.trait ??= []).push(trait);
+                    trait.code.call(drone);
                     if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
                     new Modifier("Drone", "Summon 2-star drone",
                         { target: drone, duration: 5, properties: ["techno", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
@@ -71,7 +73,7 @@ CouncilScientist.skills = {
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const will = resistDebuff(this, target)[0];
-                will >= 2 ? attribCancelMod("EMP", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'techno') : logAction(`${target[0].name} resists the EMP!`, 'miss');
+                will >= 2 ? attribCancelMod("EMP", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'techno') : logAction(`${target[0].name} resists the EMP!`, 'miss');
             }
         },
         {
@@ -79,10 +81,7 @@ CouncilScientist.skills = {
             properties: ["physical", "stamina-block", "stamina", "energy-gain"],
             cost: { stamina: 30 },
             description: "Recover a lot of energy (~45% max energy)",
-            code() {
-                resourceChange(this, { energy: 4.5 * this.energyRegen });
-                logAction(`${this.name} turns on backup power!`, "buff");
-            }
+            code() { resourceChange(this, { energy: 4.5 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -129,12 +128,14 @@ CouncilScientist.skills = {
             code() {
                 let drone = modifiers.find(m => m.name === "Drone" && m.vars.caster === this);
                 if (drone) {
-                    resourceChange(this, { stamina: drone.vars.duration * 5 });
+                    resourceChange(this, { energy: drone.vars.duration * 5 });
                     drone.vars.duration = 3;
                     hpChange(this, [drone.vars.target], [drone.vars.target.base.hp]);
                     resourceChange(drone.vars.target, { stamina: drone.vars.target.base.stamina, energy: drone.vars.target.base.energy });
                 } else {
                     drone = summon(this, Drone, droneSkills(this));
+                    (drone.trait ??= []).push(trait);
+                    trait.code.call(drone);
                     if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
                     new Modifier("Drone", "Summon 2-star drone",
                         { target: drone, duration: 3, properties: ["techno", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
@@ -165,7 +166,7 @@ CouncilScientist.skills = {
             description: "Chance to end non-passive techno modifiers target is focusing, cancel techno modifiers on target, and disables energy regen for 1 turn",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
-                resistDebuff(this, target)[0] >= 25 ? attribCancelMod("EMP", { target: target[0], duration: 1, properties: ["techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 25; } }, 'techno') : logAction(`${target[0].name} resists the EMP!`, 'miss');
+                resistDebuff(this, target)[0] >= 25 ? attribCancelMod("EMP", { target: target[0], duration: 1, properties: ["techno", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 25; } }, 'techno') : logAction(`${target[0].name} resists the EMP!`, 'miss');
             }
         },
         {
@@ -173,10 +174,7 @@ CouncilScientist.skills = {
             properties: ["physical", "stamina-block", "stamina", "energy-gain"],
             cost: { stamina: 10 },
             description: "Recover a lot of energy (~25% max energy)",
-            code() {
-                resourceChange(this, { energy: 2.5 * this.energyRegen });
-                logAction(`${this.name} turns on backup power.`, "buff");
-            }
+            code() { resourceChange(this, { energy: 2.5 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -220,10 +218,7 @@ CouncilScientist.skills = {
             name: "Backup Power",
             properties: ["physical", "stakmina-block", "energy-gain"],
             description: "Recover some energy (~15% max energy)",
-            code() {
-                resourceChange(this, { energy: 1.5 * this.energyRegen });
-                logAction(`${this.name} turns on backup power.`, "buff");
-            }
+            code() { resourceChange(this, { energy: 1.5 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -263,7 +258,9 @@ CouncilScientist.skills = {
             description: "Summons a 1-star drone to the frontline.",
             code() {
                 const drone = summon(this, Drone, droneSkills(this));
-                new Modifier("Drone", "Summon 2-star drone",
+                (drone.trait ??= []).push(trait);
+                trait.code.call(drone);
+                new Modifier("Drone", "Summon 1-star drone",
                     { target: drone, properties: ["techno", "summon"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, perm: true },
                     function() {},
                     function(context) { if (context.unit === this.vars.target && context.type === "death") return !(this.vars.perm = false); },
@@ -281,7 +278,7 @@ CouncilScientist.skills = {
                 new Modifier("Backup Power", `Regen energy (~10% max energy) each turn`,
                     { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen }, true); }
                 );
             }
         },
@@ -318,7 +315,7 @@ CouncilScientist.skills = {
                 new Modifier("Backup Power", `Regen energy (~15% max energy) each turn`,
                     { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen * 1.5 }); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen * 1.5 }, true); }
                 );
             }
         },
@@ -384,7 +381,7 @@ Drone.skills = [
                 target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
                 code(target) {
                     const will = resistDebuff(this, target)[0];
-                    will >= 2 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
+                    will >= 2 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
                 } 
             }
         ],
@@ -408,7 +405,7 @@ Drone.skills = [
                 description: "Chance to block target energy regen for 1 turn",
                 code() {
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
-                    will >= 60 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
+                    will >= 60 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
                 }
             }
         ],
@@ -456,7 +453,7 @@ Drone.skills = [
                 target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
                 code(target) {
                     const will = resistDebuff(this, target)[0];
-                    will >= 2 ? blockModifier("Disrupt Energy", { target: target[0], duration: Math.ceil(will/33), properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
+                    will >= 2 ? blockModifier("Disrupt Energy", { target: target[0], duration: Math.ceil(will/33), properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
                 } 
             },
             {
@@ -464,10 +461,7 @@ Drone.skills = [
                 properties: ["physical", "stamina-block", "stamina", "energy-gain"],
                 cost: { stamina: 20 },
                 description: "Recover a lot of energy (~35% max energy)",
-                code() {
-                    resourceChange(this, { energy: 3.5 * this.energyRegen });
-                    logAction(`${this.name} recharges!`, "buff");
-                }
+                code() { resourceChange(this, { energy: 3.5 * this.energyRegen }, true); }
             }
         ],
         basic: [
@@ -490,7 +484,7 @@ Drone.skills = [
                 description: "Chance to block target energy regen for 1 turn",
                 code() {
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
-                    will >= 30 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target) { return resistDebuff(this.vars.caster, [target])[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
+                    will >= 30 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
                 }
             },
             {
@@ -498,10 +492,7 @@ Drone.skills = [
                 properties: ["physical", "stamina-block", "stamina", "energy-gain"],
                 cost: { stamina: 10 },
                 description: "Recover a lot of energy (~25% max energy)",
-                code() {
-                    resourceChange(this, { energy: 2.5 * this.energyRegen });
-                    logAction(`${this.name} recharges.`, "buff");
-                }
+                code() { resourceChange(this, { energy: 2.5 * this.energyRegen }, true); }
             }
         ],
         secondary: [
@@ -521,10 +512,7 @@ Drone.skills = [
                 name: "Recharge",
                 properties: ["physical", "stamina-block", "energy"],
                 description: "Recover some energy (~15% max energy)",
-                code() {
-                    resourceChange(this, { energy: 1.5 * this.energyRegen });
-                    logAction(`${this.name} recharges.`, "buff");
-                }
+                code() { resourceChange(this, { energy: 1.5 * this.energyRegen }, true); }
             }
         ],
         passive: [
@@ -571,3 +559,51 @@ const droneSkills = function(unit) {
     for (const skill of (two ? ['basic', 'secondary', 'special'] : ['basic', 'special'])) skills[skill] = list[Object.keys(list).filter(s => !list[s][0] && !Object.values(skills).includes(list[s][1]) && !(skill === 'secondary' && s === 'disrupt'))[0] || Object.keys(list).find(s => !Object.values(skills).includes(list[s][1]) && !(skill === 'secondary' && s === 'disrupt'))][1];
     return Object.fromEntries(Object.entries(skills).map(([k, v]) => [k, Drone.skills[+two][k].find(s => s.name === v)]));
 };
+
+const trait = {
+    name: "Internal Circuitry",
+    properties: ["trait", "techno", "conditional", "stun"],
+    description: "More resistant to energy-block effects, but a successfun energy-block effect stuns",
+    code() {
+        new Modifier("Internal", "More resistant to energy-block effects, but a successfun energy-block effect stuns",
+            { target: this, properties: ["techno", "conditional", "stun"], listeners: { modifierStart: true, modifierEnd: false }, modifiers: [], passive: true, trait: true },
+            function() {
+                for (const mod of modifiers.filter(m => m.vars.properties.includes('energy-block') && m.vars.target === this.vars.target)) mod.vars.debuff(this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
+                if (this.vars.modifiers.length) {
+                    stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
+                    this.vars.listeners.modifierEnd = true;
+                }
+            },
+            function(context) {
+                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets.includes(this.vars.target))) {
+                    if (context.event === 'modifierStart') {
+                        if (context.modifier.vars.debuff(this.vars.target)) {
+                            if (!this.vars.modifiers.length) {
+                                if (this.vars.applied) stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
+                                this.vars.listeners.modifierEnd = true;
+                            }
+                            this.vars.modifiers.push(context.modifier);
+                        } else context.modifier.vars.parent.vars?.targets.includes(this.vars.target) ? context.modifier.vars.parent.changeTarget([this.vars.target]) : context.modifier.changeTarget(this.vars.target);
+                    } else {
+                        this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1);
+                        if (!this.vars.modifiers.length) {
+                            if (this.vars.applied) removeModifier(this.vars.child[0]);
+                            this.vars.listeners.modifierEnd = false;
+                        }
+                    }
+                }
+            },
+            function(cancel, temp) {
+                if (!temp) {
+                    if (this.vars.cancel && this.vars.applied) {
+                        this.vars.applied = false;
+                        if (this.vars.modifiers.length) removeModifier(this.vars.child[0]);
+                    } else if (!this.vars.cancel && !this.vars.applied) {
+                        this.vars.applied = true;
+                        if (this.vars.modifiers.length) stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
+                    }
+                }
+            }
+        )
+    }
+}

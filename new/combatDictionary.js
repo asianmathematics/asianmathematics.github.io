@@ -11,7 +11,7 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
-function specialTarget(unit, list, count = 1, max = true) { unit.team === "player" ? selectTarget(unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)); }
+function specialTarget(unit, list, count = 1, max = true) { unit.team === "player" ? selectTarget(unit, unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)); }
 
 function enemyTurn(unit) {
     if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.2) return executeEnemyAction(unit, unit.skills.special);
@@ -34,7 +34,7 @@ function enemyTurn(unit) {
 function executeEnemyAction(unit, action) {
     const type = Object.keys(unit.skills).find(s => unit.skills[s] === action);
     if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: type });
-    if (!action.cost || resourceChange(unit, action.cost, false)) {
+    if (!action.cost || resourceChange(unit, action.cost, false, false)) {
         if (type === 'special') logAction(`${unit.name} activates special!`);
         unit.previousAction = [unit.previousAction[0] || action.properties.includes('stamina-block'), unit.previousAction[1] || action.properties.includes('mana-block'), unit.previousAction[2] || action.properties.includes('energy-block')];
         currentAction.push([action, unit]);
@@ -96,9 +96,8 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
     return selectedTargets;
 }
 
-function selectTarget(action, target, targetType = 'unit') {
+function selectTarget(unit, action, target, targetType = 'unit') {
     document.getElementById('selection').style.display = 'block';
-    const unit = currentAction.at(-1)[1];
     let maxSelections = target[0];
     if (target[0] === -1 || target[0] > target[2].length) maxSelections = target[2].length;
     const selectionTitle = `<h2 style="text-align:center;">Action: ${action.name}</h2>`;
@@ -163,7 +162,7 @@ function selectTarget(action, target, targetType = 'unit') {
             }
         }
         if (eventState.targets.length) handleEvent('targets', {action, selectedTargets});
-        if (!unit.cancel && (!action.cost || resourceChange(unit, action.cost, false))) {
+        if (!unit.cancel && (!action.cost || resourceChange(unit, action.cost, false, false))) {
             unit.previousAction = [unit.previousAction[0] || action.properties.includes('stamina-block'), unit.previousAction[1] || action.properties.includes('mana-block'), unit.previousAction[2] || action.properties.includes('energy-block')];
             logAction(`<strong>${unit.name}'s turn (Special Interrupt!)</strong>`, 'turn');
             if (eventState.turnStart.length) handleEvent('turnStart', { unit });
@@ -250,7 +249,7 @@ function crit(attacker, defenders, hit = 20, calcMods = {}) {
     const attackMods = getModdedStats(attacker, calcMods.attacker);
     const array = [];
     for (let i = 0; i < defenders.length; i++) {
-        const defendMods = { ...defenders[i], ...calcMods.all, ...calcMods.defenders?.[i] };
+        const defendMods = getModdedStats(defenders[i], calcMods.all, calcMods.defenders?.[i]);
         const critical = [];
         for (let j = 0; j < hit[i].length; j++) {
             let critSingle = Math.max(hit[i][j] <= 0 ? 0 : hit[i][j] / (25-10*(attackMods.focus-defendMods.resist)/(attackMods.focus+defendMods.resist)), (calcMods.max?.[i]?.[j] || 0));
@@ -297,7 +296,7 @@ function damage(attacker, defenders, critical = .5, calcMods = {}) {
                 defenders[i].hp = Math.max(defenders[i].hp - total, 0);
                 if (defenders[i].hp === 0) {
                     if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
-                    if (defenders[i].hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defenders[i] && (modifiers[i].vars.focus || modifiers[i].vars.penalty)) removeModifier(modifiers[i]);
+                    if (defenders[i].hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defenders[i] && modifiers[i].vars.focus) removeModifier(modifiers[i]);
                 }
                 critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit");
                 dCheck = true;
@@ -351,7 +350,7 @@ function hpChange(unit, targets, values) {
         defenders[i].hp = Math.max(defenders[i].hp - damageSingle, 0);
         if (defenders[i].hp === 0) {
             if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
-            if (defenders[i].hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defenders[i] && (modifiers[i].vars.focus || modifiers[i].vars.penalty)) removeModifier(modifiers[i]);
+            if (defenders[i].hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defenders[i] && modifiers[i].vars.focus) removeModifier(modifiers[i]);
         }
         logAction(`${unit.name} dealt ${damageSingle} damage to ${defenders[i].name}!`, "hit");
     }
@@ -394,15 +393,21 @@ function resistDebuff(attacker, defenders, calcMods = {}) {
     return will;
 }
 
-function resourceChange(unit, resources, add = true, drain = false) {
+function resourceChange(unit, resources, log = false, add = true, drain = false) {
     const { position, ...actualResources } = resources;
     const context = {unit, resources: actualResources, add, drain};
     if (eventState.resourceChange.length) handleEvent('resourceChange', context);
     for (const resource in context.resources) {
         context.resources[resource] = (add ? 1 : -1)*((context[resource]?.nil || context.all?.nil) ? 0 : (context.resources[resource] + (context[resource]?.bonus || 0) + (context.all?.bonus || 0))*(context[resource]?.mult || 1)*(context.all?.mult || 1)/(context[resource]?.div || 1)/(context.all?.div || 1) + (context[resource]?.flatBonus || 0) + (context.all?.flatBonus || 0));
-        if (!drain && -context.resources[resource] > unit[resource]) return (currentAction.length === 1 && currentAction.at(-1)[1].team === 'player') ? logAction(`Not enough ${resource}!`, "warning") && false : false;
+        if (!drain && -context.resources[resource] > unit[resource]) return (currentAction.length === 1 && currentAction[0][1].team === 'player' && currentAction[0][0].code) ? !!logAction(`Not enough ${resource}!`, "warning") : false;
     }
-    for (const resource in context.resources) unit[resource] = Math.ceil(Math.max(0, Math.min(unit[resource] + context.resources[resource], unit.base[resource])));
+    const inc = [], dec =[];
+    for (const resource in context.resources) {
+        if (!context.resources[resource]) continue;
+        unit[resource] = Math.ceil(Math.max(0, Math.min(unit[resource] + context.resources[resource], unit.base[resource])));
+        (context.resources[resource] > 0 ? inc : dec).push((unit.team === "player" ? context.resources[resource] + ' ' : '' ) + resource)
+    }
+    if (log && (inc.length + dec.length)) !dec.length ? logAction(`${unit.name} gained ${inc.join(", ")}.`, 'buff') : !inc.length ? logAction(`${unit.name} ${drain ? 'lost' : 'spent'} ${dec.join(", ")}.`, 'debuff') : logAction(`${unit.name} gained ${inc.join(", ")}, and ${drain ? 'lost' : 'spent'} ${dec.join(", ")}.`, 'info');
     return true;
 }
 
@@ -423,6 +428,8 @@ function getStat(unit, statName, type = 'number') {
             return unit.base[statName];
         case "percent":
             return unit[statName] / unit.base[statName];
+        case "mult":
+            return unit.mult[statName]
     }
 }
 
@@ -449,8 +456,9 @@ function kill(attacker, defenders) {
     logAction(`${attacker.name} kills ${defenders.map(u => u.name).join(', ')}!`);
 }
 
-function summon(summoner, unit, skills = {}) {
+function summon(summoner, unit, skills = {}, position = false) {
     const clone = createUnit(unit, summoner.team);
+    if (position) clone.position = position;
     clone.skills = skills;
     clone.custom = { ...clone.custom, summoner };
     if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: clone });
