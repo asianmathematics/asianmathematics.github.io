@@ -409,6 +409,7 @@ const logAction = (function() {
     return function (message, type = 'info') {
         const logContainer = document.getElementById('action-log');
         if (!logContainer) return;
+        const diff = lastLogState?.diff ?? logContainer.scrollHeight - logContainer.scrollTop - logContainer.clientHeight;
         const actionPrefix = currentAction.length ? currentAction.at(-1)[0].name + ': ' : '';
         const match = message.match(STAT_CHANGE_REGEX);
         if (match) {
@@ -417,14 +418,14 @@ const logAction = (function() {
                 lastLogState.units.push(unitName);
                 const combinedUnits = lastLogState.units.join(', ');
                 lastLogState.element.innerHTML = `${actionPrefix}${combinedUnits}'s ${statChangeText}`;
-                logContainer.scrollTop = logContainer.scrollHeight;
+                if (diff <= 90) logContainer.scrollTop = logContainer.scrollHeight;
                 return;
             }
             const logEntry = document.createElement('div');
             logEntry.className = `log-entry ${type}-entry`;
             logEntry.innerHTML = actionPrefix + message;
             logContainer.appendChild(logEntry);
-            lastLogState = { type, actionPrefix, statChangeText, units: [unitName], element: logEntry };
+            lastLogState = { type, actionPrefix, statChangeText, units: [unitName], element: logEntry, diff };
         } else {
             const logEntry = document.createElement('div');
             logEntry.className = `log-entry ${type}-entry`;
@@ -435,7 +436,7 @@ const logAction = (function() {
         /*const entries = logContainer.children;
         const maxEntries = window.innerWidth < 800 ? 100 : 250;
         while (entries.length > maxEntries) logContainer.removeChild(entries[0]);*/
-        logContainer.scrollTop = logContainer.scrollHeight;
+        if (diff <= 90) logContainer.scrollTop = logContainer.scrollHeight;
     };
 })();
 

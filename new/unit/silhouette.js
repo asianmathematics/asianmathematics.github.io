@@ -81,7 +81,7 @@ Silhouette.skills = {
                             if (context.type === "death") return !(this.vars.perm = false);
                             if (context.event === "turnEnd") this.vars.duration--;
                             if (context.position) {
-                                for (const stat in this.vars.statObj) if (this.vars.target.base[stat] !== this.vars.statObj[stat]) this.vars.target.base[stat] = Math.ceil((this.vars.target.base[stat](1.5**(this.vars.target.star-1)))/(1+9*(stat === "hp")));
+                                for (const stat in this.vars.statObj) if (this.vars.target.base[stat] !== this.vars.statObj[stat]) this.vars.target.base[stat] = Math.ceil((this.vars.target.base[stat]/(1.5**(this.vars.target.star-1)))/(1+9*(stat === "hp")));
                                 for (const mod of modifiers.filter(m => m.name === "Friends with the Shadows" && m.vars.targets.includes(this.vars.target))) {
                                     currentAction.push([mod, mod.vars.caster]);
                                     if (mod.vars.targets.length === 1) {
@@ -552,7 +552,7 @@ const trait = {
                 }
             },
             function(context) {
-                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets.includes(this.vars.target))) {
+                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets?.includes(this.vars.target))) {
                     if (context.event === 'modifierStart') {
                         if (context.modifier.vars.debuff(this.vars.target)) {
                             if (!this.vars.modifiers.length) {

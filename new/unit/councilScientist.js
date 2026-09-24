@@ -581,7 +581,7 @@ const trait = {
                 }
             },
             function(context) {
-                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets.includes(this.vars.target))) {
+                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets?.includes(this.vars.target))) {
                     if (context.event === 'modifierStart') {
                         if (context.modifier.vars.debuff(this.vars.target)) {
                             if (!this.vars.modifiers.length) {

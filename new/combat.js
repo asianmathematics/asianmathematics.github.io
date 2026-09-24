@@ -484,7 +484,7 @@ function waveCalc(units, mult) {
     const front = [Experiment, Reject, enemy, ArtificialSoldier];
     const frontEnem = front[Math.floor(Math.random() * front.length)];
     enemies.push(frontEnem);
-    points += enemyPoints.get(frontEnem);
+    points += 2.25**(frontEnem.star-1);
     while (points < total) {
         const enem = Math.random() < .5 ? [...enemyPoints, ...playerPoints][Math.floor(Math.random() * (enemyPoints.length+playerPoints.length))] : enemyPoints[Math.floor(Math.random() * enemyPoints.length)], p = 2.25**(enem.star-1);
         if (points + p <= total || (Math.abs(total - points - p) < Math.abs(total - points))) {
