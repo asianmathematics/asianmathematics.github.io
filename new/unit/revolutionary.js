@@ -84,7 +84,7 @@ Revolutionary.skills = {
                             let i;
                             if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult++;
                             if (context.unit === this.vars.caster) this.vars.duration--;
-                            return this.vars.duration > 0;
+                            return this.vars.duration <= 0;
                         }
                     );
                 } else logAction(`${this.name} fails to taunt ${target[0].name}!`, "miss");
@@ -187,7 +187,7 @@ Revolutionary.skills = {
                             let i;
                             if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
-                            return this.vars.duration > 0;
+                            return this.vars.duration <= 0;
                         }
                     );
                 } else logAction(`${this.name} fails to distract ${target[0].name}`, "miss");
@@ -252,7 +252,7 @@ Revolutionary.skills = {
                             let i;
                             if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
-                            return this.vars.duration > 0;
+                            return this.vars.duration <= 0;
                         }
                     );
                 } else logAction(`${this.name} fails to distract ${target[0].name}`, "miss");

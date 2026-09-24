@@ -52,53 +52,6 @@
         </div>
     </div>
     <div id="selection" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; min-width:400px; max-width:600px;"></div>
-    
-    <!-- Squad Selection Panel (pre-battle setup) 
-    <div id="unit-selection-panel" style="display:none;">
-        <div class="info-display">
-            <div class="left-column" id="info-left">
-                <h2>Select a unit</h2>
-                <p>Click a unit card on the right to view their stats and skills.</p>
-            </div>
-            <div class="right-column" id="info-right"></div>
-        </div>
-        
-        <h3>Select Your Team (max 6 units, 4 recommended)</h3>
-        <p style="color:#aaa; font-size:14px;">Enemy waves will be randomized and balanced based on party strength. There will be 3 waves of enemies.</p>
-        
-        <div class="unit-roster" id="unit-roster"></div>
-        
-        <h4>Selected Units (<span id="selected-count">0</span>/6)</h4>
-        <div class="selected-units" id="selected-units"></div>
-        
-        <div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
-            <button id="skill-select" class="action-button">Customize Skills</button>
-            <button id="start-with-selected" class="action-button" style="border-color:#00ff88;">Start Combat</button>
-        </div>
-    </div>
-    
-    !-- Skill Selection Modal --
-    <div id="skill-selection-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#0a0a0a; border:2px solid #00ff88; padding:20px; z-index:600; width:80%; max-width:900px; color:#00ff88; box-shadow:0 0 30px rgba(0,255,136,0.4);">
-        <h2 id="skill-unit-name" style="text-align:center; margin-top:0;"></h2>
-        <p style="text-align:center; color:#aaa; font-size:14px;">Select skills for this unit. Empty slots allowed but not recommended.</p>
-        
-        <div style="display:flex; gap:20px;">
-            <div style="flex:1; border:1px solid #333; padding:10px; max-height:500px; overflow-y:auto;">
-                <h3>Available Skills</h3>
-                <div id="skill-roster"></div>
-            </div>
-            <div style="flex:1; border:1px solid #333; padding:10px; max-height:500px; overflow-y:auto;">
-                <h4 id="selected-skills-count">Selected Skills (0/0)</h4>
-                <div id="selected-skills-list"></div>
-                <button id="reset-defaults" style="margin-top:10px; width:100%; padding:8px; background:#1a1a1a; color:#00ff88; border:1px solid #00ff88; cursor:pointer; font-family:'Courier Prime',monospace;">Reset to Defaults</button>
-            </div>
-        </div>
-        
-        <div style="margin-top:20px; text-align:right;">
-            <button id="cancel-skills" style="padding:10px 20px; margin-right:10px; background:#1a1a1a; color:#ff0055; border:1px solid #ff0055; cursor:pointer; font-family:'Courier Prime',monospace;">Cancel</button>
-            <button id="confirm-skills" style="padding:10px 20px; background:#1a1a1a; color:#00ff88; border:1px solid #00ff88; cursor:pointer; font-family:'Courier Prime',monospace;">Done</button>
-        </div>
-    </div>-->
     <div id="speed-controls" style="position: fixed; bottom: 20px; right: 20px; background: rgba(20, 20, 20, 0.95); padding: 8px 12px; border-radius: 8px; z-index: 1000; display: flex; gap: 8px; align-items: center; border: 1px solid #444; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">
         <span style="color: #ccc; font-size: 12px; font-weight: bold;">SPEED:</span>
         <button class="speed-btn" data-speed="0.25" style="padding: 4px 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 11px;">0.25x</button>

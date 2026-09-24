@@ -64,7 +64,9 @@ Silhouette.skills = {
                 logAction(`${this.name} creates a shadow clone of ${target[0].name}!`, "buff");
                 const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val/(1.5**(target[0].star-1)))/(1+9*(stat === "hp")))])) }, { ...target[0].skills }, this.position);
                 (clone.trait ??= []).push(trait);
+                currentAction.push([trait, clone]);
                 trait.code.call(clone);
+                currentAction.pop();
                 new Modifier("Summon Shadow", "Summon shadow clone of a ally unit in the same position with 1 star stats",
                     { target: clone, duration: 6, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                     function() {
@@ -124,7 +126,7 @@ Silhouette.skills = {
                         if (context.event === 'turnStart' && context.unit === this.vars.caster) this.vars.duration--;
                         return this.vars.duration <= 0;
                     },
-                    function(cancel, temp) {
+                    function(_, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
                                 [...(this.vars.child || [])].forEach(m => removeModifier(m));
@@ -245,7 +247,9 @@ Silhouette.skills = {
                 logAction(`${this.name} creates a shadow.`, "action");
                 const clone = summon(this, new Unit("Shadow", [290, 13, 11, 49, 66, 60, 60, 30, 24, this.position, 16, 10, 1, 40, 8], 1), shadowSkills);
                 (clone.trait ??= []).push(trait);
+                currentAction.push([trait, clone]);
                 trait.code.call(clone);
+                currentAction.pop();
                 new Modifier("Summon Shadow", "Summon 1 star shadow",
                     { target: clone, duration: 4, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                     function() {},
@@ -566,17 +570,14 @@ const trait = {
                     }
                 }
             },
-            function(cancel, temp) {
+            function(_, temp) {
                 if (!temp) {
-                    if (this.vars.cancel && this.vars.applied) {
-                        this.vars.applied = false;
-                        if (this.vars.modifiers.length) removeModifier(this.vars.child[0]);
-                    } else if (!this.vars.cancel && !this.vars.applied) {
-                        this.vars.applied = true;
-                        if (this.vars.modifiers.length) stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
-                    }
+                    if (this.vars.cancel && this.vars.applied) this.vars.applied = false;
+                    else if (!this.vars.cancel && !this.vars.applied) this.vars.applied = true;
+                    const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('mana-block') && m.vars.modifiers.includes(this)), 0);
+                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child[0]) : (this.vars.cancel-count) || stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
                 }
             }
-        )
+        );
     }
 }

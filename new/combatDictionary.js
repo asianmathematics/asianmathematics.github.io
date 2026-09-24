@@ -75,10 +75,8 @@ function randTarget(unitList = allUnits, count = 1, trueRand = false) {
     const availableUnits = [...unitList];
     for (let i = 0; i < count && availableUnits.length > 0; i++) {
         let selectedUnit;
-        if (trueRand) {
-            const idx = Math.floor(Math.random() * availableUnits.length);
-            selectedUnit = availableUnits.splice(idx, 1)[0];
-        } else {
+        if (trueRand) selectedUnit = availableUnits.splice(Math.floor(Math.random() * availableUnits.length), 1)[0];
+        else {
             const randChoice = Math.random() * weights.reduce((sum, w) => sum + w, 0);
             let cumulative = 0;
             for (let j = 0; j < availableUnits.length; j++) {
@@ -296,7 +294,7 @@ function damage(attacker, defenders, critical = .5, calcMods = {}) {
                 defenders[i].hp = Math.max(defenders[i].hp - total, 0);
                 if (defenders[i].hp === 0) {
                     if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
-                    if (defenders[i].hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defenders[i] && modifiers[i].vars.focus) removeModifier(modifiers[i]);
+                    if (defenders[i].hp === 0) for (let j = modifiers.length - 1; j >= 0; j--) if (modifiers[j].vars.caster === defenders[i] && modifiers[j].vars.focus) removeModifier(modifiers[j]);
                 }
                 critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit");
                 dCheck = true;
@@ -350,7 +348,7 @@ function hpChange(unit, targets, values) {
         defenders[i].hp = Math.max(defenders[i].hp - damageSingle, 0);
         if (defenders[i].hp === 0) {
             if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
-            if (defenders[i].hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defenders[i] && modifiers[i].vars.focus) removeModifier(modifiers[i]);
+            if (defenders[i].hp === 0) for (let j = modifiers.length - 1; j >= 0; j--) if (modifiers[j].vars.caster === defenders[i] && modifiers[j].vars.focus) removeModifier(modifiers[j]);
         }
         logAction(`${unit.name} dealt ${damageSingle} damage to ${defenders[i].name}!`, "hit");
     }

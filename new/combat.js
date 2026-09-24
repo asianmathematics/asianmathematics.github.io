@@ -341,8 +341,13 @@ export async function combatTick() {
         const alive = allUnits.filter(u => u.hp);
         while (turn == undefined) {
             const list = alive.filter(u => u.timer <= 0);
-            if (!list.length) for (const unit of alive) unit.timer -= unit.speed;
+            let pend;
+            if (!list.length) for (const unit of alive) {
+                unit.timer -= unit.speed;
+                if (unit.pendingSpecial) pend = true;
+            }
             else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
+            if (pend) return combatTick()
             await syncTimerUI(alive);
             await new Promise(resolve => setTimeout(resolve, 120 / (window.combatSpeedMultiplier || 1)));
         }
@@ -398,7 +403,7 @@ function executeAutoAction(unit, action) {
 function executeBoth(unit) {
     if (eventState.actionStart.length) handleEvent('actionStart', {unit, action: 'both'});
     const cost = {};
-    for (const [res, attrib] of [['stamina', 'physical'], ['mana', 'mystic'], ['energy', 'techno']]) {
+    for (const [res, attrib] of [['stamina', 'physical-block'], ['mana', 'mystic-block'], ['energy', 'techno-block']]) {
         let count = unit.skills.basic.properties.includes(attrib) + unit.skills.secondary.properties.includes(attrib);
         if (count) cost[res] = count * 10;
         count = ((unit.skills.basic.cost?.[res] || 0) + (unit.skills.secondary.cost?.[res] || 0));
@@ -472,21 +477,16 @@ function waveCalc(units, mult) {
             enemyPoints.delete(Reject);
         }
     }*/
-    const playerPoints = new Map([
-       [DexSoldier, 81/16], [FourArcher, 81/16], [Mannequin, 81/16], [Silhouette, 81/16], [Doctor, 81/16], [Electric, 729/64]
-    ]);
-    enemyPoints = new Map([[Experiment, 9/4], [Reject, 9/4], [CouncilMagician, 81/16],
-            [CouncilScientist, 81/16], [Revolutionary, 81/16], [enemy, 81/16],
-            [ArtificialSoldier, 81/16]]);
+    const playerPoints = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric];
+    enemyPoints = [Experiment, Reject, CouncilMagician, CouncilScientist, Revolutionary, enemy, ArtificialSoldier];
     const enemies = [];
     let points = 0;
-    const front = [Experiment, Reject, enemy, ArtificialSoldier].filter(e => enemyPoints.has(e));
+    const front = [Experiment, Reject, enemy, ArtificialSoldier];
     const frontEnem = front[Math.floor(Math.random() * front.length)];
     enemies.push(frontEnem);
     points += enemyPoints.get(frontEnem);
     while (points < total) {
-        const enem = Math.random() < .5 ? [...enemyPoints.keys(), ...playerPoints.keys()][Math.floor(Math.random() * (enemyPoints.size+playerPoints.size))] : [...enemyPoints.keys()][Math.floor(Math.random() * enemyPoints.size)];
-        const p = enemyPoints.has(enem) ? enemyPoints.get(enem) : playerPoints.get(enem);
+        const enem = Math.random() < .5 ? [...enemyPoints, ...playerPoints][Math.floor(Math.random() * (enemyPoints.length+playerPoints.length))] : enemyPoints[Math.floor(Math.random() * enemyPoints.length)], p = 2.25**(enem.star-1);
         if (points + p <= total || (Math.abs(total - points - p) < Math.abs(total - points))) {
             enemies.push(enem);
             points += p;
@@ -540,6 +540,17 @@ export function assignEnemySkills(newUnit, template) {
             currentAction.pop();
         }
     }
+    (newUnit.traits || []).forEach(s => {
+        currentAction.push([s, newUnit]);
+        s.code.call(newUnit);
+        currentAction.pop();
+    });
+    
+    (newUnit.synergy || []).forEach(s => {
+        currentAction.push([s, newUnit]);
+        s.code.call(newUnit);
+        currentAction.pop();
+    });
 }
 
 function frontTest() {
@@ -624,6 +635,17 @@ function initializeCombatFromSquad(squadData) {
                 currentAction.pop();
             }
         }
+        (newUnit.traits || []).forEach(s => {
+            currentAction.push([s, newUnit]);
+            s.code.call(newUnit);
+            currentAction.pop();
+        });
+        
+        (newUnit.synergy || []).forEach(s => {
+            currentAction.push([s, newUnit]);
+            s.code.call(newUnit);
+            currentAction.pop();
+        });
         newUnit.autoBehavior = (newUnit.skills[unitConfig.autoBehavior] && unitConfig.autoBehavior) || (newUnit.skills.basic ? 'basic' : newUnit.skills.secondary ? 'secondary' : 'none');
         newUnit.specialReady = true;
     });

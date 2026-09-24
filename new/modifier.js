@@ -42,8 +42,7 @@ class Modifier {
                     const isActivating = !this.vars.cancel && !this.vars.applied, isDeactivating = this.vars.cancel && this.vars.applied;
                     if (isDeactivating || isActivating) {
                         if (this.vars.stats && this.vars.target && !this.vars.disableStatChange) resetStat(this.vars.target, Object.keys(this.vars.stats), Object.values(this.vars.stats), false);
-                        if (!temp && this.vars.cancelListeners) {
-                            for (const listener of this.vars.cancelListeners) {
+                        if (!temp && this.vars.cancelListeners) for (const listener of this.vars.cancelListeners) {
                                 this.vars.listeners[listener] = isActivating;
                                 if (isActivating) eventState[listener].push(this);
                                 else if (isDeactivating) {
@@ -51,7 +50,6 @@ class Modifier {
                                     if (i > -1) eventState[listener].splice(i, 1);
                                 }
                             }
-                        }
                         this.vars.applied = isActivating;
                     }
                 }
@@ -100,12 +98,10 @@ class Modifier {
             if (this.vars.stats && this.vars.target && !this.vars.disableStatChange && !this.vars.cancel) resetStat(this.vars.target, Object.keys(this.vars.stats), Object.values(this.vars.stats));
             if (this.vars.reduction) for (const stat of Object.keys(this.vars.reduction)) this.vars.caster.mult[stat] ? (this.vars.caster.base[stat] -= this.vars.reduction[stat]) && resetStat(this.vars.caster, [stat]) : (this.vars.caster.base[stat] -= this.vars.reduction[stat]) && (this.vars.caster[stat] = Math.max(this.vars.caster[stat] -this.vars.reduction[stat], 0));
             if (this.vars.listeners) for (const eventType in this.vars.listeners) if (this.vars.listeners[eventType]) eventState[eventType].push(this);
-            if (this.vars.cancel && this.vars.cancelListeners) {
-                for (const listener of this.vars.cancelListeners) {
-                    this.vars.listeners[listener] = false;
-                    const i = eventState[listener].indexOf(this);
-                    if (i > -1) eventState[listener].splice(i, 1);
-                }
+            if (this.vars.cancel && this.vars.cancelListeners) for (const listener of this.vars.cancelListeners) {
+                this.vars.listeners[listener] = false;
+                const i = eventState[listener].indexOf(this);
+                if (i > -1) eventState[listener].splice(i, 1);
             }
         }
         currentAction.pop();
@@ -126,8 +122,7 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
                 logAction(`Modifier ${eventList[i]?.name} was called too many times in one event!`, "error");
                 console.log(`${currentAction.at(-1)[1].name}'s Modifier ${eventList[i]?.name} has some recursive calls`);
                 console.log(`currentAction stack: ${currentAction.map(a => a[0].name).join(', ')}\ncurrentUnit stack: ${currentAction.map(a => a[1].name).join(', ')}`);
-            }
-            else if (eventList[i].onTurn(context)) removeModifier(eventList[i]);
+            } else if (eventList[i].onTurn(context)) removeModifier(eventList[i]);
         } catch (e) {
             console.error(`Error in ${eventType} listener (${eventList[i]?.name}):`, e);
             console.log(`currentAction stack: ${currentAction.map(a => a[0].name).join(', ')}\ncurrentUnit stack: ${currentAction.map(a => a[1].name).join(', ')}`);
@@ -146,7 +141,7 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
 
 function removeModifier(modifier) {
     let index;
-    if (modifier.vars.perm || (index = modifiers.indexOf(modifier)) === -1) return;
+    if (modifier.vars.perm || modifier.vars.trait || modifier.vars.synergy || (index = modifiers.indexOf(modifier)) === -1) return;
     if (modifier.vars.passive && allUnits.includes(modifier.vars.caster)) {
         if (modifier.vars.caster.hp === 0 && modifier.vars.focus) {
             currentAction.push([modifier, modifier.vars.caster]);
@@ -162,11 +157,11 @@ function removeModifier(modifier) {
     }
     if (eventState.modifierEnd.length) handleEvent('modifierEnd', { modifier });
     if (modifier.vars?.listeners) for (const event in modifier.vars.listeners) if (modifier.vars.listeners[event] && eventState[event].indexOf(modifier) > -1) eventState[event].splice(eventState[event].indexOf(modifier), 1);
-    if (index !== -1) modifiers.splice(index, 1);
+    modifiers.splice(index, 1);
     if (modifier.vars.parent?.vars) modifier.vars.parent.vars.child?.length > 1 ? (index = modifier.vars.parent.vars.child.indexOf(modifier)) > -1 && modifier.vars.parent.vars.child.splice(index, 1) : delete modifier.vars.parent.vars.child;
 }
 
-function refreshModifier(list, duration = 3, effect = false) { return list.map((mod, i) => !!(mod = modifiers.find(m => m.name === mod.name && m.vars.caster === mod.vars.caster && m.vars.target === mod.vars.target && m.vars.parent === mod.vars.parent)) && (!effect || effect(mod)) && !logAction(`${mod.vars.caster.name} refreshes ${mod.name}`) && [mod.vars.duration, mod.vars.duration = (duration[i] || duration) > 0 ? (duration[i] || duration) : mod.vars.duration - (duration[i] || duration)][0]); }
+function refreshModifier(list, duration = 3, effect = null) { return list.map((mod, i) => !!(mod = modifiers.find(m => m.name === mod.name && m.vars.caster === mod.vars.caster && m.vars.target === mod.vars.target && m.vars.parent === mod.vars.parent)) && (!effect || effect(mod)) && !logAction(`${mod.vars.caster.name} refreshes ${mod.name}`) && [mod.vars.duration, mod.vars.duration = (duration[i] || duration) > 0 ? (duration[i] || duration) : mod.vars.duration - (duration[i] || duration)][0]); }
 
 function basicModifier(name, description, vari, dur = 'target') {
     return new Modifier(name, description, vari,
@@ -191,7 +186,7 @@ function auraModifier(name, description, vari, mod, filter) {
                 else if (filter.call(this, context.unit)) this.changeTarget([], [context.unit]);
             }
         },
-        function(cancel, temp) {
+        function(_, temp) {
             if (!temp) {
                 if (this.vars.cancel && this.vars.applied) {
                     [...(this.vars.child || [])].forEach(m => removeModifier(m));
@@ -217,8 +212,8 @@ function stunModifier(name, vari, dur = 'target') {
         function() {
             if (this.vars.cancel) return;
             if (eventState.stun.length) handleEvent("stun", { unit: this.vars.target, stun: true });
-            this.vars.target.stun++;
-            if (this.vars.target.stun) {
+            if (!this.vars.cancel) {
+                this.vars.target.stun++;
                 for (const mod of this.vars.modifiers = modifiers.filter(m => m.vars.caster === this.vars.target && m.vars.focus)) {
                     currentAction.push([mod, mod.vars.caster]);
                     mod.cancel();
@@ -234,62 +229,33 @@ function stunModifier(name, vari, dur = 'target') {
                 return this.vars.duration <= 0;
             }
         },
-        function(cancel, temp) {
+        function(_, temp) {
             if (!this.vars.start) return;
             if (this.vars.cancel && this.vars.applied) {
                 this.vars.applied = false;
                 if (eventState.stun.length) handleEvent("stun", { unit: this.vars.target, stun: false, temp });
                 this.vars.target.stun--;
-                if (!this.vars.target.stun) {
-                    for (const mod of this.vars.modifiers) {
-                        currentAction.push([mod, mod.vars.caster]);
-                        mod.cancel(false);
-                        currentAction.pop();
-                    }
-                    this.vars.modifiers = [];
+                for (const mod of this.vars.modifiers) {
+                    currentAction.push([mod, mod.vars.caster]);
+                    mod.cancel(false);
+                    currentAction.pop();
                 }
+                this.vars.modifiers = [];
             } else if (!this.vars.cancel && !this.vars.applied) {
                 this.vars.applied = true;
                 if (eventState.stun.length) handleEvent("stun", { unit: this.vars.target, stun: true, temp });
                 this.vars.target.stun++;
-                if (this.vars.target.stun) {
-                    for (const mod of this.vars.modifiers = modifiers.filter(m => m.vars.caster === this.vars.target && m.vars.focus)) {
-                        currentAction.push([mod, mod.vars.caster]);
-                        mod.cancel();
-                        currentAction.pop();
-                    }
+                for (const mod of this.vars.modifiers = modifiers.filter(m => m.vars.caster === this.vars.target && m.vars.focus)) {
+                    currentAction.push([mod, mod.vars.caster]);
+                    mod.cancel();
+                    currentAction.pop();
                 }
             }
-        },
-        function(unit) {
-            if (this.vars.target === unit) removeModifier(this);
-            if (this.vars.applied) {
-                if (eventState.stun.length) handleEvent("stun", { unit: this.vars.target, stun: false });
-                this.vars.target.stun--;
-                if (!this.vars.target.stun) {
-                    for (const mod of this.vars.modifiers) {
-                        currentAction.push([mod, mod.vars.caster]);
-                        mod.cancel(false);
-                        currentAction.pop();
-                    }
-                    this.vars.modifiers = [];
-                }
-                this.vars.target = unit;
-                if (eventState.stun.length) handleEvent("stun", { unit: this.vars.target, stun: true, temp });
-                this.vars.target.stun++;
-                if (this.vars.target.stun) {
-                    for (const mod of this.vars.modifiers = modifiers.filter(m => m.vars.caster === this.vars.target && m.vars.focus)) {
-                        currentAction.push([mod, mod.vars.caster]);
-                        mod.cancel();
-                        currentAction.pop();
-                    }
-                }
-            } else this.vars.target = unit;
         }
     );
 }
 
-function blockModifier(name, vari, res, dur = "target", regen = false) {
+function blockModifier(name, vari, res, dur = "target", regen = null) {
     return new Modifier(name, `Blocks ${res === "all" ? 'resource' : res} regeneration`, vari,
         function() {
             this.vars.listeners ? this.vars.listeners.resourceChange = true : this.vars.listeners = { resourceChange: true };
@@ -304,8 +270,7 @@ function blockModifier(name, vari, res, dur = "target", regen = false) {
                     for (const resource in context.resources) if (context.resources[resource] * (context.add ? 1 : -1) > 0) out++, (context[resource] ??= {}).nil = (context[resource].nil || 0) + 1;
                     if (out && this.vars.uses) this.vars.uses--;
                     if (out && this.vars.duration && Object.keys(this.vars.listeners).length === 1) this.vars.duration--;
-                }
-                else if (context.resources[res] * (context.add ? 1 : -1) > 0) {
+                } else if (context.resources[res] * (context.add ? 1 : -1) > 0) {
                     (context[res] ??= {}).nil = (context[res].nil || 0) + 1;
                     if (this.vars.uses) this.vars.uses--;
                     if (this.vars.duration && Object.keys(this.vars.listeners).length === 1) this.vars.duration--;
@@ -320,7 +285,7 @@ function blockModifier(name, vari, res, dur = "target", regen = false) {
     );
 }
 
-function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
+function attribCancelMod(name, vari, attrib, dur = "target", ignore = null) {
     const res = attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy';
     return new Modifier(name, `Ends non-passive ${attrib} modifiers target is focusing, cancels ${attrib} modifiers on target, and disables ${res} regen`, vari,
         function() {
@@ -340,7 +305,6 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
             }
             this.vars.listeners ? this.vars.listeners.resourceChange = this.vars.listeners.modifierEnd = this.vars.listeners.modifierStart = this.vars.listeners.targetChange = true : this.vars.listeners = { targetChange: true, modifierStart: true, modifierEnd: true, resourceChange: true };
             if (!(this.vars.cancelListeners ??= []).includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
-            this.vars.properties.push(...(res === 'all' ? ['stamina-block', 'mana-block', 'energy-block'] : [res + '-block'] ));
         },
         function(context) {
             if (context.modifier === this || this.vars.ignore?.includes(context.modifier)) return;
@@ -375,7 +339,7 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = false) {
                 if (this.vars.hasOwnProperty("duration")) return this.vars.duration <= 0;
             }
         },
-        function(cancel, temp) {
+        function(_, temp) {
             if (!temp && this.vars.start) {
                 if (this.vars.cancel && this.vars.applied) {
                     this.vars.applied = false;
@@ -429,12 +393,10 @@ new Modifier("Remove Reduction", "Remove passive modifiers and reduction on midl
             modifiers[i].vars.passive = false;
             removeModifier(modifiers[i]);
         }
-        for (const skill of ['passive', 'augment', 'conditional']) {
-            if (context.unit.skills[skill]) {
-                currentAction.push([context.unit.skills[skill], context.unit]);
-                context.unit.skills[skill].code.call(context.unit);
-                currentAction.pop();
-            }
+        for (const skill of ['passive', 'augment', 'conditional']) if (context.unit.skills[skill]) {
+            currentAction.push([context.unit.skills[skill], context.unit]);
+            context.unit.skills[skill].code.call(context.unit);
+            currentAction.pop();
         }
     },
     function() {},

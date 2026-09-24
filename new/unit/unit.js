@@ -71,9 +71,11 @@ function cloneUnit(unit) {
         stun: 0,
         cancel: 0,
         learnedSkills: [],
+        ...(unit.switchPosition && { switchPosition: unit.switchPosition }),
+        ...(unit.traits && { traits: unit.traits }),
+        ...(unit.synergy && { synergy: unit.synergy })
     };
-    for (const stat in newUnit.base) stat !== 'elements' ? newUnit[stat] = newUnit.base[stat] : newUnit[stat] = [...unit.base[stat]];
-    if (unit.switchPosition) newUnit.switchPosition = unit.switchPosition;
+    for (const stat in newUnit.base) newUnit[stat] = stat !== 'elements' ? newUnit.base[stat] : [...unit.base[stat]];
     return newUnit;
 }
 

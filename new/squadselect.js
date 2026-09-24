@@ -34,7 +34,6 @@ function initUnitSelection() {
         card.dataset.unit = unit.name;
         card.innerHTML = `<strong>${unit.name}</strong>`;
         card.addEventListener('click', () => {
-            updateInfoDisplay(unit);
             if (selectedUnits.length >= 6 && !card.classList.contains('selected')) return showMessage('Maximum 6 units allowed!', 'warning', 'selection');
             card.classList.toggle('selected');
             if (card.classList.contains('selected')) {
@@ -51,6 +50,7 @@ function initUnitSelection() {
                 selectedUnits = selectedUnits.filter(u => u.id !== card.dataset.configId);
                 delete card.dataset.configId;
             }
+            updateInfoDisplay(unit);
             selectedContainer.innerHTML = `<h4>Selected Units (${selectedUnits.filter(u => u.startingPosition === 'front').length} front, ${selectedUnits.filter(u => u.startingPosition === 'back').length} back)</h4>`;
             renderSelectedUnits();
         });
@@ -311,18 +311,36 @@ function updateInfoDisplay(unit) {
     if (!infoDisplay || !unit) return;
     let html = `<div class="left-column"> <h2>${unit.name}</h2> <p>${unit.description}</p> <h4>Stats (Current)</h4>`;
     for (const statName of Object.keys(unit.base).filter(s => s !== "elements")) {
-        if (['hp', 'stamina', 'mana', 'energy'].includes(statName)) html += `<div class="stat-line"><span><strong>${statName.charAt(0).toUpperCase() + statName.slice(1)}</strong></span><span>${Math.max(0, unit[statName])} / ${unit.base[statName]}</span></div>`;  
+        if (['hp', 'stamina', 'mana', 'energy'].includes(statName)) html += `<div class="stat-line"><span><strong>${statName.charAt(0).toUpperCase() + statName.slice(1)}</strong></span><span>${unit.base[statName]}</span></div>`;  
         else if (unit[statName] !== undefined) html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit[statName]}</span></div>`;  
         else if (unit.base[statName] !== undefined) html += `<div class="stat-line"><span>${statName.charAt(0).toUpperCase() + statName.slice(1)}</span><span>${unit.base[statName]}</span></div>`;
     }
-    html += `</div>`;
-    html += `<div class="right-column"><h3>Skills</h3>`;
-    for (const skillName in unit.skills) {
-        if (Array.isArray(unit.skills[skillName])) {
-            html += `<h4>${skillName} skills</h4>`;
-            for (const skill of unit.skills[skillName]) html += `<div class="skill-info-box"><div class="skill-name">${skill.name}</div><p><strong>Description:</strong><br>${skill.description ? alterDesc(skill, skillName) : 'No description available.'}</p></div><hr>`;
-        } else html += `<h4>${skillName} skill</h4><div class="skill-info-box"><div class="skill-name">${unit.skills[skillName].name}</div><p><strong>Description:</strong><br>${unit.skills[skillName].description ? alterDesc(unit.skills[skillName], skillName) : 'No description available.'}</p></div><hr>`;
+    html += `</div>
+    <div class="right-column"><h3>Skills</h3>`;
+    if (unit.synergy) {
+        const skills = unit.synergy.filter(s => s.targets.some(t => selectedUnits.some(u => u.template.name === t)));
+        if (skills.length) {
+            html += "<h4>Trait skills</h4>";
+            skills.forEach(s => html += `<div class="skill-info-box"><div class="skill-name">${s.name}</div><p><strong>Targets: ${s.targets.filter(t => selectedUnits.some(u => u.template.name === t)).join(', ')}</strong><br><strong>Description:</strong><br>${s.description ? alterDesc(s, 'synergy') : 'No description available.'}</p></div>` );
+        }
     }
+    if (unit.traits) {
+        html += "<h4>Trait skills</h4>";
+        for (const skill of unit.traits) html += `<div class="skill-info-box"><div class="skill-name">${skill.name}</div><p><strong>Description:</strong><br>${skill.description ? alterDesc(skill, 'trait') : 'No description available.'}</p></div>`;
+    }
+    const template = selectedUnits.find(t => t.template === unit);
+    for (const pos of unit.base.position === 'mid' ? ['front', 'back'] : [false]) {
+        if (pos) html += `<h3>${pos}line skills</h3>`;
+        for (const skillType in unit.skills) {
+            html += `<h4>${skillType} skill</h4>`;
+            const skill = template ? unit.skills[skillType].find(s => (template.skills[pos] ?? template.skills).includes(s)) : unit.skills[skillType].find(s => s.name === unit[pos ? `${pos}DefaultSkills` : 'defaultSkills'].find(s => s.category === skillType)?.name);
+            html += skill ? `<div class="skill-info-box"><div class="skill-name">${skill.name}</div><p><strong>Description:</strong><br>${skill.description ? alterDesc(skill, skillType) : 'No description available.'}</p></div>` : `<p>No skill selected</p>`;
+        }
+    }
+    /*if (Array.isArray(unit.skills[skillName])) {
+        html += `<h4>${skillName} skills</h4>`;
+        for (const skill of unit.skills[skillName]) html += `<div class="skill-info-box"><div class="skill-name">${skill.name}</div><p><strong>Description:</strong><br>${skill.description ? alterDesc(skill, skillName) : 'No description available.'}</p></div><hr>`;
+    } else html += `<h4>${skillName} skill</h4><div class="skill-info-box"><div class="skill-name">${unit.skills[skillName].name}</div><p><strong>Description:</strong><br>${unit.skills[skillName].description ? alterDesc(unit.skills[skillName], skillName) : 'No description available.'}</p></div><hr>`;*/
     infoDisplay.innerHTML = html + '</div>';
 }
 

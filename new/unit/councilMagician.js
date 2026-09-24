@@ -33,7 +33,7 @@ CouncilMagician.skills = {
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const will = resistDebuff(this, target)[0];
-                will >= 2 ? attribCancelMod("Dispel", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["mystic", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'mystic' ) : logAction(`${target[0].name} resists Dispel!`, 'miss');
+                will >= 2 ? attribCancelMod("Dispel", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["mystic", "debuff", "cancel", "mana-block"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'mystic' ) : logAction(`${target[0].name} resists Dispel!`, 'miss');
             }
         },
         {
@@ -85,7 +85,7 @@ CouncilMagician.skills = {
             description: "Chance to end non-passive mystic modifiers target is focusing, cancel mystic modifiers on target, and disables mana regen for 1 turn",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
-                resistDebuff(this, target)[0] >= 25 ? attribCancelMod("Dispel", { target: target[0], duration: 1, properties: ["mystic", "debuff", "cancel"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 25; } }, 'mystic') : logAction(`${target[0].name} resists Dispel!`, 'miss');
+                resistDebuff(this, target)[0] >= 25 ? attribCancelMod("Dispel", { target: target[0], duration: 1, properties: ["mystic", "debuff", "cancel", "mana-block"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 25; } }, 'mystic') : logAction(`${target[0].name} resists Dispel!`, 'miss');
             }
         },
         {

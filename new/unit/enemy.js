@@ -56,7 +56,7 @@ enemy.skills = {
                             let i;
                             if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult++;
                             if (context.unit === this.vars.caster) this.vars.duration--;
-                            return this.vars.duration > 0;
+                            return this.vars.duration <= 0;
                         }
                     );
                 } else logAction(`${this.name} fails to taunt ${target[0].name}!`, "miss");
@@ -116,7 +116,7 @@ enemy.skills = {
                             let i;
                             if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
-                            return this.vars.duration > 0;
+                            return this.vars.duration <= 0;
                         }
                     );
                 } else logAction(`${this.name} fails to distract ${target[0].name}`, "miss");
@@ -175,7 +175,7 @@ enemy.skills = {
                             let i;
                             if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
-                            return this.vars.duration > 0;
+                            return this.vars.duration <= 0;
                         }
                     );
                 } else logAction(`${this.name} fails to distract ${target[0].name}`, "miss");
@@ -204,7 +204,7 @@ enemy.skills = {
                         (context.calcMods.attacker ??= {}).accuracy = { bonus: (context.calcMods.attacker.accuracy?.bonus || 0) + this.vars.stats.accuracy*this.vars.charge };
                         this.vars.charge = 0;
                     },
-                    function(cancel, temp) {
+                    function(_, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
                                 this.vars.listeners.attackStart = false;
@@ -290,7 +290,7 @@ enemy.skills = {
                         (context.calcMods.attacker ??= {}).focus = { bonus: (context.calcMods.attacker.focus?.bonus || 0) + this.vars.stats.focus*this.vars.charge };
                         this.vars.charge = 0;
                     },
-                    function(cancel, temp) {
+                    function(_, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
                                 this.vars.listeners.attackStart = false;
