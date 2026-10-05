@@ -1,7 +1,7 @@
 const allUnits = [];
 
 class Unit {
-    constructor(name, stat, star, elements = []) {
+    constructor(name, stat, star, elements = [], type = "physical") {
         this.name = name;
         this.base = {
             hp: stat[0],
@@ -42,6 +42,7 @@ class Unit {
             this.mult.energyRegen = 0;
         }
         this.star = star;
+        this.type = type;
     }
 }
 
@@ -71,6 +72,7 @@ function cloneUnit(unit) {
         stun: 0,
         cancel: 0,
         learnedSkills: [],
+        type: unit.type,
         ...(unit.switchPosition && { switchPosition: unit.switchPosition }),
         ...(unit.traits && { traits: unit.traits }),
         ...(unit.synergy && { synergy: unit.synergy })

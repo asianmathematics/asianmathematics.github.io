@@ -1,5 +1,5 @@
 import { createUnit } from "./unit/unit.js";
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
 const elements = ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"];
 
 function regenerateResources(unit) {
@@ -18,6 +18,7 @@ function enemyTurn(unit) {
     if (Math.random() < 1/16){
         if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: 'skip' });
         logAction(`${unit.name} is resting!`, 'info');
+        regenerateResources(unit);
         if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
         setTimeout(window.combatTick, 1000 / (window.combatSpeedMultiplier || 1));
         return;
@@ -296,7 +297,7 @@ function damage(attacker, defenders, critical = .5, calcMods = {}) {
                     if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
                     if (defenders[i].hp === 0) for (let j = modifiers.length - 1; j >= 0; j--) if (modifiers[j].vars.caster === defenders[i] && modifiers[j].vars.focus) removeModifier(modifiers[j]);
                 }
-                critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${hit.join(", ")} for a total of ${total} damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit");
+                critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${comma(hit)} for a total of ${total} damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit");
                 dCheck = true;
             }
         }
@@ -324,7 +325,7 @@ function heal(healer, targets, amount, calcMods = {}) {
         if (revive && eventState.unitChange.length) handleEvent('unitChange', {type: 'revive', unit: targets[i]});
         heal.push(`${targets[i].name} ${healSingle} hp`);
     }
-    logAction(`${healer.name} heals ${heal.join(", ")}!`, "heal");
+    logAction(`${healer.name} heals ${comma(heal)}!`, "heal");
 }
 
 function hpChange(unit, targets, values) {
@@ -363,7 +364,7 @@ function hpChange(unit, targets, values) {
         }
         const revive = !targets[i].hp && healSingle;
         targets[i].hp = Math.min(targets[i].hp + healSingle, targets[i].base.hp);
-        if (revive && eventState.unitChange.length) handleEvent('unitChange', {type: 'revived', unit: targets[i]});
+        if (revive && eventState.unitChange.length) handleEvent('unitChange', {type: 'revive', unit: targets[i]});
         logAction(`${unit.name} heals ${targets[i].name} for ${healSingle} hp!`, "heal");
     }
 }
@@ -405,7 +406,7 @@ function resourceChange(unit, resources, log = false, add = true, drain = false)
         unit[resource] = Math.ceil(Math.max(0, Math.min(unit[resource] + context.resources[resource], unit.base[resource])));
         (context.resources[resource] > 0 ? inc : dec).push((unit.team === "player" ? context.resources[resource] + ' ' : '' ) + resource)
     }
-    if (log && (inc.length + dec.length)) !dec.length ? logAction(`${unit.name} gained ${inc.join(", ")}.`, 'buff') : !inc.length ? logAction(`${unit.name} ${drain ? 'lost' : 'spent'} ${dec.join(", ")}.`, 'debuff') : logAction(`${unit.name} gained ${inc.join(", ")}, and ${drain ? 'lost' : 'spent'} ${dec.join(", ")}.`, 'info');
+    if (log && (inc.length + dec.length)) !dec.length ? logAction(`${unit.name} gained ${comma(inc)}.`, 'buff') : !inc.length ? logAction(`${unit.name} ${drain ? 'lost' : 'spent'} ${comma(dec)}.`, 'debuff') : logAction(`${unit.name} gained ${comma(inc)}, and ${drain ? 'lost' : 'spent'} ${comma(dec)}.`, 'info');
     return true;
 }
 
@@ -446,28 +447,40 @@ function unitByStat(units, statName, type = 'number', max = true, count = 1) {
 }
 
 function kill(attacker, defenders) {
+    if (!Array.isArray(defenders)) defenders = [defenders];
     for (const defender of defenders) {
         allUnits.splice(allUnits.indexOf(defender), 1);
         if (eventState.unitChange.length) handleEvent('unitChange', { type: 'death', unit: defender });
         for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === defender) removeModifier(modifiers[i]);
     }
-    logAction(`${attacker.name} kills ${defenders.map(u => u.name).join(', ')}!`);
+    logAction(`${attacker.name} kills ${comma(defenders.map(u => u.name))}!`);
 }
 
 function summon(summoner, unit, skills = {}, position = false) {
-    const clone = createUnit(unit, summoner.team);
-    if (position) clone.position = position;
-    clone.skills = skills;
-    clone.custom = { ...clone.custom, summoner };
-    if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: clone });
+    const newUnit = createUnit(unit, summoner.team);
+    if (position) newUnit.position = position;
+    newUnit.skills = skills;
+    newUnit.custom = { ...newUnit.custom, summoner };
+    if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: newUnit });
+    (newUnit.traits || []).forEach(s => {
+        currentAction.push([s, newUnit]);
+        s.code.call(newUnit);
+        currentAction.pop();
+    });
+    
+    (newUnit.synergy || []).forEach(s => {
+        currentAction.push([s, newUnit]);
+        s.code.call(newUnit);
+        currentAction.pop();
+    });
     for (const skill of ['passive', 'augment', 'conditional']) {
-        if (clone.skills?.[skill]) {
-            currentAction.push([clone.skills[skill], clone]);
-            clone.skills[skill].code.call(clone);
+        if (newUnit.skills?.[skill]) {
+            currentAction.push([newUnit.skills[skill], newUnit]);
+            newUnit.skills[skill].code.call(newUnit);
             currentAction.pop();
         }
     }
-    return clone;
+    return newUnit;
 }
 
 export { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements };

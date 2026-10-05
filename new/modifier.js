@@ -42,14 +42,7 @@ class Modifier {
                     const isActivating = !this.vars.cancel && !this.vars.applied, isDeactivating = this.vars.cancel && this.vars.applied;
                     if (isDeactivating || isActivating) {
                         if (this.vars.stats && this.vars.target && !this.vars.disableStatChange) resetStat(this.vars.target, Object.keys(this.vars.stats), Object.values(this.vars.stats), false);
-                        if (!temp && this.vars.cancelListeners) for (const listener of this.vars.cancelListeners) {
-                                this.vars.listeners[listener] = isActivating;
-                                if (isActivating) eventState[listener].push(this);
-                                else if (isDeactivating) {
-                                    const i = eventState[listener].indexOf(this);
-                                    if (i > -1) eventState[listener].splice(i, 1);
-                                }
-                            }
+                        if (!temp && this.vars.cancelListeners) toggleListeners(this, ...(isActivating ? [this.vars.cancelListeners] : [[], this.vars.cancelListeners]));
                         this.vars.applied = isActivating;
                     }
                 }
@@ -94,18 +87,26 @@ class Modifier {
         if (this.init()) removeModifier(this);
         else {
             this.vars.start = true;
-            this.vars.applied = !this.vars.cancel
+            this.vars.applied = !this.vars.cancel;
             if (this.vars.stats && this.vars.target && !this.vars.disableStatChange && !this.vars.cancel) resetStat(this.vars.target, Object.keys(this.vars.stats), Object.values(this.vars.stats));
             if (this.vars.reduction) for (const stat of Object.keys(this.vars.reduction)) this.vars.caster.mult[stat] ? (this.vars.caster.base[stat] -= this.vars.reduction[stat]) && resetStat(this.vars.caster, [stat]) : (this.vars.caster.base[stat] -= this.vars.reduction[stat]) && (this.vars.caster[stat] = Math.max(this.vars.caster[stat] -this.vars.reduction[stat], 0));
             if (this.vars.listeners) for (const eventType in this.vars.listeners) if (this.vars.listeners[eventType]) eventState[eventType].push(this);
-            if (this.vars.cancel && this.vars.cancelListeners) for (const listener of this.vars.cancelListeners) {
-                this.vars.listeners[listener] = false;
-                const i = eventState[listener].indexOf(this);
-                if (i > -1) eventState[listener].splice(i, 1);
-            }
+            if (this.vars.cancel && this.vars.cancelListeners) toggleListeners(this, [], this.vars.cancelListeners);
         }
         currentAction.pop();
         //window.updateModifiers();
+    }
+}
+
+function toggleListeners(mod, add = [], remove = []) {
+    for (const listener of remove) {
+        mod.vars.listeners[listener] = false;
+        const i = eventState[listener].indexOf(mod);
+        if (i > -1) eventState[listener].splice(i, 1);
+    }
+    for (const listener of add) {
+        mod.vars.listeners[listener] = true;
+        if (eventState[listener].indexOf(mod) === -1) eventState[listener].push(mod);
     }
 }
 
@@ -167,7 +168,7 @@ function basicModifier(name, description, vari, dur = 'target') {
     return new Modifier(name, description, vari,
         function() {},
         function(context) {
-            if (typeof dur === "function") return !dur.call(this, this.vars.target);
+            if (typeof dur === "function") return !dur.call(this, context);
             else {
                 if (this.vars[dur] === context.unit) this.vars.duration--;
                 return this.vars.duration <= 0;
@@ -178,7 +179,7 @@ function basicModifier(name, description, vari, dur = 'target') {
 
 function auraModifier(name, description, vari, mod, filter) {
     return new Modifier(name, description, vari,
-        function() {},
+        function() { if (!this.vars.listeners?.waveChange) this.changeTarget(this.vars.targets.filter(u => !filter.call(this, u) || !allUnits.includes(u)), allUnits.filter(u => filter.call(this, u) && !this.vars.targets.includes(u))); },
         function(context) {
             if (context.wave) this.changeTarget(this.vars.targets.filter(u => !filter.call(this, u) || !allUnits.includes(u)), allUnits.filter(u => filter.call(this, u) && !this.vars.targets.includes(u)));
             else {
@@ -198,7 +199,7 @@ function auraModifier(name, description, vari, mod, filter) {
             }
         },
         function(remove = [], add = []) {
-            if (this.vars.applied) {
+            if (!this.vars.cancel) {
                 this.vars.child?.filter(m => remove.includes(m.vars.target)).forEach(m => removeModifier(m));
                 add.forEach(u => mod(u));
             }
@@ -223,7 +224,7 @@ function stunModifier(name, vari, dur = 'target') {
             }
         },
         function(context) {
-            if (typeof dur === "function") return !dur.call(this, this.vars.target);
+            if (typeof dur === "function") return !dur.call(this, context);
             else {
                 if (this.vars[dur] === context.unit) this.vars.duration--;
                 return this.vars.duration <= 0;
@@ -276,7 +277,7 @@ function blockModifier(name, vari, res, dur = "target", regen = null) {
                     if (this.vars.duration && Object.keys(this.vars.listeners).length === 1) this.vars.duration--;
                 }
             }
-            if (typeof dur === "function") return !dur.call(this, this.vars.target);
+            if (typeof dur === "function") return !dur.call(this, context);
             else {
                 if (context.event !== "resourceChange" && context.unit === this.vars[dur] && this.vars.duration) this.vars.duration--;
                 return this.vars.hasOwnProperty('duration') ? this.vars.duration >= 0 : false;
@@ -285,7 +286,7 @@ function blockModifier(name, vari, res, dur = "target", regen = null) {
     );
 }
 
-function attribCancelMod(name, vari, attrib, dur = "target", ignore = null) {
+function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, block = true) {
     const res = attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy';
     return new Modifier(name, `Ends non-passive ${attrib} modifiers target is focusing, cancels ${attrib} modifiers on target, and disables ${res} regen`, vari,
         function() {
@@ -301,10 +302,13 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null) {
                         currentAction.pop();
                     }
                 }
-                logAction(`${this.vars.target}'s ${res} is disabled!`, "debuff");
+                if (block) logAction(`${this.vars.target}'s ${res} is disabled!`, "debuff");
             }
-            this.vars.listeners ? this.vars.listeners.resourceChange = this.vars.listeners.modifierEnd = this.vars.listeners.modifierStart = this.vars.listeners.targetChange = true : this.vars.listeners = { targetChange: true, modifierStart: true, modifierEnd: true, resourceChange: true };
-            if (!(this.vars.cancelListeners ??= []).includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
+            this.vars.listeners ? this.vars.listeners.modifierEnd = this.vars.listeners.modifierStart = this.vars.listeners.targetChange = true : this.vars.listeners = { targetChange: true, modifierStart: true, modifierEnd: true };
+            if (block) {
+                this.vars.listeners.resourceChange = true;
+                if (!(this.vars.cancelListeners ??= []).includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
+            }
         },
         function(context) {
             if (context.modifier === this || this.vars.ignore?.includes(context.modifier)) return;
@@ -332,8 +336,8 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null) {
                 }
             }
             if (context.event === 'modifierEnd' && this.vars.modifiers.includes(context.modifier)) this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1);
-            if (this.vars.applied && context.unit === this.vars.target && context.resources?.[res] * (context.add ? 1 : -1) > 0) (context[res] ??= {}).nil = (context[res].nil || 0) + 1;
-            if (typeof dur === "function") return !dur.call(this, this.vars.target);
+            if (block && this.vars.applied && context.unit === this.vars.target && context.resources?.[res] * (context.add ? 1 : -1) > 0) (context[res] ??= {}).nil = (context[res].nil || 0) + 1;
+            if (typeof dur === "function") return !dur.call(this, context);
             else {
                 if (context.event !== 'resourceChange' && this.vars[dur] === context.unit) this.vars.duration--;
                 if (this.vars.hasOwnProperty("duration")) return this.vars.duration <= 0;
@@ -343,11 +347,7 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null) {
             if (!temp && this.vars.start) {
                 if (this.vars.cancel && this.vars.applied) {
                     this.vars.applied = false;
-                    for (const listener of (this.vars.cancelListeners || [])) {
-                        this.vars.listeners[listener] = false;
-                        const i = eventState[listener].indexOf(this);
-                        if (i > -1) eventState[listener].splice(i, 1);
-                    }
+                    toggleListeners(this, [], this.vars.cancelListeners);
                     for (const mod of this.vars.modifiers) {
                         currentAction.push([mod, mod.vars.caster]);
                         mod.cancel(false);
@@ -356,10 +356,7 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null) {
                     this.vars.modifiers = [];
                 } else if (!this.vars.cancel && !this.vars.applied) {
                     this.vars.applied = true;
-                    for (const listener of (this.vars.cancelListeners || [])) {
-                        this.vars.listeners[listener] = true;
-                        eventState[listener].push(this);
-                    }
+                    toggleListeners(this, this.vars.cancelListeners);
                     for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes(m) && m.vars.properties.includes(attrib) && !m.vars.perm && !m.vars.trait && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
                         if (mod.vars.caster === this.vars.target && mod.vars.focus && !mod.vars.passive) removeModifier(mod);
                         else if (mod.vars.target === this.vars.target || mod.vars.focus) {
@@ -456,9 +453,17 @@ function resetStat(unit, statList, values = [], add = true) {
             unit.mult[statList[i]] += add ? values[i] : -values[i];
             ((add ? 1 : -1)*values[i] > 0 ? inc : dec).push(statList[i]);
         }
-        if (!turnOffStatLog && (inc.length + dec.length)) !dec.length ? logAction(`${unit.name}'s ${inc.join(", ")} increased.`, 'buff') : !inc.length ? logAction(`${unit.name}'s ${dec.join(", ")} decreased.`, 'debuff') : logAction(`${unit.name}'s ${inc.join(", ")} increased, and ${dec.join(", ")} decreased.`, 'info');
+        if (!turnOffStatLog && (inc.length + dec.length)) !dec.length ? logAction(`${unit.name}'s ${comma(inc)} increased.`, 'buff') : !inc.length ? logAction(`${unit.name}'s ${comma(dec)} decreased.`, 'debuff') : logAction(`${unit.name}'s ${comma(inc)} increased, and ${comma(dec)} decreased.`, 'info');
     }
     for (const stat of statList) unit[stat] = unit.base[stat] + Math.max(-0.8 * unit.base[stat], unit.mult[stat] || 0);
 }
 
-export { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState };
+function comma(array, cap = false) {
+    const format = ['', array[0], array[0] + " and " + array[1]];
+    const str = format[array.length] ?? array.slice(0, -1).join(', ') + ", and " + array.at(-1);
+    return cap ? capital(str) : str;
+}
+
+function capital(str) { return str.length ? str[0].toUpperCase() + str.slice(1) : '' }
+
+export { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState };

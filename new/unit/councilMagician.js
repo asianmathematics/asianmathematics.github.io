@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
 export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 80, 100, 140, 80, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
@@ -13,7 +13,7 @@ CouncilMagician.skills = {
             description: "Attacks target and a random number of random targets (including allies) twice with increased attack and halved accuracy",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) { 
-                const front = allUnits.filter(u => u.hp && u.position === target[0].position && (target[0].position === 'back' ?  u.team === target[0].team : true));
+                const front = allUnits.filter(u => u.hp && u.position === target[0].position && (target[0].position === 'back' ? u.team === target[0].team : true));
                 attack(this, target.concat(randTarget(front, Math.floor((front.length-1)*Math.min(Math.random(), Math.random(), Math.random())+1), true)), 2, { attacker: { attack: { bonus: 50 }, accuracy: { div: 2 } } });
             }
         },
@@ -126,8 +126,8 @@ CouncilMagician.skills = {
             properties: ["mystic", "mana-block", "attack", "auto-hit"],
             description: "Makes 4 non-crit guaranteed hits distributed to up to 4 enemies",
             code() {
-                const targets = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), Math.floor(Math.random()*6)+1);
-                damage(this, targets, targets.map((_, i) => Array(Math.floor(6/targets.length) + (i < 6%targets.length)).fill(.5)));
+                const targets = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), Math.floor(Math.random()*4)+1);
+                damage(this, targets, targets.map((_, i) => Array(Math.floor(4/targets.length) + (i < 4%targets.length)).fill(.5)));
             }
         },
         {
@@ -279,13 +279,13 @@ function wildMagic(buff) {
             break;
         case 4:
             new Modifier(`Wild Magic: Poison${buff ? '' : ' backfire'}`, 'Immediate and start of turn poison damage until resisted',
-                { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], properties: ["mystic", "attack", "dot", "poison"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } },
+                { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team !== this.team)), 1, true)[0], properties: ["mystic", "attack", "dot", "poison"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } },
                 function() { return this.vars.cancel ? false : this.vars.debuff.call(this, this.vars.target) ? damage(this.vars.caster, [this.vars.target], [[.5]]) && false : logAction(`${this.vars.target.name} resisted ${this.vars.caster.name}'s wild magic poison`, 'miss') || true; },
                 function(context) { if (context.unit === this.vars.target) return resistDebuff(this.vars.caster, [this.vars.target])[0] >= 50 ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[.5]]) && false : true; }
             );
             break;
         case 5: {
-            const target = randTarget(allUnits.filter(u => u.hp < u.base.hp && buff === (u.team === this.team)), 1, true);
+            const target = randTarget(allUnits.filter(u => u.hp < u.base.hp && buff === (u.team !== this.team)), 1, true);
             target.length ? heal(this, target, [5]) : logAction(`${this.name}'s wild magic failed to heal anyone!`, 'miss');
             break;
         }
@@ -293,10 +293,10 @@ function wildMagic(buff) {
             blockModifier(`Wild Magic: Resource Block${buff ? '' : ' backfire'}`, { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], duration: 2, properties: ["mystic", "debuff"], listeners: { turnEnd: true }, cancelListeners: ['resourceChange'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'all');
             break;
         case 7:
-            attack(randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true), 3);
+            attack(randTarget(allUnits.filter(u => u.hp && buff === (u.team !== this.team)), 1, true)[0], randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true), 3);
             break;
         case 8: {
-            const target = randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true);
+            const target = randTarget(allUnits.filter(u => u.hp && buff === (u.team !== this.team)), 1, true);
             if (resistDebuff(this, target)[0] >= 2) stunModifier(`Wild Magic: Stun${buff ? '' : ' backfire'}`, { target: target[0], duration: 1, properties: ["mystic", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
         }
     }

@@ -4,6 +4,7 @@ import { Mannequin } from './unit/mannequin.js';
 import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
 import { Electric } from './unit/electric.js';
+import { ClassicJoy } from './unit/classicJoy.js';
 import { enemy } from './unit/enemy.js';
 import { ArtificialSoldier } from './unit/artificialSoldier.js';
 import { CouncilMagician } from './unit/councilMagician.js';
@@ -17,7 +18,7 @@ import { magitechEnemy } from './unit/magitechEnemy.js';
 import { ChaosAgent } from './unit/chaosAgent.js';
 import { Dreamer } from './unit/dreamer.js';*/
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from './modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
 import { Unit, createUnit, cloneUnit } from './unit/unit.js';
 
 let turnCounter = 1;
@@ -222,7 +223,7 @@ function alterDesc(skill, category) {
         desc = desc.slice(0, -2) + '<br>';
     }
     const block = [];
-    if (['special', 'basic', 'secondary'].includes(category)) for (const [res, attrib] of [['stamina', 'physical'], ['mana', 'mystic'], ['energy', 'techno']]) if (!(skill.cost && Object.keys(skill.cost).includes(res)) && skill.properties.includes(attrib)) block.push(res);
+    if (['special', 'basic', 'secondary'].includes(category)) for (const [res, attrib] of [['stamina', 'stamina-block'], ['mana', 'mana-block'], ['energy', 'energy-block']]) if (!(skill.cost && Object.keys(skill.cost).includes(res)) && skill.properties.includes(attrib)) block.push(res);
     if (block.length) {
         desc += "Blocks next turn's regeneration of ";
         for (const stat of block) desc += `${stat.charAt(0).toUpperCase() + stat.slice(1)}, `;
@@ -234,6 +235,7 @@ function alterDesc(skill, category) {
 function updateModifiers() {
     const modifiersContent = document.getElementById('modifiers-content');
     if (!modifiersContent) return;
+    //const down = (modifiersContent.scrollHeight - modifiersContent.scrollTop - modifiersContent.clientHeight) <= 90, scroll = modifiersContent.scrollTop;
     let modDisplay = `<h3 style="border-bottom:2px solid #ff0055; padding-bottom:5px; margin-bottom:10px;">Active Modifiers</h3>`;
     if (modifiers.length === 0) modDisplay += `<p style="color:#888;">No active modifiers</p>`;
     else {
@@ -247,7 +249,7 @@ function updateModifiers() {
                 fullTargets = modifier.vars.target.name;
             } else if (modifier.vars?.targets?.length) {
                 const targetNames = modifier.vars.targets.map(u => u.name);
-                fullTargets = targetNames.join(', ');
+                fullTargets = comma(targetNames);
                 if (targetNames.length > 5) targetDisplay = `<span class="modifier-targets truncated" data-full-targets="${fullTargets}">${targetNames.slice(0, 4).join(', ')}, +${targetNames.length - 4} more</span>`;
                 else targetDisplay = fullTargets;
             }
@@ -264,6 +266,7 @@ function updateModifiers() {
         modDisplay += `</ul>`;
     }
     modifiersContent.innerHTML = modDisplay;
+    //if (!down) modifiersContent.scrollTop = scroll;
 }
 
 function initTabSwitching() {
@@ -345,8 +348,7 @@ export async function combatTick() {
             if (!list.length) for (const unit of alive) {
                 unit.timer -= unit.speed;
                 if (unit.pendingSpecial) pend = true;
-            }
-            else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
+            } else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
             if (pend) return combatTick()
             await syncTimerUI(alive);
             await new Promise(resolve => setTimeout(resolve, 120 / (window.combatSpeedMultiplier || 1)));
@@ -403,7 +405,7 @@ function executeAutoAction(unit, action) {
 function executeBoth(unit) {
     if (eventState.actionStart.length) handleEvent('actionStart', {unit, action: 'both'});
     const cost = {};
-    for (const [res, attrib] of [['stamina', 'physical-block'], ['mana', 'mystic-block'], ['energy', 'techno-block']]) {
+    for (const [res, attrib] of [['stamina', 'stamina-block'], ['mana', 'mana-block'], ['energy', 'energy-block']]) {
         let count = unit.skills.basic.properties.includes(attrib) + unit.skills.secondary.properties.includes(attrib);
         if (count) cost[res] = count * 10;
         count = ((unit.skills.basic.cost?.[res] || 0) + (unit.skills.secondary.cost?.[res] || 0));
@@ -477,7 +479,7 @@ function waveCalc(units, mult) {
             enemyPoints.delete(Reject);
         }
     }*/
-    const playerPoints = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric];
+    const playerPoints = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric, ClassicJoy];
     enemyPoints = [Experiment, Reject, CouncilMagician, CouncilScientist, Revolutionary, enemy, ArtificialSoldier];
     const enemies = [];
     let points = 0;
@@ -607,7 +609,8 @@ const unitLookup = {
     [Mannequin.name]: Mannequin,
     [Silhouette.name]: Silhouette,
     [Doctor.name]: Doctor,
-    [Electric.name]: Electric
+    [Electric.name]: Electric,
+    [ClassicJoy.name]: ClassicJoy
 };
 
 function initializeCombatFromSquad(squadData) {

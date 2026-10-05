@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
 export const DexSoldier = new Unit("DeX (Soldier)", [1800, 25, 55, 70, 50, 60, 80, 55, 200, "front", 250, 120, 24, 30, 5], 3, ["perfection/precision"]);
@@ -79,7 +79,7 @@ DexSoldier.skills = {
                             let redirect = 0;
                             for (let i = 0; i < context.defenders.length; i++) {
                                 const target = context.defenders[i];
-                                if (target === this.vars.target || target.team !== this.vars.target.team || target.position !== "front" || !context.calcMods.defenders?.[i]?.redirect) continue;
+                                if (target === this.vars.target || target.team !== this.vars.target.team || target.position !== "front" || context.calcMods.defenders?.[i]?.redirect) continue;
                                 redirect++;
                                 context.defenders[i] = this.vars.target;
                                 ((context.calcMods.defenders ??= [])[i] ??= {}).redirect = [target, this.vars.target];
@@ -110,7 +110,7 @@ DexSoldier.skills = {
     basic: [
         {
             name: "Hammer, Hammer, Hammer!",
-            properties: ["physical", "stamina-block", "mystic", "mystic-block", "attack"],
+            properties: ["physical", "stamina-block", "mystic", "mana-block", "attack"],
             description: "Attacks a single target with increased attack and accuracy",
             code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { mult: 3 }, accuracy: { mult: 3 } } }); }
         },
@@ -124,7 +124,7 @@ DexSoldier.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) heal(this.vars.caster, [this.vars.target], [2]);
+                            if (this.vars.applied) heal(this.vars.caster, [this.vars.target], [1]);
                             this.vars.duration--;
                         }
                         return this.vars.duration <= 0;
@@ -138,7 +138,7 @@ DexSoldier.skills = {
             cost: { stamina: 20 },
             description: "Redirects all non-aoe, non-auto-hit attacks on lowest hp frontline unit to self for 1 turn",
             code() {
-                const target = unitByStat(allUnits.filter(u => u.position === "front" && u.team === this.team), 'hp', 'percent', false)[0];
+                const target = unitByStat(allUnits.filter(u => u.hp && u.position === "front" && u.team === this.team), 'hp', 'percent', false)[0];
                 logAction(`${this.name} protects ${target.name}`, "buff");
                 new Modifier("Guardian", "Redirects attacks from an ally and increases defense",
                     { target, duration: 1, properties: ["physical"], listeners: { attackStart: true, turnStart: true }, cancelListeners: ['attackStart'], focus: true },
@@ -270,7 +270,7 @@ DexSoldier.skills = {
         },
         {
             name: "Quake Hammer",
-            properties: ["physical", "mystic" ,"attack", "aoe", "multi-target"],
+            properties: ["physical", "mystic", "conditional", "attack", "aoe", "multi-target"],
             reduction: { stamina: 50 },
             description: "When hitting an attack, makes an AOE attack with increased attack to 3 random frontline units",
             code() {
@@ -278,8 +278,8 @@ DexSoldier.skills = {
                     { target: this, properties: ["physical", "mystic", "attack", "aoe"], listeners: { singleDamage: true }, cancelListeners: ['singleDamage'], reduction: this.skills.passive.reduction, passive: true, attacking: 0 },
                     function() {},
                     function(context) {
-                        if (context.attacker !== this.vars.caster || !this.vars.applied || this.vars.attacking) return;
-                        if (context.damageSingle > this.vars.attacking++) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 3, true), 1, { attacker: { attack: { bonus: context.damageSingle/2 } } });
+                        if (context.attacker !== this.vars.caster || this.vars.attacking) return;
+                        if (context.damageSingle > this.vars.attacking++) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team), 3, true), 1, { attacker: { attack: { bonus: context.damageSingle/2 } } });
                         this.vars.attacking = 0;
                     }
                 );

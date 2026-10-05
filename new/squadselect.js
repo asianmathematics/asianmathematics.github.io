@@ -4,10 +4,12 @@ import { Mannequin } from './unit/mannequin.js';
 import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
 import { Electric } from './unit/electric.js';
+import { ClassicJoy } from './unit/classicJoy.js';
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
 import { assignEnemySkills } from './combat.js';
 
-const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric];
+const availableUnits = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric, ClassicJoy];
 
 let selectedUnits = [];
 let currentEditingUnit = null;
@@ -107,11 +109,11 @@ function openSkillSelection(unitConfig, targetPosition = null) {
             
             const names = skills.map(s => s.name);
             const duplicateNames = [...new Set(names.filter((name, index) => names.indexOf(name) !== index))];
-            if (duplicateNames.length > 0) return showMessage(`Duplicate skill names${pos ? `for ${pos}line` : ''}: ${duplicateNames.join(', ')}.`, 'error', 'selection');
+            if (duplicateNames.length > 0) return showMessage(`Duplicate skill names${pos ? `for ${pos}line` : ''}: ${comma(duplicateNames)}.`, 'error', 'selection');
             
             const categories = skills.map(s => getSkillCategory(currentEditingUnit.template, s));
             const duplicateCategories = [...new Set(categories.filter((cat, index) => categories.indexOf(cat) !== index))];
-            if (duplicateCategories.length > 0) return showMessage(`Duplicate skill types${pos ? `for ${pos}line` : ''}: ${duplicateCategories.join(', ')}.`, 'error', 'selection');
+            if (duplicateCategories.length > 0) return showMessage(`Duplicate skill types${pos ? `for ${pos}line` : ''}: ${comma(duplicateCategories)}.`, 'error', 'selection');
         }
         panel.style.display = 'none';
         renderSelectedUnits();
@@ -321,7 +323,7 @@ function updateInfoDisplay(unit) {
         const skills = unit.synergy.filter(s => s.targets.some(t => selectedUnits.some(u => u.template.name === t)));
         if (skills.length) {
             html += "<h4>Trait skills</h4>";
-            skills.forEach(s => html += `<div class="skill-info-box"><div class="skill-name">${s.name}</div><p><strong>Targets: ${s.targets.filter(t => selectedUnits.some(u => u.template.name === t)).join(', ')}</strong><br><strong>Description:</strong><br>${s.description ? alterDesc(s, 'synergy') : 'No description available.'}</p></div>` );
+            skills.forEach(s => html += `<div class="skill-info-box"><div class="skill-name">${s.name}</div><p><strong>Targets</strong>: ${comma(s.targets.filter(t => selectedUnits.some(u => u.template.name === t)))}<br><strong>Description:</strong><br>${s.description ? alterDesc(s, 'synergy') : 'No description available.'}</p></div>` );
         }
     }
     if (unit.traits) {
@@ -368,7 +370,7 @@ function alterDesc(skill, category) {
         desc = desc.slice(0, -2) + '<br>';
     }
     const block = [];
-    if (['special', 'basic', 'secondary'].includes(category)) for (const [res, attrib] of [['stamina', 'physical'], ['mana', 'mystic'], ['energy', 'techno']]) if (!(skill.cost && Object.keys(skill.cost).includes(res)) && skill.properties.includes(attrib)) block.push(res);
+    if (['special', 'basic', 'secondary'].includes(category)) for (const [res, attrib] of [['stamina', 'stamina-block'], ['mana', 'mana-block'], ['energy', 'energy-block']]) if (!(skill.cost && Object.keys(skill.cost).includes(res)) && skill.properties.includes(attrib)) block.push(res);
     if (block.length) {
         desc += "Blocks next turn's regeneration of ";
         for (const stat of block) desc += `${stat.charAt(0).toUpperCase() + stat.slice(1)}, `;

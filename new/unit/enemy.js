@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
 export const enemy = new Unit("Basic Enemy", [1000, 30, 30, 100, 100, 100, 100, 100, 100, "front", 100, 100, 10], 3);
@@ -26,7 +26,7 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        ['attack', 'accuracy', 'focus'].forEach(k => { (context.calcMods.attacker ??= {})[k] = { mult: (context.calcMods.attacker[k]?.mult || 1) + 1 }; });
+                        ['attack', 'accuracy', 'focus'].forEach(k => ((context.calcMods.attacker ??= {})[k] ??= {}).mult = (context.calcMods.attacker[k].mult || 1) + 1 );
                         return true;
                     }
                 );
@@ -88,8 +88,8 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        (context.calcMods.attacker ??= {}).attack = { bonus: (context.calcMods.attacker.attack?.bonus || 0) + 30 };
-                        (context.calcMods.attacker ??= {}).accuracy = { bonus: (context.calcMods.attacker.accuracy?.bonus || 0) + 50 };
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 30;
+                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + 50;
                         return true;
                     }
                 );
@@ -148,7 +148,7 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        (context.calcMods.attacker ??= {}).attack = { bonus: (context.calcMods.attacker.attack?.bonus || 0) + 30 };
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 30;
                         return true;
                     }
                 );
@@ -168,7 +168,7 @@ enemy.skills = {
                 let target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
                 if (will > 33) {
                     logAction(`${this.name} distracts ${target[0].name}`, "debuff");
-                    new Modifier("Taunt", "Decreases target evasion, focus, and resist and doubles the chance for caster to be targeted by target",
+                    new Modifier("Taunt", "Decreases target focus and doubles the chance for caster to be targeted by target",
                         { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; } },
                         function() {},
                         function(context) {
@@ -200,24 +200,20 @@ enemy.skills = {
                     function(context) {
                         if (context.unit === this.vars.target) return !++this.vars.charge;
                         if (context.attacker !== this.vars.target) return;
-                        (context.calcMods.attacker ??= {}).attack = { bonus: (context.calcMods.attacker.attack?.bonus || 0) + this.vars.stats.attack*this.vars.charge };
-                        (context.calcMods.attacker ??= {}).accuracy = { bonus: (context.calcMods.attacker.accuracy?.bonus || 0) + this.vars.stats.accuracy*this.vars.charge };
-                        this.vars.charge = 0;
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + this.vars.stats.attack*this.vars.charge;
+                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + this.vars.stats.accuracy*this.vars.charge;
+                        this.vars.charge = -1;
                     },
                     function(_, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
-                                this.vars.listeners.attackStart = false;
-                                eventState.attackStart.splice(eventState.attackStart.indexOf(this), 1);
-                                this.vars.listeners.turnEnd = false;
-                                eventState.turnEnd.splice(eventState.turnEnd.indexOf(this), 1);
+                                this.vars.applied = false;
+                                toggleListeners(this, [], this.vars.cancelListeners);
                                 this.vars.charge = 0;
                             }
                             if (!this.vars.cancel && !this.vars.applied) {
-                                this.vars.listeners.attackStart = true;
-                                eventState.attackStart.push(this);
-                                this.vars.listeners.turnEnd = true;
-                                eventState.turnEnd.push(this);
+                                this.vars.applied = true;
+                                toggleListeners(this, this.vars.cancelListeners);
                             }
                         }
                     }
@@ -285,25 +281,21 @@ enemy.skills = {
                     function(context) {
                         if (context.unit === this.vars.target) return !++this.vars.charge;
                         if (context.attacker !== this.vars.target) return;
-                        (context.calcMods.attacker ??= {}).attack = { bonus: (context.calcMods.attacker.attack?.bonus || 0) + this.vars.stats.attack*this.vars.charge };
-                        (context.calcMods.attacker ??= {}).accuracy = { bonus: (context.calcMods.attacker.accuracy?.bonus || 0) + this.vars.stats.accuracy*this.vars.charge };
-                        (context.calcMods.attacker ??= {}).focus = { bonus: (context.calcMods.attacker.focus?.bonus || 0) + this.vars.stats.focus*this.vars.charge };
-                        this.vars.charge = 0;
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + this.vars.stats.attack*this.vars.charge;
+                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + this.vars.stats.accuracy*this.vars.charge;
+                        ((context.calcMods.attacker ??= {}).focus ??= {}).bonus = (context.calcMods.attacker.focus.bonus || 0) + this.vars.stats.focus*this.vars.charge;
+                        this.vars.charge = -1;
                     },
                     function(_, temp) {
                         if (!temp) {
                             if (this.vars.cancel && this.vars.applied) {
-                                this.vars.listeners.attackStart = false;
-                                eventState.attackStart.splice(eventState.attackStart.indexOf(this), 1);
-                                this.vars.listeners.turnEnd = false;
-                                eventState.turnEnd.splice(eventState.turnEnd.indexOf(this), 1);
+                                this.vars.applied = false;
+                                toggleListeners(this, [], this.vars.cancelListeners);
                                 this.vars.charge = 0;
                             }
                             if (!this.vars.cancel && !this.vars.applied) {
-                                this.vars.listeners.attackStart = true;
-                                eventState.attackStart.push(this);
-                                this.vars.listeners.turnEnd = true;
-                                eventState.turnEnd.push(this);
+                                this.vars.applied = true;
+                                toggleListeners(this, this.vars.cancelListeners);
                             }
                         }
                     }

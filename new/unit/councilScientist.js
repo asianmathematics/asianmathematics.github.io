@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, createUnit } from './unit.js';
 
 export const CouncilScientist = new Unit("Science Council Member", [1000, 21, 28, 100, 80, 120, 80, 80, 130, "back", 100, 70, 6, , , 80, 9], 3, ["independence/loneliness"]);
@@ -18,10 +18,10 @@ CouncilScientist.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) attack(this.vars.caster, [this.vars.target], 1, { attack: { bonus: 60 }, accuracy: { bonus: 40 } });
+                            if (this.vars.applied) attack(this.vars.caster, [this.vars.target], 1, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 40 } } });
                             this.vars.duration;
                         }
-                        return this.vars.duration >= 0;
+                        return this.vars.duration <= 0;
                     }
                 );
             }
@@ -40,11 +40,6 @@ CouncilScientist.skills = {
                     resourceChange(drone.vars.target, { stamina: drone.vars.target.base.stamina, energy: drone.vars.target.base.energy });
                 } else {
                     drone = summon(this, { ...Drone, name: "Deka Drone", star: 2, base: Object.fromEntries(Object.entries(Drone.base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val * 1.5))])) }, droneSkills(this));
-                    (drone.trait ??= []).push(trait);
-                    currentAction.push([trait, drone]);
-                    trait.code.call(drone);
-                    currentAction.pop();
-                    if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
                     new Modifier("Drone", "Summon 2-star drone",
                         { target: drone, duration: 5, properties: ["techno", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                         function() {},
@@ -114,7 +109,7 @@ CouncilScientist.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attack: { bonus: 30 }, accuracy: { bonus: 40 } });
+                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
                             this.vars.duration;
                         }
                         return this.vars.duration >= 0;
@@ -136,11 +131,6 @@ CouncilScientist.skills = {
                     resourceChange(drone.vars.target, { stamina: drone.vars.target.base.stamina, energy: drone.vars.target.base.energy });
                 } else {
                     drone = summon(this, Drone, droneSkills(this));
-                    (drone.trait ??= []).push(trait);
-                    currentAction.push([trait, drone]);
-                    trait.code.call(drone);
-                    currentAction.pop();
-                    if (eventState.unitChange.length) handleEvent('unitChange', { type: 'summon', unit: drone });
                     new Modifier("Drone", "Summon 2-star drone",
                         { target: drone, duration: 3, properties: ["techno", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                         function() {},
@@ -210,7 +200,7 @@ CouncilScientist.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attack: { bonus: 30 }, accuracy: { bonus: 40 } });
+                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: {attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
                             this.vars.duration;
                         }
                         return this.vars.duration >= 0;
@@ -220,7 +210,7 @@ CouncilScientist.skills = {
         },
         {
             name: "Backup Power",
-            properties: ["physical", "stakmina-block", "energy-gain"],
+            properties: ["physical", "stamina-block", "energy-gain"],
             description: "Recover some energy (~15% max energy)",
             code() { resourceChange(this, { energy: 1.5 * this.energyRegen }, true); }
         },
@@ -251,7 +241,7 @@ CouncilScientist.skills = {
                 new Modifier("Laser Turret", "Attacks a target at end of caster's turn", 
                     { target: this, properties: ["techno", "attack", "dot"], listeners: { turnEnd: true }, cancelListeners: ['turnEnd'], reduction: this.skills.passive.reduction, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster && this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attack: { bonus: 30 }, accuracy: { bonus: 40 } }); }
+                    function(context) { if (context.unit === this.vars.caster) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } }); }
                 );
             }
         },
@@ -262,10 +252,6 @@ CouncilScientist.skills = {
             description: "Summons a 1-star drone to the frontline.",
             code() {
                 const drone = summon(this, Drone, droneSkills(this));
-                (drone.trait ??= []).push(trait);
-                currentAction.push([trait, drone]);
-                trait.code.call(drone);
-                currentAction.pop();
                 new Modifier("Drone", "Summon 1-star drone",
                     { target: drone, properties: ["techno", "summon"], listeners: { unitChange: true }, reduction: this.skills.passive.reduction, perm: true },
                     function() {},
@@ -319,7 +305,7 @@ CouncilScientist.skills = {
             description: "Regen energy (~15% max energy) each turn",
             code() {
                 new Modifier("Backup Power", `Regen energy (~15% max energy) each turn`,
-                    { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
+                    { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
                     function() {},
                     function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen * 1.5 }, true); }
                 );
@@ -332,7 +318,7 @@ CouncilScientist.skills = {
             description: `Heals lowlest hp ally slightly (~7.5% max HP) at start of turn`,
             code() {
                 new Modifier("First Aid", `Heals at start of turn`,
-                    { target: this, properties: ["techno", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
+                    { target: this, properties: ["techno", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
                     function() {},
                     function(context) { if (context.unit === this.vars.caster) heal(this.vars.caster, unitByStat(allUnits.filter(u => u.team === this.vars.caster.team), 'hp', 'percent', false), [.75]); }
                 );
@@ -369,7 +355,7 @@ Drone.skills = [
                 cost: { energy: 15 },
                 description: "Makes 3 attacks at a single target with increased accuracy",
                 target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
-                code(target) { attack(this, target, 3, { accuracy: { bonus: 40 } }); }
+                code(target) { attack(this, target, 3, { attacker: { accuracy: { bonus: 40 } } }); }
             },
             {
                 name: "Heal",
@@ -438,7 +424,7 @@ Drone.skills = [
                 cost: { energy: 20 },
                 description: "Makes 3 attacks at a single target with increased attack and accuracy",
                 target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
-                code(target) { attack(this, target, 3, { attack: { bonus: 10 }, accuracy: { bonus: 60 } }); }
+                code(target) { attack(this, target, 3, { attacker: { attack: { bonus: 10 }, accuracy: { bonus: 60 } } }); }
             },
             {
                 name: "Heal",
@@ -566,7 +552,7 @@ const droneSkills = function(unit) {
     return Object.fromEntries(Object.entries(skills).map(([k, v]) => [k, Drone.skills[+two][k].find(s => s.name === v)]));
 };
 
-const trait = {
+Drone.traits = [{
     name: "Internal Circuitry",
     properties: ["trait", "techno", "conditional", "stun"],
     description: "More resistant to energy-block effects, but a successfun energy-block effect stuns",
@@ -581,12 +567,12 @@ const trait = {
                 }
             },
             function(context) {
-                if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets?.includes(this.vars.target))) {
+                if (context.modifier.vars.properties.includes('energy-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets?.includes(this.vars.target))) {
                     if (context.event === 'modifierStart') {
                         if (context.modifier.vars.debuff(this.vars.target)) {
                             if (!this.vars.modifiers.length) {
                                 if (this.vars.applied) stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
-                                this.vars.listeners.modifierEnd = true;
+                                toggleListeners(this, ['modifierEnd']);
                             }
                             this.vars.modifiers.push(context.modifier);
                         } else context.modifier.vars.parent.vars?.targets.includes(this.vars.target) ? context.modifier.vars.parent.changeTarget([this.vars.target]) : context.modifier.changeTarget(this.vars.target);
@@ -594,7 +580,7 @@ const trait = {
                         this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1);
                         if (!this.vars.modifiers.length) {
                             if (this.vars.applied) removeModifier(this.vars.child[0]);
-                            this.vars.listeners.modifierEnd = false;
+                            toggleListeners(this, [], ['modifierEnd']);
                         }
                     }
                 }
@@ -609,4 +595,4 @@ const trait = {
             }
         );
     }
-}
+}];

@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
 export const Experiment = new Unit("Experiment", [700, 24, 10, 70, 45, 70, 45, 45, 80, "front", 80, 70, 7], 2, ["independence/loneliness"]);
@@ -21,12 +21,8 @@ Experiment.skills = {
             description: "Makes an attack on alive target. If attack reduced half of target's current hp or target is downed, chance to kill target",
             target() { specialTarget(this, allUnits.filter(u => u.position === "front" && u.team !== this.team)); },
             code(target) {
-                if ((!target[0].hp || attack(this, target)[0] >= target[0].hp) && resistDebuff(this, target)[0] > 50) {
-                    allUnits.splice(allUnits.indexOf(target[0]), 1);
-                    if (eventState.unitChange.length) handleEvent('unitChange', { type: 'death', unit: target[0] });
-                    for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === target[0]) removeModifier(modifiers[i]);
-                    logAction(`${this.name} consumes ${target[0].name}!`);
-                } else logAction(`${this.name} fails to consume ${target[0].name}!`, "miss");
+                if ((!target[0].hp || attack(this, target)[0] >= target[0].hp) && resistDebuff(this, target)[0] > 50) kill(this, target);
+                else logAction(`${this.name} fails to consume ${target[0].name}!`, "miss");
             }
         },
         {
@@ -64,12 +60,8 @@ Experiment.skills = {
             description: "Makes an attack on alive target. If attack downed target, chance to kill target",
             code() {
                 const target = randTarget(allUnits.filter(u => u.position === "front" && u.team !== this.team));
-                if ((!target[0].hp || (attack(this, target) && !target[0].hp)) && resistDebuff(this, target)[0] > 75) {
-                    allUnits.splice(allUnits.indexOf(target[0]), 1);
-                    if (eventState.unitChange.length) handleEvent('unitChange', { type: 'death', unit: target[0] });
-                    for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === target[0]) removeModifier(modifiers[i]);
-                    logAction(`${this.name} consumes ${target[0].name}!`);
-                } else logAction(`${this.name} fails to consume ${target[0].name}!`, "miss");
+                if ((!target[0].hp || (attack(this, target) && !target[0].hp)) && resistDebuff(this, target)[0] > 75) kill(this, target);
+                else logAction(`${this.name} fails to consume ${target[0].name}!`, "miss");
             }
         },
         {
@@ -140,18 +132,14 @@ Experiment.skills = {
                                 for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === this.vars.unit) removeModifier(modifiers[i]);
                             }
                             this.vars.unit = null;
-                            this.vars.listeners.turnEnd = false;
+                            toggleListeners(this, [], ['turnEnd']);
                         }
                         if (context.action === 'skip' && context.unit === this.vars.caster) {
                             const unit = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team), 1, true)[0];
-                            if (unit && resistDebuff(this.vars.caster, [unit])[0] > 85) {
-                                allUnits.splice(allUnits.indexOf(unit), 1);
-                                if (eventState.unitChange.length) handleEvent('unitChange', { type: 'death', unit });
-                                for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === unit) removeModifier(modifiers[i]);
-                            }
+                            if (unit && resistDebuff(this.vars.caster, [unit])[0] > 85) kill(this.vars.caster, unit);
                         } else if (context.type === 'downed' && currentAction.at(-2)[1] === this.vars.caster && resistDebuff(this.vars.caster, [context.unit])[0] > 85) {
                             this.vars.unit = context.unit;
-                            this.vars.listeners.turnEnd = true;
+                            toggleListeners(this, ['turnEnd']);
                         }
                     }
                 );

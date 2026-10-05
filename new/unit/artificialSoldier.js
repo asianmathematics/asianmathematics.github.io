@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
 export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 22, 25, 85, 60, 80, 60, 90, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
@@ -65,7 +65,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
             description: "Regen mana and energy based on which is lower (40% and 15% max resource)",
-            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1.5, energy: 4 } : { mana: 4, energy: 1.5 }, true); }
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1.5*this.manaRegen, energy: 4*this.energyRegen } : { mana: 4*this.manaRegen, energy: 1.5*this.energyRegen }, true); }
         },
         {
             name: "Perfect Form",
@@ -102,7 +102,7 @@ ArtificialSoldier.skills = {
             name: "Recharge",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             description: "Regen mana and energy based on which is lower (35% and 10% max resource)",
-            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1, energy: 3.5 } : { mana: 3.5, energy: 1 }, true); }
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: this.manaRegen, energy: 3.5*this.energyRegen } : { mana: 3.5*this.manaRegen, energy: this.energyRegen }, true); }
         },
         {
             name: "Perfect Form",
@@ -145,7 +145,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "buff", "penalty"],
             description: "Increases accuracy/focus and decreases resist/presence",
             code() {
-                basicModifier("Made to Serve buff", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 60, focus: 60 } });
+                basicModifier("Made to Serve buff", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 60, focus: 60 }, passive: true });
                 basicModifier("Made to Serve penalty", "Resist and presence decrease", { target: this, properties: ["physical", "penalty"], stats: { resist: -30, presence: -60 }, passive: true, penalty: true });
             }
         }
@@ -174,7 +174,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "buff", "penalty"],
             description: "Increases accuracy/focus and decreases resist/presence",
             code() {
-                basicModifier("Made to Serve buff", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 80, focus: 80 } });
+                basicModifier("Made to Serve buff", "Accuracy and focus increase", { target: this, properties: ["physical", "buff"], stats: { accuracy: 80, focus: 80 }, passive: true });
                 basicModifier("Made to Serve penalty", "Resist and presence decrease", { target: this, properties: ["physical", "penalty"], stats: { resist: -20, presence: -40 }, passive: true, penalty: true });
             }
         }

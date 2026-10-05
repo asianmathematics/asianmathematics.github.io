@@ -1,5 +1,5 @@
 import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
-import { allUnits, Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
 export const Reject = new Unit("Reject", [660, 30, 28, 60, 40, 60, 80, 40, 70, "front", 66, 60, 8], 2, ["independence/loneliness"]);
@@ -46,7 +46,7 @@ Reject.skills = {
         {
             name: "Bite",
             properties: ["physical", "stamina-block", "attack"],
-            description: "Attacks a single target with increased attack, accuracy, and focus",
+            description: "Attacks a single target with increased attack and accuracy",
             code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 40 }, accuracy: { bonus: 80 } } }); }
         },
         {
@@ -83,7 +83,7 @@ Reject.skills = {
         {
             name: "Bite",
             properties: ["physical", "attack"],
-            description: "Attacks a single target with increased attack, accuracy, and focus",
+            description: "Attacks a single target with increased attack",
             code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 40 } } }); }
         },
         {
