@@ -29,7 +29,7 @@ Doctor.skills = {
             description: "Attacks target with increased attack, accuracy, and focus and chance to deal critical damage over time until resist",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
-                if (attack(this, target, 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 100 }, focus: { bonus: 200 } } })[0]) new Modifier("Medical Malpractice", "Critical amage start of turn until resist", 
+                if (attack(this, target, 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 100 }, focus: { bonus: 200 } } })[0]) new Modifier("Medical Malpractice", "Critical damage start of turn until resist", 
                     { target: target[0], properties: ["physical", 'techno'], listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 50; } },
                     function() {},
                     function(context) { if (context.unit === this.vars.target) return this.vars.debuff.call(this, this.vars.target) ? this.vars.applied && damage(this.vars.caster, [this.vars.target], [[1]]) && false : true; }

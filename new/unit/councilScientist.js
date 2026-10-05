@@ -19,7 +19,7 @@ CouncilScientist.skills = {
                     function(context) {
                         if (context.unit === this.vars.caster) {
                             if (this.vars.applied) attack(this.vars.caster, [this.vars.target], 1, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 40 } } });
-                            this.vars.duration;
+                            this.vars.duration--;
                         }
                         return this.vars.duration <= 0;
                     }
@@ -110,7 +110,7 @@ CouncilScientist.skills = {
                     function(context) {
                         if (context.unit === this.vars.caster) {
                             if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
-                            this.vars.duration;
+                            this.vars.duration--;
                         }
                         return this.vars.duration >= 0;
                     }
@@ -201,7 +201,7 @@ CouncilScientist.skills = {
                     function(context) {
                         if (context.unit === this.vars.caster) {
                             if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: {attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
-                            this.vars.duration;
+                            this.vars.duration--;
                         }
                         return this.vars.duration >= 0;
                     }
