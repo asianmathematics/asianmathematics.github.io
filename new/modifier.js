@@ -137,7 +137,7 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
             } finally { currentAction.length = stack; }
         } finally { currentAction.pop(); }
     }
-    window.updateModifiers();
+    if (typeof window !== 'undefined') window.updateModifiers();
 }
 
 function removeModifier(modifier) {

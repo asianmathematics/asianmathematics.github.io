@@ -17,13 +17,12 @@ import { technoEnemy } from './unit/technoEnemy.js';
 import { magitechEnemy } from './unit/magitechEnemy.js';
 import { ChaosAgent } from './unit/chaosAgent.js';
 import { Dreamer } from './unit/dreamer.js';*/
-import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
+import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from './combatDictionary.js';
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
 import { Unit, createUnit, cloneUnit } from './unit/unit.js';
 
 let turnCounter = 1;
 let wave = 1;
-window.combatSpeedMultiplier = 1;
 
 function initSpeedControls() {
     document.querySelectorAll('.speed-btn').forEach(btn => {
@@ -36,7 +35,7 @@ function initSpeedControls() {
             btn.classList.add('active');
             btn.style.background = '#060';
             btn.style.borderColor = '#0a0';
-            window.combatSpeedMultiplier = parseFloat(btn.dataset.speed);
+            combatSpeedMultiplier[0] = parseFloat(btn.dataset.speed);
         });
     });
 }
@@ -331,7 +330,7 @@ const syncTimerUI = (aliveUnits) => {
 
 export async function combatTick() {
     updateBattleDisplay();
-    await new Promise(resolve => setTimeout(resolve, 500 / (window.combatSpeedMultiplier || 1)));
+    await new Promise(resolve => setTimeout(resolve, 500 / (combatSpeedMultiplier[0] || 1)));
     if (frontTest()) return;
     let turn;
     let isSpecialInterrupt = false;
@@ -351,7 +350,7 @@ export async function combatTick() {
             } else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
             if (pend) return combatTick()
             await syncTimerUI(alive);
-            await new Promise(resolve => setTimeout(resolve, 120 / (window.combatSpeedMultiplier || 1)));
+            await new Promise(resolve => setTimeout(resolve, 120 / (combatSpeedMultiplier[0] || 1)));
         }
         logAction(`<strong>Turn ${turnCounter++}: ${turn.name}'s turn</strong>`, 'turn');
         if (eventState.turnStart.length) handleEvent('turnStart', { unit: turn });
@@ -365,7 +364,7 @@ export async function combatTick() {
                 else {
                     logAction("Can't find special action!", "error");
                     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
-                    setTimeout(combatTick, 500/window.combatSpeedMultiplier);
+                    setTimeout(combatTick, 500/combatSpeedMultiplier[0]);
                 }
             } else {
                 const behavior = turn.autoBehavior || (turn.skills.basic ? 'basic' : turn.skills.secondary ? 'secondary' : 'none');
@@ -374,7 +373,7 @@ export async function combatTick() {
                     logAction(`${turn.name} is resting!`, 'info');
                     regenerateResources(turn);
                     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
-                    setTimeout(combatTick, 500/window.combatSpeedMultiplier);
+                    setTimeout(combatTick, 500/combatSpeedMultiplier[0]);
                     turn.specialReady = true;
                 } else if (behavior === 'both') executeBoth(turn);
                 else executeAutoAction(turn, behavior);
@@ -384,7 +383,7 @@ export async function combatTick() {
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, 'miss');
         if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
-        setTimeout(combatTick, 500/window.combatSpeedMultiplier);
+        setTimeout(combatTick, 500/combatSpeedMultiplier[0]);
     }
     turn.timer += 1000;
 }
@@ -399,7 +398,7 @@ function executeAutoAction(unit, action) {
     }
     unit.specialReady = true;
     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
-    setTimeout(combatTick, 500/window.combatSpeedMultiplier);
+    setTimeout(combatTick, 500/combatSpeedMultiplier[0]);
 }
 
 function executeBoth(unit) {
@@ -422,7 +421,7 @@ function executeBoth(unit) {
         unit.specialReady = false;
     }
     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
-    setTimeout(combatTick, 500/window.combatSpeedMultiplier);
+    setTimeout(combatTick, 500/combatSpeedMultiplier[0]);
 }
 
 function executeSpecialAction(unit, specialSkill) {
@@ -431,7 +430,7 @@ function executeSpecialAction(unit, specialSkill) {
     else {
         if (specialSkill.cost && !resourceChange(unit, specialSkill.cost, false, false)) {
             logAction(`${unit.name}'s special was canceled!`, 'error');
-            return setTimeout(combatTick, 2000/window.combatSpeedMultiplier);
+            return setTimeout(combatTick, 2000/combatSpeedMultiplier[0]);
         }
         unit.previousAction = [unit.previousAction[0] || specialSkill.properties.includes('stamina-block'), unit.previousAction[1] || specialSkill.properties.includes('mana-block'), unit.previousAction[2] || specialSkill.properties.includes('energy-block')];
         logAction(`<strong>${unit.name}'s turn (Special Interrupt!)</strong>`, 'turn');
@@ -441,7 +440,7 @@ function executeSpecialAction(unit, specialSkill) {
         currentAction.pop();
         if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
     }
-    setTimeout(combatTick, 2000/window.combatSpeedMultiplier);
+    setTimeout(combatTick, 2000/combatSpeedMultiplier[0]);
 }
 
 export function advanceWave(x = 0) {
@@ -535,6 +534,16 @@ export function assignEnemySkills(newUnit, template) {
         newUnit.skills = {...newUnit.backSkills};
         if (Math.random() > 0.5) newUnit.switchPosition(true);
     } else newUnit.skills = getLoadoutForPosition(newUnit.position);
+    (newUnit.traits || []).forEach(s => {
+        currentAction.push([s, newUnit]);
+        s.code.call(newUnit);
+        currentAction.pop();
+    });
+    (newUnit.synergy || []).forEach(s => {
+        currentAction.push([s, newUnit]);
+        s.code.call(newUnit);
+        currentAction.pop();
+    });
     for (const skill of ['passive', 'augment', 'conditional']) {
         if (newUnit.skills[skill]) {
             currentAction.push([newUnit.skills[skill], newUnit]);
@@ -542,17 +551,6 @@ export function assignEnemySkills(newUnit, template) {
             currentAction.pop();
         }
     }
-    (newUnit.traits || []).forEach(s => {
-        currentAction.push([s, newUnit]);
-        s.code.call(newUnit);
-        currentAction.pop();
-    });
-    
-    (newUnit.synergy || []).forEach(s => {
-        currentAction.push([s, newUnit]);
-        s.code.call(newUnit);
-        currentAction.pop();
-    });
 }
 
 function frontTest() {
@@ -631,13 +629,6 @@ function initializeCombatFromSquad(squadData) {
             newUnit.skills = {...newUnit.backSkills};
             if (unitConfig.startingPosition === "front") newUnit.switchPosition(true);
         } else for (const skill of unitConfig.skills ) newUnit.skills[skill.category] = ref.skills[skill.category].find(s => s.name === skill.name);
-        for (const skill of ['passive', 'augment', 'conditional']) {
-            if (newUnit.skills[skill]) {
-                currentAction.push([newUnit.skills[skill], newUnit]);
-                newUnit.skills[skill].code.call(newUnit);
-                currentAction.pop();
-            }
-        }
         (newUnit.traits || []).forEach(s => {
             currentAction.push([s, newUnit]);
             s.code.call(newUnit);
@@ -649,6 +640,13 @@ function initializeCombatFromSquad(squadData) {
             s.code.call(newUnit);
             currentAction.pop();
         });
+        for (const skill of ['passive', 'augment', 'conditional']) {
+            if (newUnit.skills[skill]) {
+                currentAction.push([newUnit.skills[skill], newUnit]);
+                newUnit.skills[skill].code.call(newUnit);
+                currentAction.pop();
+            }
+        }
         newUnit.autoBehavior = (newUnit.skills[unitConfig.autoBehavior] && unitConfig.autoBehavior) || (newUnit.skills.basic ? 'basic' : newUnit.skills.secondary ? 'secondary' : 'none');
         newUnit.specialReady = true;
     });
