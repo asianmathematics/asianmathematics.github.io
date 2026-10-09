@@ -115,6 +115,7 @@ Silhouette.skills = {
                     { targets: [], duration: 4, properties: ["mystic", "conditional", "buff"], listeners: { turnStart: true, unitChange: true, modifierStart: true, modifierEnd: true }, cancelListeners: ['modifierStart', 'modifierEnd'], focus: true},
                     function() { this.changeTarget([], allUnits.filter(u => u.custom?.summoner === this.vars.caster)); },
                     function(context) {
+                        if (this.vars.cancel && context.event === 'modifierEnd') return;
                         if (context.type === 'summon' && context.unit.custom?.summoner === this.vars.caster) this.changeTarget([], [context.unit]);
                         else if (context.type === 'unsummon' && context.unit.custom?.summoner === this.vars.caster) this.changeTarget([context.unit]);
                         else if (context.event === 'modifierStart' && context.modifier.name === "Fear of the Dark" && context.modifier.vars.target === this.vars.caster) for (const target of this.vars.targets) new Modifier("Fear of the Dark copy", context.modifier.description, { ...context.modifier.vars, target, listeners: undefined, cancelListeners: undefined}, context.modifier.init, context.modifier.onTurn, context.modifier.cancel, context.modifier.changeTarget);
@@ -531,7 +532,7 @@ const trait = {
         new Modifier("Shadow Construct", "More resistant to mana-block effects, but a successfun mana-block effect stuns",
             { target: this, properties: ["mystic", "conditional", "stun"], listeners: { modifierStart: true, modifierEnd: false }, modifiers: [], passive: true, trait: true },
             function() {
-                for (const mod of modifiers.filter(m => m.vars.properties.includes('mana-block') && m.vars.target === this.vars.target)) mod.vars.debuff(this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
+                for (const mod of modifiers.filter(m => m.vars.properties.includes('mana-block') && m.vars.target === this.vars.target)) mod.vars.debuff.call(mod, this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
                 if (this.vars.modifiers.length) {
                     stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
                     this.vars.listeners.modifierEnd = true;
@@ -540,7 +541,7 @@ const trait = {
             function(context) {
                 if (context.modifier.vars.properties.includes('mana-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets?.includes(this.vars.target))) {
                     if (context.event === 'modifierStart') {
-                        if (context.modifier.vars.debuff(this.vars.target)) {
+                        if (context.modifier.vars.debuff.call(context.modifier, this.vars.target)) {
                             if (!this.vars.modifiers.length) {
                                 if (this.vars.applied) stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
                                 toggleListeners(this, ['modifierEnd']);

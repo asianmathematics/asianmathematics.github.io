@@ -13,20 +13,39 @@ import { Experiment } from './unit/experiment.js';
 import { Reject } from './unit/reject.js';
 import { Revolutionary } from './unit/revolutionary.js';
 import { regenerateResources, specialTarget, randTarget, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from './combatDictionary.js';
-import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
+import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState, stopOnErr } from './modifier.js';
 import { Unit, createUnit, cloneUnit } from './unit/unit.js';
-import { createWriteStream } from 'fs/promises'
+import { appendFileSync } from 'node:fs';
 
 let seed;
 let id;
-const eventArray = [];
-const stream = createWriteStream("C:/Users/Owner/Documents/greanandin/log.jsonl", { flags: 'a' });
+const unitList = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric, ClassicJoy, enemy, ArtificialSoldier, CouncilMagician, CouncilScientist, Experiment, Reject, Revolutionary];
 combatSpeedMultiplier[0] = 1e9;
+stopOnErr[0] = true;
+
+const mod = new Modifier("Simulation Log", "Logs all events", { caster: { name: "System" }, target: { name: "system" }, properties: ["system"], listeners: {}, list: [], perm: true },
+    function() {
+        Object.keys(eventState).forEach(e => this.vars.listeners[e] = true);
+        delete this.vars.listeners.critStart;
+        delete this.vars.listeners.damageStart;
+        delete this.vars.listeners.healStart;
+        this.vars.off = true;
+    },
+    function(context) {
+        if (context.temp || context.filter) return;
+        this.vars.list.push(context);
+        if (!this.vars.off) {
+            for (let i = 0; i < this.vars.list.length-1; i++) appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, ...clean(this.vars.list[i]) }) + '\n');
+            this.vars.list = [this.vars.list.at(-1)];
+        }
+    },
+    function() {},
+    function() {}
+);
 
 function generateHash(str) {
     let h1 = 0xdeadbeef;
     let h2 = 0x41c6ce57;
-
     for (let i = 0; i < str.length; i++) {
         const ch = str.charCodeAt(i);
         h1 = Math.imul(h1 ^ ch, 2654435761);
@@ -39,27 +58,24 @@ function generateHash(str) {
     return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
 }
 
-function clean(obj = {}, weak = new WeakSet()) {
+function clean(obj = {}, expand = false, weak = new WeakSet()) {
+    if (obj instanceof Modifier) return { name: obj.name, vars: { caster: obj.vars.caster.name, ...(obj.vars.targets ? { targets: obj.vars.targets.map(u => u.name) } : { target: obj.vars.target?.name }) }};
+    if (obj?.name && !expand) return obj.name;
+    if (obj === null || typeof obj !== 'object') return obj = (Number.isFinite(obj) || typeof obj === 'string' || typeof obj == 'boolean' || obj === undefined ? obj : String(obj));
     const out = {};
     Object.keys(obj).forEach(k => {
         if (typeof obj[k] === 'function') return undefined;
         if (obj[k] === null || typeof obj[k] !== 'object') return out[k] = (Number.isFinite(obj[k]) || typeof obj[k] === 'string' || typeof obj[k] == 'boolean' || obj[k] === undefined ? obj[k] : String(obj[k]));
+        if (obj[k] instanceof Modifier) return out[k] = { name: obj[k].name, vars: { caster: obj[k].vars.caster.name, ...(obj[k].vars.targets ? { targets: obj[k].vars.targets.map(u => u.name) } : { target: obj[k].vars.target?.name }) }};
         if (obj[k]?.name) return out[k] = obj[k].name;
         if (weak.has(obj[k])) return out[k] = 'Circular';
         weak.add(obj[k]);
-        const o = Array.isArray(obj[k]) ? obj[k].map(x => clean(x, weak)) : Object.fromEntries(Object.entries(obj[k]).filter(([,x]) => x !== undefined && typeof x !== 'function').map(([v,x]) => [v, clean(x, weak)]));
+        const o = Array.isArray(obj[k]) ? obj[k].map(x => clean(x, false, weak)) : Object.fromEntries(Object.entries(obj[k]).filter(([,x]) => x !== undefined && typeof x !== 'function').map(([v,x]) => [v, clean(x, false, weak)]));
         weak.delete(obj[k]);
         return out[k] = o;
     });
     return out
 }
-
-new Modifier("Simulation Log", "Logs all events", { caster: { name: "System" }, target: { name: "system" }, properties: ["system"], listeners: {}, perm: true },
-    function() { Object.keys(eventState).forEach(e => this.vars.listeners[e] = true) },
-    function(context) { stream.write(JSON.stringify({ id, ...clean(context) }) + '\n'); },
-    function() {},
-    function() {}
-);
 
 function mulberry32(a) {
     return function() {
@@ -74,36 +90,47 @@ function init(s = 1, units = [{ unit: enemy, team: "player", skills: 'random', c
     seed = s;
     Math.random = mulberry32(seed);
     for (const template of units) {
+        if (template.unit === 'random') template.unit = unitList[Math.floor(Math.random()*unitList.length)];
         if (template.skills === 'random') for (let i = template.count || 1; i > 0; i--) assignEnemySkills(createUnit(template.unit, template.team || 'player'), template.unit);
     }
+    Math.random = mulberry32(seed);
+    if (eventState.waveChange.length) handleEvent('waveChange', { wave: 1 });
     id = generateHash(JSON.stringify({ seed, allUnits: allUnits.map(u => ({ name: u.name, skills: Object.keys(u.skills).map(s => ({ [s]: u.skills[s].name })) })) }));
-    stream.write(JSON.stringify({ id, seed, allUnits: allUnits.map(u => clean(u)) })+ '\n');
+    appendFileSync("C:/Users/Owner/Documents/greanandin/log.jsonl", JSON.stringify({ id, seed, allUnits: allUnits.map(u => clean(u, true)) })+ '\n');
+    mod.vars.off = false;
     combatTick();
 }
 
 function end() {
-    stream.write(JSON.stringify({ id, allUnits: allUnits.map(u => clean(u))}) + '\n');
-    stream.end()
+    for (const c of mod.vars.list) appendFileSync("C:/Users/Owner/Documents/greanandin/log.jsonl", JSON.stringify({ id, ...clean(c) }) + '\n');
+    appendFileSync("C:/Users/Owner/Documents/greanandin/log.jsonl", JSON.stringify({ id, allUnits: allUnits.map(u => clean(u, true))}) + '\n');
 }
 
 function combatTick() {
-    while (!frontTest()) {
-        let turn;
-        const alive = allUnits.filter(u => u.hp);
-        while (turn == undefined) {
-            const list = alive.filter(u => u.timer <= 0);
-            if (!list.length) for (const unit of alive) unit.timer -= unit.speed;
-            else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
+    try {
+        let round = 0;
+        while (!frontTest()) {
+            if (round++ > 3000) throw new Error("Simulation ran too long");
+            let turn;
+            const alive = allUnits.filter(u => u.hp);
+            while (turn == undefined) {
+                const list = alive.filter(u => u.timer <= 0);
+                if (!list.length) for (const unit of alive) unit.timer -= unit.speed;
+                else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
+            }
+            if (eventState.turnStart.length) handleEvent('turnStart', { unit: turn });
+            if (!turn.stun) {
+                regenerateResources(turn);
+                action(turn);
+            }
+            if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
+            turn.timer += 1000;
         }
-        if (eventState.turnStart.length) handleEvent('turnStart', { unit: turn });
-        if (!turn.stun) {
-            regenerateResources(turn);
-            action(turn);
-        }
-        if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
-        turn.timer += 1000;
+    } catch (e) {
+        console.error("An error occurred:", e);
+        mod.vars.list.push({ error: Object.fromEntries(Object.getOwnPropertyNames(e).map(key => [key, e[key]])) });
     }
-    end();
+    finally { end(); }
 }
 
 function action(unit) {
@@ -207,3 +234,5 @@ function assignEnemySkills(newUnit, template) {
         }
     }
 }
+
+init(Date.now(), Array.from({ length: 8 }, (_, i) => ({ unit: 'random', skills: 'random', ...(i >= 4 && { team: 'enemy' }) })));

@@ -23,9 +23,11 @@ ClassicJoy.skills = {
                 logAction(`${this.name} give some joy to ${target[0].name}!`, 'crit');
                 const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker");
                 if (mod?.vars.parent === this.skills.special) {
+                    currentAction.push([mod, mod.vars.caster]);
                     mod.cancel(true, true);
                     mod.vars.duration = 40 + (target[0].team !== this.team);
                     mod.cancel(false, true);
+                    currentAction.pop();
                 } else {
                     mod ? removeModifier(mod) : tracker.changeTarget([], target);
                     new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
@@ -52,7 +54,7 @@ ClassicJoy.skills = {
                         }
                     );
                 }
-                tracker.vars.unitMap[target[0].name] += 2+!!mod;
+                if ((tracker.vars.unitMap[target[0].name] += 2+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
                 if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 20;
                 if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
             }
@@ -172,9 +174,11 @@ ClassicJoy.skills = {
                 logAction(`${this.name} give some joy to ${target[0].name}!`, 'crit');
                 const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker");
                 if (mod?.vars.parent === this.skills.basic || mod?.vars.parent === ClassicJoy.skills.special[0]) {
+                    currentAction.push([mod, mod.vars.caster]);
                     mod.cancel(true, true);
                     mod.vars.duration = 40 + ((target[0].team === this.team) === !(mod?.vars.parent === ClassicJoy.skills.special[0]));
                     mod.cancel(false, true);
+                    currentAction.pop();
                 } else {
                     mod ? removeModifier(mod) : tracker.changeTarget([], target);
                     new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
@@ -201,7 +205,7 @@ ClassicJoy.skills = {
                         }
                     );
                 }
-                tracker.vars.unitMap[target[0].name] += 1+!!mod;
+                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
                 if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
                 if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
             }
@@ -310,9 +314,11 @@ ClassicJoy.skills = {
                 logAction(`${this.name} give some joy to ${target[0].name}!`, 'crit');
                 const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker");
                 if (mod?.vars.parent === this.skills.secondary || mod?.vars.parent === ClassicJoy.skills.basic[0] || mod?.vars.parent === ClassicJoy.skills.special[0]) {
+                    currentAction.push([mod, mod.vars.caster]);
                     mod.cancel(true, true);
                     mod.vars.duration = 40 + (mod?.vars.parent === this.skills.secondary ? -(target[0].team !== this.team) : ((target[0].team === this.team) === !(mod?.vars.parent === ClassicJoy.skills.special[0])));
                     mod.cancel(false, true);
+                    currentAction.pop();
                 } else {
                     mod ? removeModifier(mod) : tracker.changeTarget([], target);
                     new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
@@ -339,7 +345,7 @@ ClassicJoy.skills = {
                         }
                     );
                 }
-                tracker.vars.unitMap[target[0].name] += 1+!!mod;
+                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
                 if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
                 if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
             }
@@ -474,8 +480,9 @@ ClassicJoy.skills = {
                             return;
                         }
                         logAction(`${this.vars.caster.name} give some joy to ${target[0].name}!`, 'crit');
-                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0].includes(mod.vars.parent));
+                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent );
                         if (type) {
+                            currentAction.push([mod, mod.vars.caster]);
                             mod.cancel(true, true);
                             switch(type.indexOf(true)) {
                                 case 0:
@@ -497,6 +504,7 @@ ClassicJoy.skills = {
                                     mod.vars.duration = 40;
                             }
                             mod.cancel(false, true);
+                            currentAction.pop();
                         } else {
                             mod ? removeModifier(mod) : tracker.changeTarget([], target);
                             new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
@@ -523,7 +531,7 @@ ClassicJoy.skills = {
                                 }
                             );
                         }
-                        tracker.vars.unitMap[target[0].name] += 1+!!mod;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
                         if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
                     }
                 );
@@ -551,7 +559,7 @@ ClassicJoy.skills = {
                     { target: this, properties: ["physical", "conditional", "attack", "aoe", "pseudo-resource"], listeners: { singleDamage: true }, cancelListeners: ['singleDamage'], passive: true, attacking: 0 },
                     function() { (this.custom ??= {}).shotgun ??= 1; },
                     function(context) {
-                        if (context.attacker !== this.vars.caster || !this.custom.shotgun || this.vars.attacking) return;
+                        if (context.attacker !== this.vars.caster || context.direct || !this.custom.shotgun || this.vars.attacking) return;
                         if (context.damageSingle > this.vars.attacking++) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team), 2, true), 1, { attacker: { ...context.calcMods.attacker, attack: { ...context.calcMods.attacker?.attack, div: (context.calcMods.attacker?.attack?.div || 1) + 1 }, accuracy: { ...context.calcMods.attacker?.accuracy, div: (context.calcMods.attacker?.accuracy?.div || 1) + 1 } } });
                         this.vars.attacking = 0;
                         this.custom.shotgun--;
@@ -629,8 +637,9 @@ ClassicJoy.skills = {
                             return;
                         }
                         logAction(`${this.vars.caster.name} give some joy to ${target[0].name}!`, 'crit');
-                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0].includes(mod.vars.parent));
+                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent);
                         if (type && !type[3]) {
+                            currentAction.push([mod, mod.vars.caster]);
                             mod.cancel(true, true);
                             switch(type.indexOf(true)) {
                                 case 0:
@@ -649,6 +658,7 @@ ClassicJoy.skills = {
                                     mod.vars.duration = 40;
                             }
                             mod.cancel(false, true);
+                            currentAction.pop();
                         } else {
                             mod ? removeModifier(mod) : tracker.changeTarget([], target);
                             new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
@@ -675,7 +685,7 @@ ClassicJoy.skills = {
                                 }
                             );
                         }
-                        tracker.vars.unitMap[target[0].name] += 1+!!mod;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
                         if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
                     }
                 );
@@ -721,8 +731,9 @@ ClassicJoy.skills = {
                             return;
                         }
                         logAction(`${this.vars.caster.name} give some joy to ${target[0].name}!`, 'crit');
-                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0].includes(mod.vars.parent));
+                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent);
                         if (type && !type[3] && !type[4]) {
+                            currentAction.push([mod, mod.vars.caster]);
                             mod.cancel(true, true);
                             switch(type.indexOf(true)) {
                                 case 0:
@@ -738,6 +749,7 @@ ClassicJoy.skills = {
                                     mod.vars.duration = 40;
                             }
                             mod.cancel(false, true);
+                            currentAction.pop();
                         } else {
                             mod ? removeModifier(mod) : tracker.changeTarget([], target);
                             new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
@@ -764,7 +776,7 @@ ClassicJoy.skills = {
                                 }
                             );
                         }
-                        tracker.vars.unitMap[target[0].name] += 1+!!mod;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
                         if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
                     }
                 );
@@ -792,7 +804,7 @@ ClassicJoy.skills = {
                     { target: this, properties: ["physical", "conditional", "attack", "aoe", "pseudo-resource"], listeners: { singleDamage: true }, cancelListeners: ['singleDamage'], passive: true, attacking: 0 },
                     function() { (this.custom ??= {}).shotgun ??= 1; },
                     function(context) {
-                        if (context.attacker !== this.vars.caster || !this.custom.shotgun || this.vars.attacking) return;
+                        if (context.attacker !== this.vars.caster || context.direct || !this.custom.shotgun || this.vars.attacking) return;
                         if (context.damageSingle > this.vars.attacking++) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team), 4, true), 1, { attacker: { ...context.calcMods.attacker, attack: { ...context.calcMods.attacker?.attack, div: (context.calcMods.attacker?.attack?.div || 1) + 1 }, accuracy: { ...context.calcMods.attacker?.accuracy, div: (context.calcMods.attacker?.accuracy?.div || 1) + 1 } } });
                         this.vars.attacking = 0;
                         this.custom.shotgun--;
@@ -858,7 +870,7 @@ ClassicJoy.traits = [
                     if (context.unit === this.vars.target) {
                         this.cancel(true, true);
                         this.vars.count--;
-                        this.vars.stats = Object.fromEntries(Object.entries({ attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }).map(([k, v]) => [k, v*this.vars.count/20]));
+                        this.vars.stats = Object.fromEntries(Object.entries({ attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }).map(([k, v]) => [k, v*Math.min(this.vars.count, 40)/20]));
                         this.cancel(false, true);
                     }
                 }
@@ -903,7 +915,7 @@ ClassicJoy.traits = [
                         this.vars.targets = this.vars.targets.filter(u => allUnits.includes(u));
                         this.vars.unitMap = Object.fromEntries(Object.entries(this.vars.unitMap).filter(([n]) => this.vars.targets.some(u => u.name === n)));
                     } else if (!context.type && context.unit) {
-                        for (const unit of this.vars.targets) if (!unit.hp && this.vars.unitMap[unit.name] >= 32*(1+(unit.source === ClassicJoy))) {
+                        for (const unit of this.vars.targets) if (this.vars.unitMap[unit.name] >= 32*(1+(unit.source === ClassicJoy))*(1+!!unit.hp)) {
                             summon({ team: "monster" }, { ...unit, name: unit.name + " (Mutant)", base: { ...unit.base, hp: unit.base.hp*10, attack: unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: unit.base.presence*4 }}, unit.skills, unit.position);
                             this.changeTarget([unit]);
                         }
