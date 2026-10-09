@@ -1,5 +1,6 @@
 import { createUnit } from "./unit/unit.js";
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
+const combatSpeedMultiplier = [1];
 const elements = ["precision/perfection", "independence/loneliness", "passion/hatred", "ingenuity/insanity"];
 
 function regenerateResources(unit) {
@@ -11,7 +12,7 @@ function regenerateResources(unit) {
     unit.previousAction = [false, false, false];
 }
 
-function specialTarget(unit, list, count = 1, max = true) { unit.team === "player" ? selectTarget(unit, unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)); }
+function specialTarget(unit, list, count = 1, max = true) { (typeof document !== 'undefined' && unit.team === "player") ? selectTarget(unit, unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)); }
 
 function enemyTurn(unit) {
     if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.2) return executeEnemyAction(unit, unit.skills.special);
@@ -20,7 +21,7 @@ function enemyTurn(unit) {
         logAction(`${unit.name} is resting!`, 'info');
         regenerateResources(unit);
         if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
-        setTimeout(window.combatTick, 1000 / (window.combatSpeedMultiplier || 1));
+        setTimeout(window.combatTick, 1000 / (combatSpeedMultiplier[0] || 1));
         return;
     }
     const availableActions = [];
@@ -29,7 +30,7 @@ function enemyTurn(unit) {
     if (availableActions.length) return executeEnemyAction(unit, availableActions[Math.floor(Math.random() * availableActions.length)]);
     logAction(`${unit.name} has no available actions and skips!`, 'miss');
     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
-    setTimeout(window.combatTick, 1000 / (window.combatSpeedMultiplier || 1));
+    setTimeout(window.combatTick, 1000 / (combatSpeedMultiplier[0] || 1));
 }
 
 function executeEnemyAction(unit, action) {
@@ -43,7 +44,7 @@ function executeEnemyAction(unit, action) {
         currentAction.pop();
     } else logAction(`${unit.name}'s ${action.name} action failed!`, 'miss');
     if (eventState.turnEnd.length) handleEvent('turnEnd', { unit });
-    setTimeout(window.combatTick, 1000 / (window.combatSpeedMultiplier || 1));
+    setTimeout(window.combatTick, 1000 / (combatSpeedMultiplier[0] || 1));
 }
 
 function randTarget(unitList = allUnits, count = 1, trueRand = false) {
@@ -483,4 +484,4 @@ function summon(summoner, unit, skills = {}, position = false) {
     return newUnit;
 }
 
-export { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements };
+export { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier };

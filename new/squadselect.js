@@ -5,7 +5,7 @@ import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
 import { Electric } from './unit/electric.js';
 import { ClassicJoy } from './unit/classicJoy.js';
-import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from './combatDictionary.js';
+import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from './combatDictionary.js';
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from './modifier.js';
 import { assignEnemySkills } from './combat.js';
 

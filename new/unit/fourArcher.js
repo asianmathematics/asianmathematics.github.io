@@ -1,4 +1,4 @@
-import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
+import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from '../combatDictionary.js';
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
@@ -28,7 +28,7 @@ FourArcher.skills = {
                     function() {},
                     function(context) {
                         if (context.event !== "turnEnd") {
-                            if (context.attacker === this.vars.caster) (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                            if (context.attacker === this.vars.caster) context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                             if (context.defenders.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] >= 2) for (let i = 0; i < context.defenders.length; i++) if (context.defenders[i] === this.vars.caster) ((context.calcMods.defenders ??= [])[i] ??= { reroll: 0 }).reroll--;
                         } else if (context.unit === this.vars.caster) this.vars.duration--;
                         return this.vars.duration <= 0;
@@ -103,7 +103,7 @@ FourArcher.skills = {
                     { target: this, duration: will[0] < 2 ? 0 : will[0] > 99 ? 7 : Math.ceil(will[0]/33), properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
                     function() { return !this.vars.duration; },
                     function(context) {
-                        if (context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                        if (context.attacker === this.vars.caster) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                         return this.vars.duration <= 0;
                     }
                 );
@@ -174,7 +174,7 @@ FourArcher.skills = {
                         { target: this, duration: will[0] > 99 ? 7 : Math.ceil(will[0]/25), properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
                         function() { return !this.vars.duration; },
                         function(context) {
-                            if (context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                            if (context.attacker === this.vars.caster) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                             return this.vars.duration <= 0;
                         }
                     );
@@ -241,7 +241,7 @@ FourArcher.skills = {
                     { target: this, properties: ["mystic", "buff", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], reduction: this.skills.passive.reduction, passive: true, debuffing: 0 },
                     function() {},
                     function(context) {
-                        if (context.attacker === this.vars.caster) (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                        if (context.attacker === this.vars.caster) context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                         if (context.defenders.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] > 50) for (let i = 0; i < context.defenders.length; i++) if (context.defenders[i] === this.vars.caster) ((context.calcMods.defenders ??= [])[i] ??= { reroll: 0 }).reroll--;
                     }
                 );
@@ -319,7 +319,7 @@ FourArcher.skills = {
                                 { target: this.vars.caster, duration: will[0] > 99 ? 7 : Math.ceil(will[0]/25), properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
                                 function() { return !this.vars.duration; },
                                 function(context) {
-                                    if (this.vars.applied && context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                                    if (this.vars.applied && context.attacker === this.vars.caster) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                                     return this.vars.duration <= 0;
                                 }
                             );
@@ -366,7 +366,7 @@ FourArcher.skills = {
                     { target: this, properties: ["mystic", "buff", "debuff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], reduction: this.skills.augment.reduction, passive: true, debuffing: 0 },
                     function() {},
                     function(context) {
-                        if (context.attacker === this.vars.caster) (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                        if (context.attacker === this.vars.caster) context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                         if (context.defenders?.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[--this.vars.debuffing] > 25) for (let i = 0; i < context.defenders.length; i++) if (context.defenders[i] === this.vars.caster) ((context.calcMods.defenders ??= [])[i] ??= { reroll: 0 }).reroll--;
                     }
                 );
@@ -420,7 +420,7 @@ FourArcher.skills = {
                                 { target: this.vars.caster, duration: will[0] < 2 ? 0 : will[0] > 99 ? 7 : Math.floor(will[0]/33) + 1, properties: ["mystic", "buff"], listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'] },
                                 function() { return !this.vars.duration; },
                                 function(context) {
-                                    if (this.vars.applied && context.attacker === this.vars.caster) this.vars.duration--, (context.calcMods.all ??= { reroll: 0 }).reroll++;
+                                    if (this.vars.applied && context.attacker === this.vars.caster) this.vars.duration--, context.calcMods.all ? context.calcMods.all.reroll = (context.calcMods.all.reroll || 0) + 1 : context.calcMods.all = { reroll: 1 };
                                     return this.vars.duration <= 0;
                                 }
                             );

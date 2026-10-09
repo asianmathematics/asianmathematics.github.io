@@ -4,12 +4,13 @@ const currentAction = [];
 const eventState = {};
 const events = [
     'turnStart', 'resistStart', 'attackStart', 'critStart', 'damageStart', 'healStart', 'modifierStart', 'stun', 'resourceChange', 'targetStart',
-    'turnEnd', 'singleResist', 'singleAttack', 'singleCrit', 'singleDamage', 'singleHeal', 'modifierEnd', 'cancel', 'costChange', 'targets',
+    'turnEnd', 'singleResist', 'singleAttack', 'singleCrit', 'singleDamage', 'singleHeal', 'modifierEnd', 'cancel',/* 'costChange',*/ 'targets',
     'actionStart', 'positionChange', 'waveChange', 'unitChange', 'statChange', 'targetChange'
 ];
 events.forEach(type => eventState[type] = []);
 let turnOffStatLog = false;
 const system = { name: "system" };
+const stopOnErr = [false];
 
 Object.defineProperty(allUnits, 'filter', {
   value: function (callback, thisArg) {
@@ -41,7 +42,7 @@ class Modifier {
                 if (this.vars.start) {
                     const isActivating = !this.vars.cancel && !this.vars.applied, isDeactivating = this.vars.cancel && this.vars.applied;
                     if (isDeactivating || isActivating) {
-                        if (this.vars.stats && this.vars.target && !this.vars.disableStatChange) resetStat(this.vars.target, Object.keys(this.vars.stats), Object.values(this.vars.stats), false);
+                        if (this.vars.stats && this.vars.target && !this.vars.disableStatChange) resetStat(this.vars.target, Object.keys(this.vars.stats), Object.values(this.vars.stats), isActivating);
                         if (!temp && this.vars.cancelListeners) toggleListeners(this, ...(isActivating ? [this.vars.cancelListeners] : [[], this.vars.cancelListeners]));
                         this.vars.applied = isActivating;
                     }
@@ -120,13 +121,15 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
         try {
             if (!currentAction.at(-1)[1]) throw new Error(`No caster found in Modifier: ${eventList[i]?.name}`);
             if (currentAction.slice(-7).filter(a => a[0] === eventList[i]).length > 3) {
+                if (stopOnErr[0]) throw new Error(`Modifer: ${eventList[i]?.name}, had too many recursive calls`);
                 logAction(`Modifier ${eventList[i]?.name} was called too many times in one event!`, "error");
                 console.log(`${currentAction.at(-1)[1].name}'s Modifier ${eventList[i]?.name} has some recursive calls`);
                 console.log(`currentAction stack: ${currentAction.map(a => a[0].name).join(', ')}\ncurrentUnit stack: ${currentAction.map(a => a[1].name).join(', ')}`);
             } else if (eventList[i].onTurn(context)) removeModifier(eventList[i]);
         } catch (e) {
-            console.error(`Error in ${eventType} listener (${eventList[i]?.name}):`, e);
             console.log(`currentAction stack: ${currentAction.map(a => a[0].name).join(', ')}\ncurrentUnit stack: ${currentAction.map(a => a[1].name).join(', ')}`);
+            if (stopOnErr[0]) throw e;
+            console.error(`Error in ${eventType} listener (${eventList[i]?.name}):`, e);
             try {
                 removeModifier(eventList[i]);
                 logAction(`An error occurred with a modifier.`, "error");
@@ -137,12 +140,17 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
             } finally { currentAction.length = stack; }
         } finally { currentAction.pop(); }
     }
-    window.updateModifiers();
+    if (typeof window !== 'undefined') window.updateModifiers();
 }
 
-function removeModifier(modifier) {
+function removeModifier(modifier, err=true) {
+    if (!modifier?.vars) {
+        if (err) throw new Error(`${currentAction.at(-1)?.[1]?.name || "The system"} tried removing a non${modifier == null ? "existent " : "-" }modifier!`);
+        else return;
+    }
     let index;
-    if (modifier.vars.perm || modifier.vars.trait || modifier.vars.synergy || (index = modifiers.indexOf(modifier)) === -1) return;
+    if (modifier.vars.perm || (index = modifiers.indexOf(modifier)) === -1 || ((modifier.vars.trait || modifier.vars.synergy) && allUnits.includes(modifier.vars.caster))) return;
+    if (modifier.vars.trait || modifier.vars.synergy) modifier.vars.passive = false;
     if (modifier.vars.passive && allUnits.includes(modifier.vars.caster)) {
         if (modifier.vars.caster.hp === 0 && modifier.vars.focus) {
             currentAction.push([modifier, modifier.vars.caster]);
@@ -151,13 +159,13 @@ function removeModifier(modifier) {
         }
         return;
     }
-    if (modifier.vars?.applied) {
+    if (modifier.vars.applied) {
         currentAction.push([modifier, modifier.vars.caster]);
         modifier.cancel();
         currentAction.pop();
     }
     if (eventState.modifierEnd.length) handleEvent('modifierEnd', { modifier });
-    if (modifier.vars?.listeners) for (const event in modifier.vars.listeners) if (modifier.vars.listeners[event] && eventState[event].indexOf(modifier) > -1) eventState[event].splice(eventState[event].indexOf(modifier), 1);
+    if (modifier.vars.listeners) for (const event in modifier.vars.listeners) if (modifier.vars.listeners[event] && eventState[event].indexOf(modifier) > -1) eventState[event].splice(eventState[event].indexOf(modifier), 1);
     modifiers.splice(index, 1);
     if (modifier.vars.parent?.vars) modifier.vars.parent.vars.child?.length > 1 ? (index = modifier.vars.parent.vars.child.indexOf(modifier)) > -1 && modifier.vars.parent.vars.child.splice(index, 1) : delete modifier.vars.parent.vars.child;
 }
@@ -375,7 +383,13 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, bloc
 new Modifier("Reapply Passive", "Reapplies passive modifiers on unit revive",
     { caster: system, target: system, properties: ["system"], listeners: { unitChange: true }, perm: true },
     function() {},
-    function(context) { if (context.type === "revive") for (const mod of modifiers.filter(m => m.vars.caster === context.unit && m.vars.passive && (m.vars.focus || m.vars.penalty))) mod.cancel(false); },
+    function(context) {
+        if (context.type === "revive") for (const mod of modifiers.filter(m => m.vars.caster === context.unit && m.vars.passive && (m.vars.focus || m.vars.penalty))) {
+            currentAction.push([mod, mod.vars.caster]);
+            mod.cancel(false);
+            currentAction.pop();
+        }
+    },
     function() {},
     function() {}
 );
@@ -385,7 +399,7 @@ new Modifier("Remove Reduction", "Remove passive modifiers and reduction on midl
     function() {},
     function(context) {
         for (let i = modifiers.length - 1; i >= 0; i--) {
-            if (modifiers[i].vars.caster !== context.unit || !modifiers[i].vars.passive) continue;
+            if (modifiers[i].vars.caster !== context.unit || !modifiers[i].vars.passive || modifiers[i].vars.trait || modifiers[i].vars.synergy) continue;
             if (modifiers[i].vars.reduction) for (const stat of Object.keys(modifiers[i].vars.reduction)) modifiers[i].vars.caster.mult[stat] ? (modifiers[i].vars.caster.base[stat] += modifiers[i].vars.reduction[stat]) && resetStat(modifiers[i].vars.caster, [stat]) : (modifiers[i].vars.caster.base[stat] += modifiers[i].vars.reduction[stat]) && (modifiers[i].vars.caster[stat] = Math.min(modifiers[i].vars.caster[stat] + modifiers[i].vars.reduction[stat], modifiers[i].vars.caster.base[stat]));
             modifiers[i].vars.passive = false;
             removeModifier(modifiers[i]);
@@ -401,6 +415,7 @@ new Modifier("Remove Reduction", "Remove passive modifiers and reduction on midl
 );
 
 const logAction = (function() {
+    if (typeof document === 'undefined') return function() {};
     let lastLogState = {};
     const STAT_CHANGE_REGEX = /^(.+?)'s (.+ (?:increased|decreased)(?:, and .+ decreased)?\.)$/;
     return function (message, type = 'info') {
@@ -466,4 +481,4 @@ function comma(array, cap = false) {
 
 function capital(str) { return str.length ? str[0].toUpperCase() + str.slice(1) : '' }
 
-export { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState };
+export { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState, stopOnErr };

@@ -1,4 +1,4 @@
-import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements } from '../combatDictionary.js';
+import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget, showMessage, cleanupGlobalHandlers, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from '../combatDictionary.js';
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, createUnit } from './unit.js';
 
@@ -560,7 +560,7 @@ Drone.traits = [{
         new Modifier("Internal", "More resistant to energy-block effects, but a successfun energy-block effect stuns",
             { target: this, properties: ["techno", "conditional", "stun"], listeners: { modifierStart: true, modifierEnd: false }, modifiers: [], passive: true, trait: true },
             function() {
-                for (const mod of modifiers.filter(m => m.vars.properties.includes('energy-block') && m.vars.target === this.vars.target)) mod.vars.debuff(this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
+                for (const mod of modifiers.filter(m => m.vars.properties.includes('energy-block') && m.vars.target === this.vars.target)) mod.vars.debuff.call(mod, this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
                 if (this.vars.modifiers.length) {
                     stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
                     this.vars.listeners.modifierEnd = true;
@@ -569,7 +569,7 @@ Drone.traits = [{
             function(context) {
                 if (context.modifier.vars.properties.includes('energy-block') && (context.modifier.vars.target === this.vars.target || context.modifier.vars.targets?.includes(this.vars.target))) {
                     if (context.event === 'modifierStart') {
-                        if (context.modifier.vars.debuff(this.vars.target)) {
+                        if (context.modifier.vars.debuff.call(context.modifier, this.vars.target)) {
                             if (!this.vars.modifiers.length) {
                                 if (this.vars.applied) stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
                                 toggleListeners(this, ['modifierEnd']);
