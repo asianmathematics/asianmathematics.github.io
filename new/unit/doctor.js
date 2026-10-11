@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
-export const Doctor = new Unit("Doctor", [1200, 25, 25, 140, 70, 150, 75, 90, 75, "back", 140, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
+export const Doctor = new Unit("Doctor", [1200, 25, 25, 140, 70, 150, 75, 85, 80, "back", 140, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
 
 Doctor.description = "3-star techno backline unit with healing and buff abilities";
 
