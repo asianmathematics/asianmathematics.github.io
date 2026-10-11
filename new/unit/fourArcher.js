@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const FourArcher = new Unit("4 (Archer)", [800, 36, 16, 50, 80, 70, 140, 85, 160, "back", 110, 40, 7, 160, 24], 3, ["perfection/precision"]);
+export const FourArcher = new Unit("4 (Archer)", [800, 40, 20, 50, 90, 70, 160, 105, 160, "back", 100, 40, 7, 160, 24], 3, ["perfection/precision"]);
 
 FourArcher.description = "3-star mystic backline unit with high crit/debuff resist but low in everything else, capable of manipulating RNG to buff self and debuff enemies.";
 
@@ -12,9 +12,9 @@ FourArcher.skills = {
             name: "Perfect Shot",
             properties: ["mystic", "mana-block", "mana", "attack", "auto-hit", "auto-crit"],
             cost: { mana: 40 },
-            description: "Deals a critical hit to a single target, 99% chance to ignore half of defense",
+            description: "Deals a critical hit to a single target that ignores 75% of defense",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
-            code(target) { damage(this, target, [[4]], { all: { defense: { div: resistDebuff(this, target)[0] < 2 ? 1 : 2 } } }); }
+            code(target) { damage(this, target, [[4]], { all: { defense: { div: 4 } } }); }
         },
         {
             name: "Unnatural Luck",
@@ -59,7 +59,7 @@ FourArcher.skills = {
         {
             name: "Rebound Arc",
             properties: ["mystic", "mana-block", "mana", "buff", "conditional"],
-            cost: { mana: 40 },
+            cost: { mana: 20 },
             description: "Missed attacks have a chance to hit a random enemy and non-crit guaranteed hits can make an attack to pierce a random enemy for 4 turns",
             code() {
                 logAction(`${this.name}'s arrows starts to curve!`, "buff");
@@ -71,7 +71,7 @@ FourArcher.skills = {
                         if (context.event === "singleAttack" && context.attacker === this.vars.caster && context.hitSingle <= 0) {
                             this.vars.attacking = true;
                             let target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team));
-                            if (resistDebuff(this.vars.caster, target)[0] > 70) crit(this.vars.caster, target, [[this.vars.caster.accuracy/2]]);
+                            if (resistDebuff(this.vars.caster, target)[0] > 50) crit(this.vars.caster, target, [[this.vars.caster.accuracy/2]]);
                         } else if (context.event === "singleDamage" && context.attacker === this.vars.caster && (currentAction.at(-2)[0].properties?.includes("auto-hit") || currentAction.at(-2)[0].vars?.properties.includes("auto-hit")) && context.critical < 1) {
                             this.vars.attacking = true;
                             attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team)), 1, context.calcMods);
@@ -88,7 +88,7 @@ FourArcher.skills = {
             properties: ["mystic", "mana-block", "mana", "buff"],
             cost: { mana: 40 },
             description: "Increases all alive allies, except self, accuracy/evasion/focus/resist/presence for one of their turns",
-            code() { for (const unit of allUnits.filter(u => u !== this && u.hp && u.team === this.team)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: unit, duration: 2, properties: ["mystic", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }); }
+            code() { for (const unit of allUnits.filter(u => u !== this && u.hp && u.team === this.team)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: unit, duration: 2, properties: ["mystic", "buff"], stats: { accuracy: 50, evasion: 90, focus: 70, resist: 80, presence: 80 }, listeners: { turnStart: true } }); }
         },
         {
             name: "Luck Arrow",
@@ -131,10 +131,10 @@ FourArcher.skills = {
         {
             name: "Perfect Shot",
             properties: ["mystic", "mana-block", "attack", "auto-hit"],
-            description: "Makes a guaranteed hit to a single target, 99% chance to ignore some defense",
+            description: "Makes a guaranteed hit to a single target that ignores most defense",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
-                attack(this, target, 1, { max: [[.5]], all: { defense: { bonus: resistDebuff(this, target)[0] < 2 ? 0 : -15 } } });
+                attack(this, target, 1, { max: [[.5]], all: { defense: { bonus: -20 } } });
             }
         },
         {
@@ -160,7 +160,7 @@ FourArcher.skills = {
             name: "Lucky Aura",
             properties: ["mystic", "mana-block", "buff"],
             description: "Increases 4 random ally accuracy/evasion/focus/resist/presence for one of their turns",
-            code() { for (const target of randTarget(allUnits.filter(u => u.hp && u.team === this.team), 4, true)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target, duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }); }
+            code() { for (const target of randTarget(allUnits.filter(u => u.hp && u.team === this.team), 4, true)) basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target, duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 50, evasion: 90, focus: 70, resist: 80, presence: 80 }, listeners: { turnStart: true } }); }
         },
         {
             name: "Luck Arrow",
@@ -201,8 +201,8 @@ FourArcher.skills = {
         {
             name: "Perfect Shot",
             properties: ["mystic", "attack", "auto-hit"],
-            description: "Makes a non-crit guaranteed hit to a single target",
-            code() { damage(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), [[.5]]); }
+            description: "Makes a non-crit guaranteed hit to a single target that ignores a bit of defense",
+            code() { damage(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), [[.5]], { all: { defense: { bonus: -8 } } }); }
         },
         {
             name: "Lazing Around",
@@ -227,14 +227,14 @@ FourArcher.skills = {
             name: "Lucky Aura",
             properties: ["mystic", "buff"],
             description: "Increases a random alive ally accuracy/evasion/focus/resist/presence for one of their turns",
-            code() { basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0], duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true } }); }
+            code() { basicModifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence", { target: randTarget(allUnits.filter(u => u.hp && u.team === this.team), 1, true)[0], duration: 2, properties: ["mystic", "mana", "buff"], stats: { accuracy: 50, evasion: 90, focus: 70, resist: 80, presence: 80 }, listeners: { turnStart: true } }); }
         }
     ],
     passive: [
         {
             name: "Unnatural Luck",
             properties: ["mystic", "buff", "debuff"],
-            reduction: { mana: 40, manaRegen: 8 },
+            reduction: { mana: 40, manaRegen: 6 },
             description: "Rolls all attacks/debuffs with advantage and opponent's attacks/debuffs to self has chance to debuff to disadvantage until end of next turn",
             code() {
                 new Modifier("Unnatural Luck", "Rolls all attacks/debuffs with advantage and opponent's attacks/debuffs to self has chance to debuff to disadvantage",
@@ -273,7 +273,7 @@ FourArcher.skills = {
                         if (context.event === "singleAttack" && context.attacker === this.vars.caster && context.hitSingle <= 0 && resourceChange(this.vars.caster, this.vars.cost, false, false)) {
                             this.vars.attacking = true;
                             let target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team));
-                            if (resistDebuff(this.vars.caster, target)[0] > 70) crit(this.vars.caster, target, [[this.vars.caster.accuracy/4]]);
+                            if (resistDebuff(this.vars.caster, target)[0] > 50) crit(this.vars.caster, target, [[this.vars.caster.accuracy/4]]);
                         } else if (context.event === "singleDamage" && context.attacker === this.vars.caster && (currentAction.at(-2)[0].properties?.includes("auto-hit") || currentAction.at(-2)[0].vars?.properties.includes("auto-hit")) && context.critical < 1 && resourceChange(this.vars.caster, this.vars.cost, false, false)) {
                             this.vars.attacking = true;
                             attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team)), 1, context.calcMods);
@@ -289,7 +289,7 @@ FourArcher.skills = {
             description: "Increases a random alive ally accuracy/evasion/focus/resist/presence for one of their turns",
             code() {
                 new Modifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence",
-                    { target: null, properties: ["mystic", "buff"], stats: { accuracy: 5, evasion: 20, focus: 10, resist: 20, presence: 20 }, listeners: { turnStart: true }, passive: true },
+                    { target: null, properties: ["mystic", "buff"], stats: { accuracy: 10, evasion: 40, focus: 20, resist: 40, presence: 40 }, listeners: { turnStart: true }, passive: true },
                     function() {
                         const target = randTarget(allUnits.filter(u => u.hp && u.team === this.vars.caster.team), 1, true)[0];
                         if (target !== this.vars.target) this.changeTarget(target);
@@ -306,7 +306,7 @@ FourArcher.skills = {
         {
             name: "Luck Arrow",
             properties: ["mystic", "buff", "debuff", "conditional"],
-            reduction: { mana: 40, manaRegen: 8 },
+            reduction: { mana: 40, manaRegen: 6 },
             description: "On hit with any attack, chance to give self advantage to next few attacks/debuffs and chance to give disadvantage to target's next few attacks/debuffs",
             code() {
                 new Modifier("Luck Arrow", "On hit with any attack, chance to give self advantage to next few attacks/debuffs and chance to give disadvantage to target's next few attacks/debuffs",
@@ -339,7 +339,7 @@ FourArcher.skills = {
         {
             name: "Multi-shot",
             properties: ["mystic", "attack", "multi-target"],
-            reduction: { mana: 40, manaRegen: 8 },
+            reduction: { mana: 40, manaRegen: 6 },
             description: "On damage, chance to split the attack to 3 other targets",
             code() {
                 new Modifier("Multi-shot", "When making an attack, chance to split the attack towards up to 3 other targets",
@@ -359,7 +359,7 @@ FourArcher.skills = {
         {
             name: "Unnatural Luck",
             properties: ["mystic", "buff", "debuff"],
-            reduction: { mana: 40, manaRegen: 8 },
+            reduction: { mana: 40, manaRegen: 6 },
             description: "Rolls all attacks/debuffs with advantage and opponent's attacks/debuffs to self has chance to debuff to disadvantage until end of next turn",
             code() {
                 new Modifier("Unnatural Luck", "Rolls all attacks/debuffs with advantage and opponent's attacks/debuffs to self has chance to debuff to disadvantage",
@@ -390,7 +390,7 @@ FourArcher.skills = {
             description: "Increases a random alive ally accuracy/evasion/focus/resist/presence for one turn",
             code() {
                 new Modifier("Lucky Aura", "Increases accuracy/evasion/focus/resist/presence",
-                    { target: null, properties: ["mystic", "buff"], stats: { accuracy: 25, evasion: 45, focus: 35, resist: 40, presence: 40 }, listeners: { turnStart: true }, passive: true },
+                    { target: null, properties: ["mystic", "buff"], stats: { accuracy: 50, evasion: 90, focus: 70, resist: 80, presence: 80 }, listeners: { turnStart: true }, passive: true },
                     function() {
                         const target = randTarget(allUnits.filter(u => u.hp && u.team === this.vars.caster.team), 1, true)[0];
                         if (target !== this.vars.target) this.changeTarget(target);
@@ -407,7 +407,7 @@ FourArcher.skills = {
         {
             name: "Luck Arrow",
             properties: ["mystic", "buff", "debuff", "conditional"],
-            reduction: { mana: 40, manaRegen: 8 },
+            reduction: { mana: 40, manaRegen: 6 },
             description: "On hit with any attack, gives self advantage to next few attacks/debuffs depending on chance and chance to give disadvantage to target's next few attacks/debuffs, 1% chance to fail to give advantage",
             code() {
                 new Modifier("Luck Arrow", "On hit with any attack, gives self advantage to next few attacks/debuffs depending on chance and chance to give disadvantage to target's next few attacks/debuffs, 1% chance to fail to give advantage",

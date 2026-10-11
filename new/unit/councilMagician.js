@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 80, 100, 140, 80, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
+export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 80, 100, 140, 90, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
 
 CouncilMagician.skills = {
     special: [
@@ -46,9 +46,12 @@ CouncilMagician.skills = {
         {
             name: "Wild Magic",
             properties: ["mystic", "mana-block", "mana", "random", "buff", "penalty"],
-            cost: { mana: 50 },
-            description: "Creates a random effect with a 1% chance of backfiring",
-            code() { wildMagic.call(this, Math.random() >= .01); }
+            cost: { mana: 40 },
+            description: "Creates two random effects with a 1% chance of backfiring",
+            code() {
+                wildMagic.call(this, Math.random() >= .01);
+                wildMagic.call(this, Math.random() >= .01);
+            }
         },
         {
             name: "Pursuit of Knowledge",
@@ -98,9 +101,9 @@ CouncilMagician.skills = {
         {
             name: "Wild Magic",
             properties: ["mystic", "mana-block", "mana", "random", "buff", "penalty"],
-            cost: { mana: 20 },
-            description: "Creates a random effect with a 12.5% chance of backfiring",
-            code() { wildMagic.call(this, Math.random() >= .125); }
+            cost: { mana: 10 },
+            description: "Creates a random effect with a 5% chance of backfiring",
+            code() { wildMagic.call(this, Math.random() >= .05); }
         },
         {
             name: "Pursuit of Knowledge",
@@ -139,8 +142,8 @@ CouncilMagician.skills = {
         {
             name: "Wild Magic",
             properties: ["mystic", "mana-block", "random", "buff", "penalty"],
-            description: "Creates a random effect with a 25% chance of backfiring",
-            code() { wildMagic.call(this, Math.random() >= .25); }
+            description: "Creates a random effect with a 10% chance of backfiring",
+            code() { wildMagic.call(this, Math.random() >= .1); }
         },
         {
             name: "Pursuit of Knowledge",
@@ -170,12 +173,12 @@ CouncilMagician.skills = {
         {
             name: "Wild Magic",
             properties: ["mystic", "random", "buff", "penalty"],
-            description: "Creates a random effect every turn with a 37.5% chance of backfiring",
+            description: "Creates a random effect every turn with a 17.5% chance of backfiring",
             code() { 
-                new Modifier("Wild Magic", "Creates a random effect with a 37.5% chance of backfiring",
+                new Modifier("Wild Magic", "Creates a random effect with a 17.5% chance of backfiring",
                     { target: this, properties: ["mystic", "random", "buff", "penalty"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) wildMagic.call(this.vars.caster, Math.random() >= .375);}
+                    function(context) { if (context.unit === this.vars.caster) wildMagic.call(this.vars.caster, Math.random() >= .175);}
                 );
             }
         },
@@ -206,12 +209,12 @@ CouncilMagician.skills = {
         {
             name: "Wild Magic",
             properties: ["mystic", "random", "buff", "penalty"],
-            description: "Creates a random effect every turn with a 25% chance of backfiring",
+            description: "Creates a random effect every turn with a 12.5% chance of backfiring",
             code() { 
-                new Modifier("Wild Magic", "Creates a random effect with a 25% chance of backfiring",
+                new Modifier("Wild Magic", "Creates a random effect with a 12.5% chance of backfiring",
                     { target: this, properties: ["mystic", "random", "buff", "penalty"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) wildMagic.call(this.vars.caster, Math.random() >= .25);}
+                    function(context) { if (context.unit === this.vars.caster) wildMagic.call(this.vars.caster, Math.random() >= .125);}
                 );
             }
         },
@@ -268,7 +271,7 @@ function wildMagic(buff) {
         case 2:
             auraModifier(`Wild Magic: Defense${buff ? '' : ' backfire'}`, `Increases defense and resist of all frontline ${buff ? "allies" : "enemies"}`,
                 { targets: allUnits.filter(u => u.position === "front" && buff === (u.team === this.team)), duration: 1, properties: ["mystic", "buff"], listeners: { turnStart: true, positionChange: true }, cancelListeners: ['positionChange'] },
-                function(target) { basicModifier("Wild Magic: Defense buff", "Increases defense and resist", {target, properties: ["mystic", "buff"], stats: { defense: 30, resist: 100 } }); },
+                function(target) { basicModifier("Wild Magic: Defense buff", "Increases defense and resist", {target, properties: ["mystic", "buff"], stats: { defense: 30, evasion: 50, resist: 100 } }); },
                 function (unit) { return unit.position === "front" && buff === (unit.team === this.vars.caster.team); }
             );
             break;
@@ -290,7 +293,7 @@ function wildMagic(buff) {
             break;
         }
         case 6:
-            blockModifier(`Wild Magic: Resource Block${buff ? '' : ' backfire'}`, { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], duration: 2, properties: ["mystic", "debuff"], listeners: { turnEnd: true }, cancelListeners: ['resourceChange'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'all');
+            blockModifier(`Wild Magic: Resource Block${buff ? '' : ' backfire'}`, { target: randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true)[0], duration: 4, properties: ["mystic", "debuff"], listeners: { turnEnd: true }, cancelListeners: ['resourceChange'], debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'all');
             break;
         case 7:
             attack(randTarget(allUnits.filter(u => u.hp && buff === (u.team !== this.team)), 1, true)[0], randTarget(allUnits.filter(u => u.hp && buff === (u.team === this.team)), 1, true), 3);

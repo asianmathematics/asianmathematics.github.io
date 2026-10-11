@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const DexSoldier = new Unit("DeX (Soldier)", [1800, 25, 55, 70, 50, 60, 80, 55, 200, "front", 250, 120, 24, 30, 5], 3, ["perfection/precision"]);
+export const DexSoldier = new Unit("DeX (Soldier)", [1600, 25, 50, 70, 50, 60, 80, 65, 200, "front", 200, 120, 24, 30, 5], 3, ["perfection/precision"]);
 
 DexSoldier.description = "3-star physical mystic frontline unit with high defensive stats but low speed, has strong sustain and defensive capabilities.";
 

@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 22, 25, 85, 60, 80, 60, 90, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
+export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 28, 28, 95, 70, 90, 70, 100, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
 
 ArtificialSoldier.skills = {
     special: [

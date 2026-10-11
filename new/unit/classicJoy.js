@@ -54,8 +54,8 @@ ClassicJoy.skills = {
                         }
                     );
                 }
-                if ((tracker.vars.unitMap[target[0].name] += 2+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 20;
+                if ((tracker.vars.unitMap[target[0].name] += 2+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
+                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
                 if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
             }
         },
@@ -205,8 +205,8 @@ ClassicJoy.skills = {
                         }
                     );
                 }
-                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
+                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
+                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
                 if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
             }
         },
@@ -345,8 +345,8 @@ ClassicJoy.skills = {
                         }
                     );
                 }
-                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
+                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
+                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
                 if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
             }
         },
@@ -531,8 +531,8 @@ ClassicJoy.skills = {
                                 }
                             );
                         }
-                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
+                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
                     }
                 );
             }
@@ -685,8 +685,8 @@ ClassicJoy.skills = {
                                 }
                             );
                         }
-                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
+                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
                     }
                 );
             }
@@ -776,8 +776,8 @@ ClassicJoy.skills = {
                                 }
                             );
                         }
-                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 64*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
+                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
                     }
                 );
             }
@@ -869,7 +869,7 @@ ClassicJoy.traits = [
                 function(context) {
                     if (context.unit === this.vars.target) {
                         this.cancel(true, true);
-                        this.vars.count--;
+                        this.vars.count -= 1+Math.floor(modifiers.find(m => m.name === "Joy Tracker").vars.unitMap[this.vars.caster.name]/8);
                         this.vars.stats = Object.fromEntries(Object.entries({ attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }).map(([k, v]) => [k, v*Math.min(this.vars.count, 40)/20]));
                         this.cancel(false, true);
                     }
@@ -915,7 +915,7 @@ ClassicJoy.traits = [
                         this.vars.targets = this.vars.targets.filter(u => allUnits.includes(u));
                         this.vars.unitMap = Object.fromEntries(Object.entries(this.vars.unitMap).filter(([n]) => this.vars.targets.some(u => u.name === n)));
                     } else if (!context.type && context.unit) {
-                        for (const unit of this.vars.targets) if (this.vars.unitMap[unit.name] >= 32*(1+(unit.source === ClassicJoy))*(1+!!unit.hp)) {
+                        for (const unit of this.vars.targets) if (this.vars.unitMap[unit.name] >= 16*(1+(unit.source === ClassicJoy))*(1+!!unit.hp)) {
                             summon({ team: "monster" }, { ...unit, name: unit.name + " (Mutant)", base: { ...unit.base, hp: unit.base.hp*10, attack: unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: unit.base.presence*4 }}, unit.skills, unit.position);
                             this.changeTarget([unit]);
                         }
@@ -923,7 +923,7 @@ ClassicJoy.traits = [
                     } else if (context.type && this.vars.targets.includes(context.unit)) {
                         if (context.type === "downed") toggleListeners(this, ['turnEnd']);
                         if (context.type === "death") {
-                            summon({ name: "system", team: "monster" }, { ...context.unit, name: context.unit.name + " (Mutant)", base: { ...context.unit.base, hp: context.unit.base.hp*10, attack: context.unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10 }}, context.unit.skills, context.unit.position);
+                            summon({ name: "system", team: "monster" }, { ...context.unit, name: context.unit.name + " (Mutant)", base: { ...context.unit.base, hp: context.unit.base.hp*10, attack: context.unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: unit.base.presence*4 }}, context.unit.skills, context.unit.position);
                             this.changeTarget([context.unit]);
                         }
                     }

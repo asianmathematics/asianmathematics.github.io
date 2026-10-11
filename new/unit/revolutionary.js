@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const Revolutionary = new Unit("Revolutionary", [850, 50, 20, 130, 90, 150, 65, 90, 55, "mid", 75, 150, 18], 3, ["passion/hatred"]);
+export const Revolutionary = new Unit("Revolutionary", [850, 50, 20, 130, 90, 150, 65, 100, 55, "mid", 75, 150, 18], 3, ["passion/hatred"]);
 
 Revolutionary.skills = {
     special: [
@@ -425,11 +425,11 @@ Revolutionary.backDefaultSkills = [
 Revolutionary.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
-        this.base = { ...this.base, attack: 60, evasion: 50, resist: 50, speed: 110, presence: 105 };
+        this.base = { ...this.base, attack: 60, evasion: 50, resist: 50, speed: 120, presence: 105 };
         this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
-        this.base = { ...this.base, attack: 50, evasion: 90, resist: 65, speed: 90, presence: 55 };
+        this.base = { ...this.base, attack: 50, evasion: 90, resist: 65, speed: 100, presence: 55 };
         this.skills = {...this.backSkills};
     }
     logAction(`${this.name} moves to the ${this.position}line.`, "info");

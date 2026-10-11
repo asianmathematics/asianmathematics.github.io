@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
-export const Doctor = new Unit("Doctor", [1200, 22, 25, 140, 70, 140, 70, 100, 60, "back", 150, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
+export const Doctor = new Unit("Doctor", [1200, 25, 25, 140, 70, 150, 75, 90, 75, "back", 140, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
 
 Doctor.description = "3-star techno backline unit with healing and buff abilities";
 
@@ -171,12 +171,12 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["techno", "buff"],
-            reduction: { energy: 20, energyRegen: 2 },
+            reduction: { energy: 20, energyRegen: 3 },
             description: "Increases heal factor of all allies except self",
             code() {
                 auraModifier("Caring is Sharing", "Increased heal factor for allies",
                     { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
-                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 50 } }); },
+                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 30 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
@@ -184,7 +184,7 @@ Doctor.skills = {
         {
             name: "Prescription Stimulant",
             properties: ["techno", "conditional", "buff"],
-            reduction: { energy: 40, energyRegen: 4 },
+            reduction: { energy: 40, energyRegen: 8 },
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for all allies, except self",
             code() {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",
@@ -221,12 +221,12 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["techno", "buff"],
-            reduction: { energy: 20, energyRegen: 2 },
+            reduction: { energy: 20, energyRegen: 3 },
             description: "Increases heal factor of all allies except self",
             code() {
                 auraModifier("Caring is Sharing", "Increased heal factor for allies",
                     { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.augment.reduction, passive: true },
-                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 75 } }); },
+                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 45 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
@@ -234,7 +234,7 @@ Doctor.skills = {
         {
             name: "Prescription Stimulant",
             properties: ["techno", "conditional", "buff"],
-            reduction: { energy: 40, energyRegen: 4 },
+            reduction: { energy: 40, energyRegen: 8 },
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for all allies, except self",
             code() {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",

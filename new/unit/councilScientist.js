@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, createUnit } from './unit.js';
 
-export const CouncilScientist = new Unit("Science Council Member", [1000, 21, 28, 100, 80, 120, 80, 80, 130, "back", 100, 70, 6, , , 80, 9], 3, ["independence/loneliness"]);
+export const CouncilScientist = new Unit("Science Council Member", [1000, 21, 28, 100, 80, 120, 80, 90, 130, "back", 100, 70, 6, , , 80, 9], 3, ["independence/loneliness"]);
 
 CouncilScientist.skills = {
     special: [
@@ -29,7 +29,7 @@ CouncilScientist.skills = {
         {
             name: "Drone",
             properties: ["techno", "energy-block", "energy", "summon"],
-            cost: { energy: 50 },
+            cost: { energy: 40 },
             description: "Summons a 2-star drone to the frontline for 5 turns. If currently active, refreshes drone duration/HP and refunds 10 energy for each turn remaining",
             code() {
                 let drone = modifiers.find(m => m.name === "Drone" && m.vars.caster === this);
@@ -241,7 +241,7 @@ CouncilScientist.skills = {
                 new Modifier("Laser Turret", "Attacks a target at end of caster's turn", 
                     { target: this, properties: ["techno", "attack", "dot"], listeners: { turnEnd: true }, cancelListeners: ['turnEnd'], reduction: this.skills.passive.reduction, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } }); }
+                    function(context) { if (context.unit === this.vars.caster) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } }); }
                 );
             }
         },
