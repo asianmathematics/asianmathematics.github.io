@@ -15,10 +15,12 @@ import { Revolutionary } from './unit/revolutionary.js';
 import { regenerateResources, specialTarget, randTarget, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from './combatDictionary.js';
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState, stopOnErr } from './modifier.js';
 import { Unit, createUnit, cloneUnit } from './unit/unit.js';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, writeFile } from 'node:fs';
 
+const once = true;
 let seed;
 let id;
+let win = "draw";
 const unitList = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric, ClassicJoy, enemy, ArtificialSoldier, CouncilMagician, CouncilScientist, Experiment, Reject, Revolutionary];
 combatSpeedMultiplier[0] = 1e9;
 stopOnErr[0] = true;
@@ -34,7 +36,7 @@ const mod = new Modifier("Simulation Log", "Logs all events", { caster: { name: 
     function(context) {
         if (context.temp || context.filter) return;
         this.vars.list.push(context);
-        if (!this.vars.off) {
+        if (!once && !this.vars.off) {
             for (let i = 0; i < this.vars.list.length-1; i++) appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, ...clean(this.vars.list[i]) }) + '\n');
             this.vars.list = [this.vars.list.at(-1)];
         }
@@ -86,31 +88,47 @@ function mulberry32(a) {
     }
 }
 
-function init(s = 1, units = [{ unit: enemy, team: "player", skills: 'random', count: 4 }, { unit: enemy, team: "enemy", skills: 'random', count: 4 }]) {
+function init(s = 1, units = [{ unit: enemy, team: "player", skills: 'random', count: 6 }, { unit: enemy, team: "enemy", skills: 'random', count: 6 }]) {
     seed = s;
     Math.random = mulberry32(seed);
-    for (const template of units) {
-        if (template.unit === 'random') template.unit = unitList[Math.floor(Math.random()*unitList.length)];
-        if (template.skills === 'random') for (let i = template.count || 1; i > 0; i--) assignEnemySkills(createUnit(template.unit, template.team || 'player'), template.unit);
+    while (true) {
+        let r;
+        for (const template of units) {
+            if (template.unit === 'random') {
+                template.unit = unitList[Math.floor(Math.random()*unitList.length)];
+                r = true;
+            }
+            if (template.skills === 'random') for (let i = template.count || 1; i > 0; i--) assignEnemySkills(createUnit(template.unit, template.team || 'player'), template.unit);
+        }
+        if (allUnits.some(u => u.position === "front" && u.team === "player") && allUnits.some(u => u.position === "front" && u.team === "enemy")) break;
+        else {
+            if (!r) break;
+            allUnits.splice(0);
+            modifiers.splice(0, modifiers.length, ...modifiers.filter(m => m.vars.target?.name === "system"));
+        }
     }
     Math.random = mulberry32(seed);
     if (eventState.waveChange.length) handleEvent('waveChange', { wave: 1 });
     id = generateHash(JSON.stringify({ seed, allUnits: allUnits.map(u => ({ name: u.name, skills: Object.keys(u.skills).map(s => ({ [s]: u.skills[s].name })) })) }));
-    appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, seed, allUnits: allUnits.map(u => clean(u, true)) })+ '\n');
+    if (once) mod.vars.list.unshift({ seed, allUnits: allUnits.map(u => clean(u, true)) });
+    else appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, seed, allUnits: allUnits.map(u => clean(u, true)) })+ '\n');
     mod.vars.off = false;
     combatTick();
 }
 
 function end() {
-    for (const c of mod.vars.list) appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, ...clean(c) }) + '\n');
-    appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, allUnits: allUnits.map(u => clean(u, true))}) + '\n');
+    if (once) writeFile(`../../greanandin/sims2/${id}.json`, JSON.stringify({ [id]: mod.vars.list.concat({ win, allUnits: allUnits.map(u => clean(u, true)) }).map(c => c.allUnits ? c : clean(c)) }), () => {})
+    else {
+        for (const c of mod.vars.list) appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, ...clean(c) }) + '\n');
+        appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, win, allUnits: allUnits.map(u => clean(u, true))}) + '\n');
+    }
 }
 
 function combatTick() {
     try {
         let round = 0;
         while (!frontTest()) {
-            if (round++ > 3000) throw new Error("Simulation ran too long");
+            if (round++ > 10000) throw new Error("Simulation ran too long");
             let turn;
             const alive = allUnits.filter(u => u.hp);
             while (turn == undefined) {
@@ -128,6 +146,7 @@ function combatTick() {
         }
     } catch (e) {
         console.error("An error occurred:", e);
+        win = "error";
         mod.vars.list.push({ error: Object.fromEntries(Object.getOwnPropertyNames(e).map(key => [key, e[key]])) });
     }
     finally { end(); }
@@ -147,8 +166,7 @@ function action(unit) {
 }
 
 function executeAction(unit, action) {
-    const type = Object.keys(unit.skills).find(s => unit.skills[s] === action);
-    if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: type });
+    if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: Object.keys(unit.skills).find(s => unit.skills[s] === action) });
     if (!action.cost || resourceChange(unit, action.cost, false, false)) {
         unit.previousAction = [unit.previousAction[0] || action.properties.includes('stamina-block'), unit.previousAction[1] || action.properties.includes('mana-block'), unit.previousAction[2] || action.properties.includes('energy-block')];
         currentAction.push([action, unit]);
@@ -165,7 +183,7 @@ function frontTest() {
                 unit.switchPosition();
                 unit.timer += 1000;
             }
-        } else return true;
+        } else return win = "enemy";
     }
     if (!allUnits.filter(u => u.hp && u.position === 'front' && u.team === 'enemy').length) {
         const midLine = allUnits.filter(u => u.hp && u.base.position === 'mid' && u.team === 'enemy');
@@ -174,7 +192,7 @@ function frontTest() {
                 unit.switchPosition();
                 unit.timer += 1000;
             }
-        } else return true;
+        } else return win = "player";
     }
 }
 
@@ -235,4 +253,4 @@ function assignEnemySkills(newUnit, template) {
     }
 }
 
-init(Date.now(), Array.from({ length: 8 }, (_, i) => ({ unit: 'random', skills: 'random', ...(i >= 4 && { team: 'enemy' }) })));
+init(Date.now(), Array.from({ length: 12 }, (_, i) => ({ unit: 'random', skills: 'random', ...(i >= 6 && { team: 'enemy' }) })));

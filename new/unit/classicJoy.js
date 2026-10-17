@@ -31,7 +31,7 @@ ClassicJoy.skills = {
                 } else {
                     mod ? removeModifier(mod) : tracker.changeTarget([], target);
                     new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
-                        { target: target[0], duration: 40 + (target[0].team !== this.team), properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods) >= 2 } } : {}) },
+                        { target: target[0], duration: 40 + (target[0].team !== this.team), properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2 } } : {}) },
                         function() { if (!this.vars.cancel) joy(this.vars.target); },
                         function(context) {
                             if (context.unit === this.vars.target) {
@@ -40,23 +40,21 @@ ClassicJoy.skills = {
                                 else if (this.vars.applied && this.vars.duration === (this.vars.target.team === this.vars.caster.team ? 20 : 30)) withdrawal(this.vars.target);
                             }
                         },
-                        function(_, temp) {
-                            if (!temp) {
-                                if (this.vars.cancel && this.vars.applied) {
-                                    (this.vars.child || []).forEach(m => removeModifier(m));
-                                    this.vars.applied = false;
-                                } else if (!this.vars.cancel && !this.vars.applied) {
-                                    if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 30 : 35)) joy(this.vars.target);
-                                    else if (this.vars.duration < (this.vars.target.team === this.vars.caster.team ? 20 : 30)) withdrawal(this.vars.target);
-                                    this.vars.applied = true;
-                                }
+                        function() {
+                            if (this.vars.cancel && this.vars.applied) {
+                                (this.vars.child || []).forEach(m => removeModifier(m));
+                                this.vars.applied = false;
+                            } else if (!this.vars.cancel && !this.vars.applied) {
+                                if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 30 : 35)) joy(this.vars.target);
+                                else if (this.vars.duration <= (this.vars.target.team === this.vars.caster.team ? 20 : 30)) withdrawal(this.vars.target);
+                                this.vars.applied = true;
                             }
                         }
                     );
                 }
-                if ((tracker.vars.unitMap[target[0].name] += 2+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 10;
-                if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
+                if ((tracker.vars.unitMap[target[0].name] += 2*(1+!!mod+(target[0].source === ClassicJoy))) >= 32) toggleListeners(tracker, ['turnEnd']);
+                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 6;
+                if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/5)]);
             }
         },
         {
@@ -168,7 +166,7 @@ ClassicJoy.skills = {
                 const target = randTarget(allUnits.filter(u => u.type === "physical" && (u.team === this.team || (this.position === "front" && u.position === "front"))));
                 if (target[0].team !== this.team && resistDebuff(this, target)[0] < 25) {
                     logAction(`${target[0].name} avoids the Joy pill!`, "miss");
-                    hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
+                    hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
                     return;
                 }
                 logAction(`${this.name} give some joy to ${target[0].name}!`, 'crit');
@@ -182,7 +180,7 @@ ClassicJoy.skills = {
                 } else {
                     mod ? removeModifier(mod) : tracker.changeTarget([], target);
                     new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
-                        { target: target[0], duration: 40 + (target[0].team === this.team), properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods) >= 25 } } : {}) },
+                        { target: target[0], duration: 40 + (target[0].team === this.team), properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods)[0] >= 25 } } : {}) },
                         function() { if (!this.vars.cancel) joy(this.vars.target); },
                         function(context) {
                             if (context.unit === this.vars.target) {
@@ -191,23 +189,21 @@ ClassicJoy.skills = {
                                 else if (this.vars.applied && this.vars.duration === (this.vars.target.team === this.vars.caster.team ? 24 : 27)) withdrawal(this.vars.target);
                             }
                         },
-                        function(_, temp) {
-                            if (!temp) {
-                                if (this.vars.cancel && this.vars.applied) {
-                                    (this.vars.child || []).forEach(m => removeModifier(m));
-                                    this.vars.applied = false;
-                                } else if (!this.vars.cancel && !this.vars.applied) {
-                                    if (this.vars.duration > 32 + (this.vars.target.team !== this.vars.caster.team)) joy(this.vars.target);
-                                    else if (this.vars.duration < (this.vars.target.team === this.vars.caster.team ? 24 : 27)) withdrawal(this.vars.target);
-                                    this.vars.applied = true;
-                                }
+                        function() {
+                            if (this.vars.cancel && this.vars.applied) {
+                                (this.vars.child || []).forEach(m => removeModifier(m));
+                                this.vars.applied = false;
+                            } else if (!this.vars.cancel && !this.vars.applied) {
+                                if (this.vars.duration > 32 + (this.vars.target.team !== this.vars.caster.team)) joy(this.vars.target);
+                                else if (this.vars.duration <= (this.vars.target.team === this.vars.caster.team ? 24 : 27)) withdrawal(this.vars.target);
+                                this.vars.applied = true;
                             }
                         }
                     );
                 }
-                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
-                if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
+                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod+(target[0].source === ClassicJoy)) >= 32) toggleListeners(tracker, ['turnEnd']);
+                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 3;
+                if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
             }
         },
         {
@@ -308,7 +304,7 @@ ClassicJoy.skills = {
                 const target = randTarget(allUnits.filter(u => u.type === "physical" && (u.team === this.team || (this.position === "front" && u.position === "front"))));
                 if (target[0].team !== this.team && resistDebuff(this, target)[0] < 35) {
                     logAction(`${target[0].name} avoids the Joy pill!`, "miss");
-                    hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
+                    hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
                     return;
                 }
                 logAction(`${this.name} give some joy to ${target[0].name}!`, 'crit');
@@ -322,32 +318,30 @@ ClassicJoy.skills = {
                 } else {
                     mod ? removeModifier(mod) : tracker.changeTarget([], target);
                     new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
-                        { target: target[0], duration: 40 - (target[0].team !== this.team), properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods) >= 35 } } : {}) },
+                        { target: target[0], duration: 40 - (target[0].team !== this.team), properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods)[0] >= 35 } } : {}) },
                         function() { if (!this.vars.cancel) joy(this.vars.target); },
                         function(context) {
                             if (context.unit === this.vars.target) {
                                 this.vars.duration--;
-                                if (this.vars.applied && this.vars.duration === 16 + (this.vars.target.team === this.vars.caster.team)) removeModifier(this.vars.child[0]);
+                                if (this.vars.applied && this.vars.duration === 32 + (this.vars.target.team === this.vars.caster.team)) removeModifier(this.vars.child[0]);
                                 else if (this.vars.applied && this.vars.duration === (this.vars.target.team === this.vars.caster.team ? 27 : 24)) withdrawal(this.vars.target);
                             }
                         },
-                        function(_, temp) {
-                            if (!temp) {
-                                if (this.vars.cancel && this.vars.applied) {
-                                    (this.vars.child || []).forEach(m => removeModifier(m));
-                                    this.vars.applied = false;
-                                } else if (!this.vars.cancel && !this.vars.applied) {
-                                    if (this.vars.duration > 32 + (this.vars.target.team === this.vars.caster.team)) joy(this.vars.target);
-                                    else if (this.vars.duration < (this.vars.target.team === this.vars.caster.team ? 27 : 34)) withdrawal(this.vars.target);
-                                    this.vars.applied = true;
-                                }
+                        function() {
+                            if (this.vars.cancel && this.vars.applied) {
+                                (this.vars.child || []).forEach(m => removeModifier(m));
+                                this.vars.applied = false;
+                            } else if (!this.vars.cancel && !this.vars.applied) {
+                                if (this.vars.duration > 32 + (this.vars.target.team === this.vars.caster.team)) joy(this.vars.target);
+                                else if (this.vars.duration <= (this.vars.target.team === this.vars.caster.team ? 27 : 34)) withdrawal(this.vars.target);
+                                this.vars.applied = true;
                             }
                         }
                     );
                 }
-                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
-                if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/20)]);
+                if ((tracker.vars.unitMap[target[0].name] += 1+!!mod+(target[0].source === ClassicJoy)) >= 32) toggleListeners(tracker, ['turnEnd']);
+                if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 3;
+                if (this.position === "front") hpChange(this, [this], [-Math.ceil(this.base.hp/10)]);
             }
         },
         {
@@ -466,7 +460,7 @@ ClassicJoy.skills = {
         {
             name: "Joy",
             properties: ["physical", "disease", "conditional", "buff", "debuff", "pseudo-stat"],
-            reduction: { hp: 100 }, 
+            reduction: { hp: 200 }, 
             description: "Increases ally defense, accuracy, focus, and resist massively for 6 turns. 11 turns after cast, decreases attack, defense, accuracy, evasion, focus, resist, speed, and presence for 30 turns. If in frontline, double reduction, and has a chance to also target enemy frontline to give the stat increase for 9 turns, then the stat decrease after 17 turns that last for 21 turns. Don't take too much though",
             code() {
                 new Modifier("Joy Spreader", `Spreads Joy to allies${this.position === "front" ? ' and frontline enemies' : ''}`,
@@ -480,7 +474,7 @@ ClassicJoy.skills = {
                             return;
                         }
                         logAction(`${this.vars.caster.name} give some joy to ${target[0].name}!`, 'crit');
-                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent );
+                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent.vars?.parent ?? mod.vars.parent );
                         if (type) {
                             currentAction.push([mod, mod.vars.caster]);
                             mod.cancel(true, true);
@@ -508,7 +502,7 @@ ClassicJoy.skills = {
                         } else {
                             mod ? removeModifier(mod) : tracker.changeTarget([], target);
                             new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
-                                { target: target[0], duration: (target[0].team === this.vars.caster.team) ? 41 : 38, properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.vars.caster.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods) >= 45 } } : {}) },
+                                { target: target[0], duration: (target[0].team === this.vars.caster.team) ? 41 : 38, properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.vars.caster.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods)[0] >= 45 } } : {}) },
                                 function() { if (!this.vars.cancel) joy(this.vars.target); },
                                 function(context) {
                                     if (context.unit === this.vars.target) {
@@ -517,22 +511,20 @@ ClassicJoy.skills = {
                                         else if (this.vars.applied && this.vars.duration === (this.vars.target.team === this.vars.caster.team ? 30 : 21)) withdrawal(this.vars.target);
                                     }
                                 },
-                                function(_, temp) {
-                                    if (!temp) {
-                                        if (this.vars.cancel && this.vars.applied) {
-                                            (this.vars.child || []).forEach(m => removeModifier(m));
-                                            this.vars.applied = false;
-                                        } else if (!this.vars.cancel && !this.vars.applied) {
-                                            if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 35 : 29)) joy(this.vars.target);
-                                            else if (this.vars.duration < (this.vars.target.team === this.vars.caster.team ? 30 : 21)) withdrawal(this.vars.target);
-                                            this.vars.applied = true;
-                                        }
+                                function() {
+                                    if (this.vars.cancel && this.vars.applied) {
+                                        (this.vars.child || []).forEach(m => removeModifier(m));
+                                        this.vars.applied = false;
+                                    } else if (!this.vars.cancel && !this.vars.applied) {
+                                        if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 35 : 29)) joy(this.vars.target);
+                                        else if (this.vars.duration <= (this.vars.target.team === this.vars.caster.team ? 30 : 21)) withdrawal(this.vars.target);
+                                        this.vars.applied = true;
                                     }
                                 }
                             );
                         }
-                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod+(target[0].source === ClassicJoy)) >= 32) toggleListeners(tracker, ['turnEnd']);
+                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 3;
                     }
                 );
             }
@@ -623,7 +615,7 @@ ClassicJoy.skills = {
         {
             name: "Joy",
             properties: ["physical", "disease", "conditional", "buff", "debuff", "pseudo-stat"],
-            reduction: { hp: 100 }, 
+            reduction: { hp: 200 }, 
             description: "Increases ally defense, accuracy, focus, and resist massively for 8 turns. 15 turns after cast, decreases attack, defense, accuracy, evasion, focus, resist, speed, and presence for 30 turns. If in frontline, double reduction, and has a chance to also target enemy frontline to give the stat increase for 7 turns, then the stat decrease after 13 turns that last for 21 turns. Don't take too much though",
             code() {
                 new Modifier("Joy Spreader", `Spreads Joy to allies${this.position === "front" ? ' and frontline enemies' : ''}`,
@@ -637,7 +629,7 @@ ClassicJoy.skills = {
                             return;
                         }
                         logAction(`${this.vars.caster.name} give some joy to ${target[0].name}!`, 'crit');
-                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent);
+                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent.vars?.parent ?? mod.vars.parent);
                         if (type && !type[3]) {
                             currentAction.push([mod, mod.vars.caster]);
                             mod.cancel(true, true);
@@ -662,7 +654,7 @@ ClassicJoy.skills = {
                         } else {
                             mod ? removeModifier(mod) : tracker.changeTarget([], target);
                             new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
-                                { target: target[0], duration: (target[0].team === this.vars.caster.team) ? 45 : 34, properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.vars.caster.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods) >= 45 } } : {}) },
+                                { target: target[0], duration: (target[0].team === this.vars.caster.team) ? 45 : 34, properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.vars.caster.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods)[0] >= 45 } } : {}) },
                                 function() { if (!this.vars.cancel) joy(this.vars.target); },
                                 function(context) {
                                     if (context.unit === this.vars.target) {
@@ -671,22 +663,20 @@ ClassicJoy.skills = {
                                         else if (this.vars.applied && this.vars.duration === (this.vars.target.team === this.vars.caster.team ? 30 : 21)) withdrawal(this.vars.target);
                                     }
                                 },
-                                function(_, temp) {
-                                    if (!temp) {
-                                        if (this.vars.cancel && this.vars.applied) {
-                                            (this.vars.child || []).forEach(m => removeModifier(m));
-                                            this.vars.applied = false;
-                                        } else if (!this.vars.cancel && !this.vars.applied) {
-                                            if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 37 : 27)) joy(this.vars.target);
-                                            else if (this.vars.duration < (this.vars.target.team === this.vars.caster.team ? 30 : 21)) withdrawal(this.vars.target);
-                                            this.vars.applied = true;
-                                        }
+                                function() {
+                                    if (this.vars.cancel && this.vars.applied) {
+                                        (this.vars.child || []).forEach(m => removeModifier(m));
+                                        this.vars.applied = false;
+                                    } else if (!this.vars.cancel && !this.vars.applied) {
+                                        if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 37 : 27)) joy(this.vars.target);
+                                        else if (this.vars.duration <= (this.vars.target.team === this.vars.caster.team ? 30 : 21)) withdrawal(this.vars.target);
+                                        this.vars.applied = true;
                                     }
                                 }
                             );
                         }
-                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod+(target[0].source === ClassicJoy)) >= 32) toggleListeners(tracker, ['turnEnd']);
+                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 3;
                     }
                 );
             }
@@ -717,7 +707,7 @@ ClassicJoy.skills = {
         {
             name: "Joy",
             properties: ["physical", "disease", "conditional", "buff", "debuff", "pseudo-stat"],
-            reduction: { hp: 100 }, 
+            reduction: { hp: 200 }, 
             description: "Increases ally defense, accuracy, focus, and resist massively for 6 turns. 15 turns after cast, decreases attack, defense, accuracy, evasion, focus, resist, speed, and presence for 25 turns. If in frontline, double reduction, and has a chance to also target enemy frontline to give the stat increase for 9 turns, then the stat decrease after 14 turns that last for 26 turns. Don't take too much though",
             code() {
                 new Modifier("Joy Spreader", `Spreads Joy to allies${this.position === "front" ? ' and frontline enemies' : ''}`,
@@ -731,7 +721,7 @@ ClassicJoy.skills = {
                             return;
                         }
                         logAction(`${this.vars.caster.name} give some joy to ${target[0].name}!`, 'crit');
-                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent);
+                        const mod = modifiers.find(m => m.name === "Joy" && m.vars.target === target[0]), tracker = modifiers.find(m => m.name === "Joy Tracker"), type = mod && Object.values(ClassicJoy.skills).map(s => s[0] === mod.vars.parent.vars?.parent ?? mod.vars.parent);
                         if (type && !type[3] && !type[4]) {
                             currentAction.push([mod, mod.vars.caster]);
                             mod.cancel(true, true);
@@ -753,7 +743,7 @@ ClassicJoy.skills = {
                         } else {
                             mod ? removeModifier(mod) : tracker.changeTarget([], target);
                             new Modifier("Joy", "Stat increases, then nothing, then stat decrease", 
-                                { target: target[0], duration: 40, properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.vars.caster.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods) >= 45 } } : {}) },
+                                { target: target[0], duration: 40, properties: ["physical", "disease", "conditional", "buff", "debuff"], listeners: { turnEnd: true }, ...((target[0].team !== this.vars.caster.team) ? { debuff: function(target, calcMods) { resistDebuff(this.vars.caster, [target], calcMods)[0] >= 45 } } : {}) },
                                 function() { if (!this.vars.cancel) joy(this.vars.target); },
                                 function(context) {
                                     if (context.unit === this.vars.target) {
@@ -762,22 +752,20 @@ ClassicJoy.skills = {
                                         else if (this.vars.applied && this.vars.duration === 25+(this.vars.target.team !== this.vars.caster.team)) withdrawal(this.vars.target);
                                     }
                                 },
-                                function(_, temp) {
-                                    if (!temp) {
-                                        if (this.vars.cancel && this.vars.applied) {
-                                            (this.vars.child || []).forEach(m => removeModifier(m));
-                                            this.vars.applied = false;
-                                        } else if (!this.vars.cancel && !this.vars.applied) {
-                                            if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 34 : 31)) joy(this.vars.target);
-                                            else if (this.vars.duration < 25+(this.vars.target.team !== this.vars.caster.team)) withdrawal(this.vars.target);
-                                            this.vars.applied = true;
-                                        }
+                                function() {
+                                    if (this.vars.cancel && this.vars.applied) {
+                                        (this.vars.child || []).forEach(m => removeModifier(m));
+                                        this.vars.applied = false;
+                                    } else if (!this.vars.cancel && !this.vars.applied) {
+                                        if (this.vars.duration > (this.vars.target.team === this.vars.caster.team ? 34 : 31)) joy(this.vars.target);
+                                        else if (this.vars.duration <= 25+(this.vars.target.team !== this.vars.caster.team)) withdrawal(this.vars.target);
+                                        this.vars.applied = true;
                                     }
                                 }
                             );
                         }
-                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod) >= 32*(1+(target[0].source === ClassicJoy))) toggleListeners(tracker, ['turnEnd']);
-                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 5;
+                        if ((tracker.vars.unitMap[target[0].name] += 1+!!mod+(target[0].source === ClassicJoy)) >= 32) toggleListeners(tracker, ['turnEnd']);
+                        if (target[0].source === ClassicJoy) modifiers.find(m => m.name === "Overdose" && m.vars.target === target[0]).vars.count += 3;
                     }
                 );
             }
@@ -864,13 +852,14 @@ ClassicJoy.traits = [
         description: "Starts with massively increased stats that slowly decrease over time and continue even after going negative. Can apply joy to self to undo some stat reduction but speeds up stat reduction. Also more resistant to mutation from joy",
         code() {
             new Modifier("Overdose", "Starts with massively increased stats that slowly decrease over time and continue even after going negative. Can apply joy to self to undo some stat reduction but speeds up stat reduction. Also more resistant to mutation from joy",
-                { target: this, properties: ["physical", "disease", "conditional", "buff"], stats: { attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }, listeners: { turnEnd: true }, trait: true, passive: true, count: 20 },
+                { target: this, properties: ["physical", "disease", "conditional", "buff"], stats: { attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }, listeners: { turnEnd: true }, trait: true, passive: true, count: 10 },
                 function() { Object.defineProperty(this.vars, "properties", { get: () => ["physical", "disease", "conditional", this.vars.count < 0 ? "debuff" : "buff"], configureable: true, enumerable: true })},
                 function(context) {
                     if (context.unit === this.vars.target) {
                         this.cancel(true, true);
-                        this.vars.count -= 1+Math.floor(modifiers.find(m => m.name === "Joy Tracker").vars.unitMap[this.vars.caster.name]/8);
-                        this.vars.stats = Object.fromEntries(Object.entries({ attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }).map(([k, v]) => [k, v*Math.min(this.vars.count, 40)/20]));
+                        const dec = Math.floor(modifiers.find(m => m.name === "Joy Tracker").vars.unitMap[this.vars.caster.name]/8);
+                        this.vars.count = this.vars.count > 10 ? Math.min(Math.max(this.vars.count - 2*dec, 9), this.vars.count - dec) : this.vars.count - dec;
+                        this.vars.stats = Object.fromEntries(Object.entries({ attack: 40, defense: 120, accuracy: 280, evasion: 140, focus: 200, resist: 340, speed: 100, presence: 40 }).map(([k, v]) => [k, v*Math.min(this.vars.count, 20)/20]));
                         this.cancel(false, true);
                     }
                 }
@@ -894,7 +883,7 @@ ClassicJoy.traits = [
                         if (!this.vars.unitMap.some(a => a[0] === context.attacker && a[1] === context.defender)) this.vars.unitMap.push([context.attacker, context.defender]);
                         if (!this.vars.listeners.turnEnd) toggleListeners(this, ['turnEnd']);
                     } else if (context.event === "turnEnd") {
-                        for (const arr of this.vars.unitMap) if (resistDebuff(arr[0], arr[1]) >= 65 +5*(arr[1].star-arr[0].star)) kill(arr[0], arr[1]);
+                        for (const arr of this.vars.unitMap) if (resistDebuff(arr[0], [arr[1]]) >= 65 +5*(arr[1].star-arr[0].star)) kill(arr[0], arr[1]);
                         toggleListeners(this, [], ['turnEnd']);
                     }
                 }
@@ -915,15 +904,15 @@ ClassicJoy.traits = [
                         this.vars.targets = this.vars.targets.filter(u => allUnits.includes(u));
                         this.vars.unitMap = Object.fromEntries(Object.entries(this.vars.unitMap).filter(([n]) => this.vars.targets.some(u => u.name === n)));
                     } else if (!context.type && context.unit) {
-                        for (const unit of this.vars.targets) if (this.vars.unitMap[unit.name] >= 16*(1+(unit.source === ClassicJoy))*(1+!!unit.hp)) {
-                            summon({ team: "monster" }, { ...unit, name: unit.name + " (Mutant)", base: { ...unit.base, hp: unit.base.hp*10, attack: unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: unit.base.presence*4 }}, unit.skills, unit.position);
+                        for (const unit of this.vars.targets) if (this.vars.unitMap[unit.name] >= 16*(1+!!unit.hp)) {
+                            summon({ name: "system", team: "monster" }, { ...unit, name: unit.name + " (Mutant)", base: { ...unit.base, hp: unit.base.hp*10, attack: unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: unit.base.presence*4 }}, unit.skills, unit.position);
                             this.changeTarget([unit]);
                         }
                         toggleListeners(this, [], ['turnEnd']);
                     } else if (context.type && this.vars.targets.includes(context.unit)) {
                         if (context.type === "downed") toggleListeners(this, ['turnEnd']);
                         if (context.type === "death") {
-                            summon({ name: "system", team: "monster" }, { ...context.unit, name: context.unit.name + " (Mutant)", base: { ...context.unit.base, hp: context.unit.base.hp*10, attack: context.unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: unit.base.presence*4 }}, context.unit.skills, context.unit.position);
+                            summon({ name: "system", team: "monster" }, { ...context.unit, name: context.unit.name + " (Mutant)", base: { ...context.unit.base, hp: context.unit.base.hp*10, attack: context.unit.base.attack*3, defense: 19, focus: 25, resist: 25, speed: 10, presence: context.unit.base.presence*4 }}, context.unit.skills, context.unit.position);
                             this.changeTarget([context.unit]);
                         }
                     }

@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const Silhouette = new Unit("Silhouette", [650, 24, 25, 110, 160, 110, 125, 85, 50, "mid", 80, 60, 8, 100, 16], 3, ["independence/loneliness"]);
+export const Silhouette = new Unit("Silhouette", [650, 24, 25, 110, 170, 110, 125, 85, 50, "mid", 80, 60, 8, 120, 16], 3, ["independence/loneliness"]);
 
 Silhouette.description = "3-star physical mystic unit with high hit/resist from attacks/crit/debuffs but low defensive stats and speed, can summon shadows.";
 
@@ -52,17 +52,17 @@ Silhouette.skills = {
             name: "Summon Shadow",
             properties: ["mystic", "mana-block", "mana", "summon", "positional"],
             cost: { mana: 40 },
-            description: "Summon shadow clone of a ally unit in the same position with 1 star stats for 6 turns, only one of the same clone can be summoned at a time",
+            description: "Summon shadow clone of an ally unit in the same position with 1 star stats for 6 turns. If clone already exists, refresh its hp and refund half the action cost",
             target() { specialTarget(this, allUnits.filter(u => u.position === this.position && u.team === this.team && u.custom?.summoner !== this)); },
             code(target) {
-                if (!target?.length || allUnits.find(obj => obj.custom?.summoner === this && obj.name === target[0].name + " (Shadow)")) {
-                    logAction(!target?.length ? "No shadow clones can be summoned!" : "A shadow clone of this unit is already summoned!", "warning");
-                    resourceChange(this, this.skills.special.cost);
-                    this.previousAction[1] = false;
+                const unit = allUnits.find(obj => obj.custom?.summoner === this && obj.name === target[0].name + " (Shadow)");
+                if (unit) {
+                    hpChange(this, [unit], unit.base.hp);
+                    resourceChange(this, this.skills.special.cost.map(v => v/2));
                     return;
                 }
                 logAction(`${this.name} creates a shadow clone of ${target[0].name}!`, "buff");
-                const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val/(1.5**(target[0].star-1)))/(1+9*(stat === "hp")))])), type: "mystic", traits: [...(target[0].traits ?? []), ...(target[0].traits?.includes(trait) ? [] : [trait])], synergy: undefined }, { ...target[0].skills }, this.position);
+                const clone = summon(this, { ...target[0], name: target[0].name + " (Shadow)", base: Object.fromEntries(Object.entries(target[0].base).map(([stat, val]) => [stat, (stat === "position" || stat === "elements") ? val : Math.ceil((val/(1.5**(target[0].star-1)))/(1+(stat === "hp")))])), type: "mystic", traits: [...(target[0].traits ?? []), ...(target[0].traits?.includes(trait) ? [] : [trait])], synergy: undefined }, { ...target[0].skills }, this.position);
                 new Modifier("Summon Shadow", "Summon shadow clone of a ally unit in the same position with 1 star stats",
                     { target: clone, duration: 6, properties: ["mystic", "summon"], listeners: { turnEnd: true, unitChange: true }, perm: true },
                     function() {
@@ -77,7 +77,7 @@ Silhouette.skills = {
                             if (context.type === "death") return !(this.vars.perm = false);
                             if (context.event === "turnEnd") this.vars.duration--;
                             if (context.position) {
-                                for (const stat in this.vars.statObj) if (this.vars.target.base[stat] !== this.vars.statObj[stat]) this.vars.target.base[stat] = Math.ceil((this.vars.target.base[stat]/(1.5**(this.vars.target.star-1)))/(1+9*(stat === "hp")));
+                                for (const stat in this.vars.statObj) if (this.vars.target.base[stat] !== this.vars.statObj[stat]) this.vars.target.base[stat] = Math.ceil((this.vars.target.base[stat]/(1.5**(this.vars.target.star-1)))/(1+(stat === "hp")));
                                 for (const mod of modifiers.filter(m => m.name === "Friends with the Shadows" && m.vars.targets.includes(this.vars.target))) {
                                     currentAction.push([mod, mod.vars.caster]);
                                     if (mod.vars.targets.length === 1) {
@@ -107,12 +107,12 @@ Silhouette.skills = {
         {
             name: "Friends with the Shadows",
             properties: ["mystic", "mana-block", "mana", "conditional", "buff"],
-            cost: { mana: 40 },
-            description: "Shadow summons gain a star up equivalent stat increase, except for hp and resources, also gains the Fear of the Dark if active, lasts 4 turns. If currently active, refreshes duration and refund 10 mana for each turn remaining",
+            cost: { mana: 30 },
+            description: "Shadow summons gain a star up equivalent stat increase, except for hp and resources, also gains the Fear of the Dark if active, lasts 6 turns. If currently active, refreshes duration and refund 5 mana for each turn remaining",
             code() {
                 const dur = refreshModifier([{ name: "Friends with the Shadows", vars: { caster: this, target: this, parent: this.skills.special } }], 4)[0];
-                dur ? resourceChange(this, { mana: 10*dur }) : logAction(`${this.name} empowers the shadows!`, "buff") || new Modifier("Friends with the Shadows", "Shadow summons gain a star up equivalent stat increase, except for hp and resources, also gains the Fear of the Dark if active",
-                    { targets: [], duration: 4, properties: ["mystic", "conditional", "buff"], listeners: { turnStart: true, unitChange: true, modifierStart: true, modifierEnd: true }, cancelListeners: ['modifierStart', 'modifierEnd'], focus: true},
+                dur ? resourceChange(this, { mana: 5*dur }) : logAction(`${this.name} empowers the shadows!`, "buff") || new Modifier("Friends with the Shadows", "Shadow summons gain a star up equivalent stat increase, except for hp and resources, also gains the Fear of the Dark if active",
+                    { targets: [], duration: 6, properties: ["mystic", "conditional", "buff"], listeners: { turnStart: true, unitChange: true, modifierStart: true, modifierEnd: true }, cancelListeners: ['modifierStart', 'modifierEnd'], focus: true},
                     function() { this.changeTarget([], allUnits.filter(u => u.custom?.summoner === this.vars.caster)); },
                     function(context) {
                         if (this.vars.cancel && context.event === 'modifierEnd') return;
@@ -226,13 +226,13 @@ Silhouette.skills = {
         {
             name: "Summon Shadow",
             properties: ["mystic", "mana-block", "mana", "summon", "positional"],
-            cost: { mana: 20 },
-            description: "Summons a 1 star shadow for 4 turns, can't have more shadows than non-summon allies in the same position",
+            cost: { mana: 10 },
+            description: "Summons a 1 star shadow for 4 turns, can't have more shadows than non-summon allies in the same position. If the summon limit is hit, restores the hp of the lowest hp shadow in the same positon and refunds the action cost",
             code() {
-                if (allUnits.filter(u => !u.custom?.summoner && u.position === this.position && u.team === this.team).length <= allUnits.filter(u => u.custom?.summoner === this && u.position === this.position).length) {
-                    logAction("Cannot summon more shadows than allies in the same position!", "warning");
+                const shadows = allUnits.filter(u => u.custom?.summoner === this && u.position === this.position);
+                if (allUnits.filter(u => !u.custom?.summoner && u.position === this.position && u.team === this.team).length <= shadows.length) {
+                    hpChange(this, unitByStat(shadows, 'hp', 'percent', false), 290);
                     resourceChange(this, this.skills.basic.cost);
-                    this.previousAction[1] = false;
                     return;
                 }
                 logAction(`${this.name} creates a shadow.`, "action");
@@ -460,8 +460,8 @@ Silhouette.frontDefaultSkills = [
 ];
 
 Silhouette.backDefaultSkills = [
-    { category: 'special', name: 'Friends with the Shadows' },
-    { category: 'basic', name: 'Summon Shadow' },
+    { category: 'special', name: 'Amulet of Darkness' },
+    { category: 'basic', name: 'Ball of Darkness' },
     { category: 'secondary', name: 'Shadow Shift' },
     { category: 'passive', name: 'Accursed Lineage' },
     { category: 'augment', name: 'Fear of the Dark' }
@@ -470,11 +470,11 @@ Silhouette.backDefaultSkills = [
 Silhouette.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
-        this.base = { ...this.base, accuracy: 140, evasion: 95, focus: 155, resist: 85, speed: 95 };
+        this.base = { ...this.base, accuracy: 140, evasion: 105, focus: 155, resist: 85, speed: 95 };
         this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
-        this.base = { ...this.base, accuracy: 110, evasion: 160, focus: 110, resist: 125, speed: 85 };
+        this.base = { ...this.base, accuracy: 110, evasion: 170, focus: 110, resist: 125, speed: 85 };
         this.skills = {...this.backSkills};
     }
     logAction(`${this.name} shifts to the ${this.position}line.`, "info");
@@ -561,8 +561,8 @@ const trait = {
                 if (!temp) {
                     if (this.vars.cancel && this.vars.applied) this.vars.applied = false;
                     else if (!this.vars.cancel && !this.vars.applied) this.vars.applied = true;
-                    const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('mana-block') && m.vars.modifiers.includes(this)), 0);
-                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child[0]) : (this.vars.cancel-count) || stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
+                    const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('mana-block') && m.vars.modifiers?.includes(this)), 0);
+                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child?.[0], false) : (this.vars.cancel-count) || stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
                 }
             }
         );

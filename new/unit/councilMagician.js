@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 80, 100, 140, 90, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
+export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 90, 100, 140, 90, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
 
 CouncilMagician.skills = {
     special: [
@@ -33,7 +33,7 @@ CouncilMagician.skills = {
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const will = resistDebuff(this, target)[0];
-                will >= 2 ? attribCancelMod("Dispel", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["mystic", "debuff", "cancel", "mana-block"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'mystic' ) : logAction(`${target[0].name} resists Dispel!`, 'miss');
+                will >= 2 ? attribCancelMod("Dispel", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/33), properties: ["mystic", "debuff", "cancel", "mana-block"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'mystic') : logAction(`${target[0].name} resists Dispel!`, 'miss');
             }
         },
         {
@@ -261,6 +261,15 @@ function wildMagic(buff) {
                         logAction(`${this.vars.caster.name} teleports back to the backline.`, "info");
                         resetStat(this.vars.caster, ["defense", "evasion", "focus", "speed", "presence"]);
                         if (eventState.positionChange.length) handleEvent('positionChange', { unit: this.vars.caster, position: "back" });
+                        if (!allUnits.filter(u => u.hp && u.position === "front" && u.team === this.vars.caster.team).length) {
+                            const midLine = allUnits.filter(u => u.hp && u.base.position === 'mid' && u.team === this.vars.caster.team);
+                            if (midLine.length) {
+                                for (const unit of midLine) {
+                                    unit.switchPosition();
+                                    unit.timer += 1000;
+                                }
+                            } else this.vars.caster.stun++;
+                        }
                         return !(this.vars.perm = false);
                     }
                 },
@@ -277,7 +286,7 @@ function wildMagic(buff) {
             break;
         case 3:
             currentAction.push([CouncilMagician.skills.special[0], this]);
-            CouncilMagician.skills.special[0].code.call(this, buff ? randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 1, true) : [this]);
+            CouncilMagician.skills.special[0].code.call(this, buff ? [randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 2, true).reduce((u, v) => (!u || v.position === "back") ? u = v : u, null)] : [this]);
             currentAction.pop();
             break;
         case 4:

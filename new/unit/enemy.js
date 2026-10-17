@@ -88,8 +88,8 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 30;
-                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + 50;
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 20;
+                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + 75;
                         return true;
                     }
                 );
@@ -148,7 +148,7 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 30;
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 20;
                         return true;
                     }
                 );
@@ -195,7 +195,7 @@ enemy.skills = {
             description: "Increases attack and accuracy every turn until attacking or stuned, which it resets",
             code() {
                 new Modifier("Power Up", "Increases attack and accuracy every turn until attacking or stuned, which it resets",
-                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 15, accuracy: 25 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
+                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 10, accuracy: 35 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.target) return !++this.vars.charge;
@@ -276,7 +276,7 @@ enemy.skills = {
             description: "Increases attack/accuracy/focus every turn until attacking or stuned, which it resets",
             code() {
                 new Modifier("Power Up", "Increases attack/accuracy/focus every turn until attacking or stuned, which it resets",
-                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 30, accuracy: 50, focus: 50 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
+                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 20, accuracy: 65, focus: 50 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.target) return !++this.vars.charge;

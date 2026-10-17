@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 28, 28, 95, 70, 90, 70, 100, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
+export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 28, 28, 95, 80, 90, 70, 100, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
 
 ArtificialSoldier.skills = {
     special: [
@@ -52,13 +52,13 @@ ArtificialSoldier.skills = {
             name: "Magic Weapon",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "attack", "conditional", "mana"],
             description: "Attacks a single target twice with increased accuracy and focus, can spend 15 mana to increase attack",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -15 }) ? 16 : 0 }, accuracy: { bonus: 60 }, focus: { bonus: 30 } } }); }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -15 }) ? 18 : 0 }, accuracy: { bonus: 60 }, focus: { bonus: 30 } } }); }
         },
         {
             name: "Energy Rifle",
             properties: ["physical", "stamina-block", "techno", "energy-block", "attack", "conditional", "energy"],
             description: "Attacks a single target 4 times with increased attack, can spend 10 energy to increase accuracy",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { attack: { bonus: 8 }, accuracy: { bonus: resourceChange(this, { energy: -10 }) ? 30 : 0 } } }); }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { attack: { bonus: 8 }, accuracy: { bonus: resourceChange(this, { energy: -10 }) ? 80 : 0 } } }); }
         },
         {
             name: "Recharge",
@@ -96,7 +96,7 @@ ArtificialSoldier.skills = {
             name: "Energy Rifle",
             properties: ["physical", "techno", "energy-block", "attack", "conditional", "energy"],
             description: "Attacks a single target 4 times, can spend 5 energy to increase accuracy",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { accuracy: { bonus: resourceChange(this, { energy: -5 }) ? 20 : 0 } } }); }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 4, { attacker: { accuracy: { bonus: resourceChange(this, { energy: -5 }) ? 40 : 0 } } }); }
         },
         {
             name: "Recharge",

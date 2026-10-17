@@ -79,7 +79,7 @@ class Modifier {
         };
         if (currentAction.length) {
             this.vars.parent = currentAction.at(-1)[0];
-            if (currentAction.at(-1)[0].vars) currentAction.at(-1)[0].vars.child ? currentAction.at(-1)[0].vars.child.push(this) : currentAction.at(-1)[0].vars.child = [this];
+            if (currentAction.at(-1)[0].vars) (currentAction.at(-1)[0].vars.child ??= []).push(this);
         }
         this.vars.cancel = 0;
         modifiers.push(this);
@@ -145,7 +145,7 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
 
 function removeModifier(modifier, err=true) {
     if (!modifier?.vars) {
-        if (err) throw new Error(`${currentAction.at(-1)?.[1]?.name || "The system"} tried removing a non${modifier == null ? "existent " : "-" }modifier!`);
+        if (err) throw new TypeError(`${currentAction.at(-1)?.[1]?.name || "The system"} tried removing a non${modifier == null ? "existent " : "-" }modifier!`);
         else return;
     }
     let index;
@@ -296,7 +296,7 @@ function blockModifier(name, vari, res, dur = "target", regen = null) {
 
 function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, block = true) {
     const res = attrib === 'physical' ? 'stamina' : attrib === 'mystic' ? 'mana' : 'energy';
-    return new Modifier(name, `Ends non-passive ${attrib} modifiers target is focusing, cancels ${attrib} modifiers on target, and disables ${res} regen`, vari,
+    return new Modifier(name, `Ends non-passive ${attrib} modifiers target is focusing${block ? ',' : 'and'} cancels ${attrib} modifiers on target${block ? `, and disables ${res} regen` : ''}`, vari,
         function() {
             this.vars.modifiers = [];
             if (ignore) this.vars.ignore = modifiers.filter(m => ignore.call(this, m));
@@ -313,9 +313,10 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, bloc
                 if (block) logAction(`${this.vars.target}'s ${res} is disabled!`, "debuff");
             }
             this.vars.listeners ? this.vars.listeners.modifierEnd = this.vars.listeners.modifierStart = this.vars.listeners.targetChange = true : this.vars.listeners = { targetChange: true, modifierStart: true, modifierEnd: true };
+            (this.vars.cancelListeners ??= []).push('targetChange', 'modifierStart', 'modifierEnd')
             if (block) {
                 this.vars.listeners.resourceChange = true;
-                if (!(this.vars.cancelListeners ??= []).includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
+                if (!this.vars.cancelListeners.includes('resourceChange')) this.vars.cancelListeners.push('resourceChange');
             }
         },
         function(context) {
@@ -381,10 +382,14 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, bloc
 }
 
 new Modifier("Reapply Passive", "Reapplies passive modifiers on unit revive",
-    { caster: system, target: system, properties: ["system"], listeners: { unitChange: true }, perm: true },
+    { caster: system, target: system, properties: ["system"], listeners: { unitChange: true }, modList: {}, perm: true },
     function() {},
     function(context) {
-        if (context.type === "revive") for (const mod of modifiers.filter(m => m.vars.caster === context.unit && m.vars.passive && (m.vars.focus || m.vars.penalty))) {
+        if (context.unit.hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === context.unit && modifiers[i].vars.focus) {
+            if (modifiers[i].vars.passive) (this.vars.modList[context.unit.name] ??= []).push(modifiers[i]);
+            removeModifier(modifiers[i]);
+        }
+        if (context.type === "revive") for (const mod of (this.vars.modList[context.unit.name] ?? [])) {
             currentAction.push([mod, mod.vars.caster]);
             mod.cancel(false);
             currentAction.pop();

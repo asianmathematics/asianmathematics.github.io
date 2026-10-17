@@ -294,10 +294,7 @@ function damage(attacker, defenders, critical = .5, calcMods = {}) {
             }
             if (total) {
                 defenders[i].hp = Math.max(defenders[i].hp - total, 0);
-                if (defenders[i].hp === 0) {
-                    if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
-                    if (defenders[i].hp === 0) for (let j = modifiers.length - 1; j >= 0; j--) if (modifiers[j].vars.caster === defenders[i] && modifiers[j].vars.focus) removeModifier(modifiers[j]);
-                }
+                if (defenders[i].hp === 0 && eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
                 critical[i].length > 1 ? logAction(`${attacker.name} makes ${critical[i].length} attacks on ${defenders[i].name} dealing ${comma(hit)} for a total of ${total} damage!`, "hit") : logAction(`${attacker.name} hits ${defenders[i].name} dealing ${hit[0]} damage!`, "hit");
                 dCheck = true;
             }
@@ -348,10 +345,7 @@ function hpChange(unit, targets, values) {
             damageSingle = context.nil ? 0 : Math.ceil(Math.max((context.damageSingle + (context.bonus || 0))*(context.mult || 1)/(context.div || 1) + (context.flatBonus || 0), 0));
         }
         defenders[i].hp = Math.max(defenders[i].hp - damageSingle, 0);
-        if (defenders[i].hp === 0) {
-            if (eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
-            if (defenders[i].hp === 0) for (let j = modifiers.length - 1; j >= 0; j--) if (modifiers[j].vars.caster === defenders[i] && modifiers[j].vars.focus) removeModifier(modifiers[j]);
-        }
+        if (defenders[i].hp === 0 && eventState.unitChange.length) handleEvent('unitChange', {type: 'downed', unit: defenders[i]});
         logAction(`${unit.name} dealt ${damageSingle} damage to ${defenders[i].name}!`, "hit");
     }
     context = {healer: unit, targets, heals, direct: true};

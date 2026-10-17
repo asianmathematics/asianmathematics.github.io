@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const Mannequin = new Unit("Mannequin", [750, 45, 22, 120, 120, 125, 70, 130, 50, "mid", 100, 100, 10], 3, ["perfection/precision", "independence/loneliness", "passion/hatred"]);
+export const Mannequin = new Unit("Mannequin", [750, 45, 22, 120, 120, 125, 70, 125, 50, "mid", 90, 100, 10], 3, ["perfection/precision", "independence/loneliness", "passion/hatred"]);
 
 Mannequin.description = "3-star physical midline unit with high offensive stats and speed but low defense and crit/debuff resist. Has strong attacks with reload mechanics.";
 
@@ -342,11 +342,11 @@ Mannequin.backDefaultSkills = [
 Mannequin.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
-        this.base = { ...this.base, attack: 55, evasion: 80, resist: 55, speed: 150, presence: 100 };
+        this.base = { ...this.base, attack: 50, evasion: 75, resist: 55, speed: 150, presence: 100 };
         this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
-        this.base = { ...this.base, attack: 45, evasion: 120, resist: 70, speed: 130, presence: 50 };
+        this.base = { ...this.base, attack: 45, evasion: 120, resist: 70, speed: 125, presence: 50 };
         this.skills = {...this.backSkills};
     }
     logAction(`${this.name} moves to the ${this.position}line.`, "info");
@@ -364,7 +364,7 @@ Mannequin.synergy = [
             new Modifier("Familiar Face", "When healing Classical (Joy), or when Classical (Joy) heals Mannequin, doubles heal rate",
                 { targets: [], properties: ["physical", "heal"], listeners: { singleHeal: true }, cancelListeners: ['singleHeal'], passive: true, synergy: true },
                 function() {},
-                function(context) { if ((context.healer.source.name === "Classical (Joy)" && !context.healer.custom?.summoner && context.target === this.vars.caster) || (context.target.source.name === "Classical (Joy)" && !context.target.custom?.summoner && context.healer === this.vars.caster)) context.mult = 2; }
+                function(context) { if ((context.healer.source.name === "Classical (Joy)" && !context.healer.custom?.summoner && context.target === this.vars.caster) || (context.target.source.name === "Classical (Joy)" && !context.target.custom?.summoner && context.healer === this.vars.caster)) context.mult = (context.mult || 1) + 1; }
             );
         }
     }

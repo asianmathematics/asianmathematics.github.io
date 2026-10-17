@@ -109,7 +109,7 @@ CouncilScientist.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
+                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team)), 1, { attacker: { attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
                             this.vars.duration--;
                         }
                         return this.vars.duration >= 0;
@@ -200,7 +200,7 @@ CouncilScientist.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 1, { attacker: {attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
+                            if (this.vars.applied) attack(this.vars.caster, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team)), 1, { attacker: {attack: { bonus: 30 }, accuracy: { bonus: 40 } } });
                             this.vars.duration--;
                         }
                         return this.vars.duration >= 0;
@@ -557,7 +557,7 @@ Drone.traits = [{
     properties: ["trait", "techno", "conditional", "stun"],
     description: "More resistant to energy-block effects, but a successfun energy-block effect stuns",
     code() {
-        new Modifier("Internal", "More resistant to energy-block effects, but a successfun energy-block effect stuns",
+        new Modifier("Internal Circuitry", "More resistant to energy-block effects, but a successfun energy-block effect stuns",
             { target: this, properties: ["techno", "conditional", "stun"], listeners: { modifierStart: true, modifierEnd: false }, modifiers: [], passive: true, trait: true },
             function() {
                 for (const mod of modifiers.filter(m => m.vars.properties.includes('energy-block') && m.vars.target === this.vars.target)) mod.vars.debuff.call(mod, this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
@@ -589,8 +589,8 @@ Drone.traits = [{
                 if (!temp) {
                     if (this.vars.cancel && this.vars.applied) this.vars.applied = false;
                     else if (!this.vars.cancel && !this.vars.applied) this.vars.applied = true;
-                    const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('energy-block') && m.vars.modifiers.includes(this)), 0);
-                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child[0]) : (this.vars.cancel-count) || stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
+                    const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('energy-block') && m.vars.modifiers?.includes(this)), 0);
+                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child?.[0], false) : (this.vars.cancel-count) || stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
                 }
             }
         );

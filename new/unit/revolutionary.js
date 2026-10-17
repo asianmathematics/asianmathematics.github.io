@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const Revolutionary = new Unit("Revolutionary", [850, 50, 20, 130, 90, 150, 65, 100, 55, "mid", 75, 150, 18], 3, ["passion/hatred"]);
+export const Revolutionary = new Unit("Revolutionary", [850, 50, 20, 130, 100, 150, 65, 100, 55, "mid", 75, 150, 18], 3, ["passion/hatred"]);
 
 Revolutionary.skills = {
     special: [
@@ -143,7 +143,7 @@ Revolutionary.skills = {
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
                     switch (true) {
                         case will >= 50:
-                            stunModifier("Flashbang", { target: target[0], duration: 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 75; } });
+                            stunModifier("Flashbang", { target: target[0], duration: 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 50; } });
                         case will >= 20:
                             basicModifier("Flashbang debuff", "Evasion, and speed decrease", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/50), properties: ["physical", "debuff"], stats: { evasion: -30, speed: -15 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 20; } });
                             break;
@@ -425,11 +425,11 @@ Revolutionary.backDefaultSkills = [
 Revolutionary.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
-        this.base = { ...this.base, attack: 60, evasion: 50, resist: 50, speed: 120, presence: 105 };
+        this.base = { ...this.base, attack: 60, evasion: 60, resist: 50, speed: 120, presence: 105 };
         this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
-        this.base = { ...this.base, attack: 50, evasion: 90, resist: 65, speed: 100, presence: 55 };
+        this.base = { ...this.base, attack: 50, evasion: 100, resist: 65, speed: 100, presence: 55 };
         this.skills = {...this.backSkills};
     }
     logAction(`${this.name} moves to the ${this.position}line.`, "info");
