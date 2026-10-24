@@ -201,7 +201,7 @@ function auraModifier(name, description, vari, mod, filter) {
                     [...(this.vars.child || [])].forEach(m => removeModifier(m));
                     this.vars.applied = false;
                 } else if (!this.vars.cancel && !this.vars.applied) {
-                    this.vars.targets.forEach(u => mod(u));
+                    this.vars.targets.forEach(u => mod.call(this, u));
                     this.vars.applied = true;
                 }
             }
@@ -209,7 +209,7 @@ function auraModifier(name, description, vari, mod, filter) {
         function(remove = [], add = []) {
             if (!this.vars.cancel) {
                 this.vars.child?.filter(m => remove.includes(m.vars.target)).forEach(m => removeModifier(m));
-                add.forEach(u => mod(u));
+                add.forEach(u => mod.call(this, u));
             }
             this.vars.targets = [...this.vars.targets.filter(target => !remove.includes(target)), ...add];
         }
@@ -385,9 +385,10 @@ new Modifier("Reapply Passive", "Reapplies passive modifiers on unit revive",
     { caster: system, target: system, properties: ["system"], listeners: { unitChange: true }, modList: {}, perm: true },
     function() {},
     function(context) {
-        if (context.unit.hp === 0) for (let i = modifiers.length - 1; i >= 0; i--) if (modifiers[i].vars.caster === context.unit && modifiers[i].vars.focus) {
-            if (modifiers[i].vars.passive) (this.vars.modList[context.unit.name] ??= []).push(modifiers[i]);
-            removeModifier(modifiers[i]);
+        const mods = [...modifiers]
+        if (context.unit.hp === 0) for (let i = mods.length - 1; i >= 0; i--) if (mods[i].vars.caster === context.unit && mods[i].vars.focus) {
+            if (mods[i].vars.passive) (this.vars.modList[context.unit.name] ??= []).push(mods[i]);
+            removeModifier(mods[i]);
         }
         if (context.type === "revive") for (const mod of (this.vars.modList[context.unit.name] ?? [])) {
             currentAction.push([mod, mod.vars.caster]);
@@ -403,11 +404,12 @@ new Modifier("Remove Reduction", "Remove passive modifiers and reduction on midl
     { caster: system, target: system, properties: ["system"], listeners: { positionChange: true }, perm: true },
     function() {},
     function(context) {
-        for (let i = modifiers.length - 1; i >= 0; i--) {
-            if (modifiers[i].vars.caster !== context.unit || !modifiers[i].vars.passive || modifiers[i].vars.trait || modifiers[i].vars.synergy) continue;
-            if (modifiers[i].vars.reduction) for (const stat of Object.keys(modifiers[i].vars.reduction)) modifiers[i].vars.caster.mult[stat] ? (modifiers[i].vars.caster.base[stat] += modifiers[i].vars.reduction[stat]) && resetStat(modifiers[i].vars.caster, [stat]) : (modifiers[i].vars.caster.base[stat] += modifiers[i].vars.reduction[stat]) && (modifiers[i].vars.caster[stat] = Math.min(modifiers[i].vars.caster[stat] + modifiers[i].vars.reduction[stat], modifiers[i].vars.caster.base[stat]));
-            modifiers[i].vars.passive = false;
-            removeModifier(modifiers[i]);
+        const mods = [...modifiers]
+        for (let i = mods.length - 1; i >= 0; i--) {
+            if (mods[i].vars.caster !== context.unit || !mods[i].vars.passive || mods[i].vars.trait || mods[i].vars.synergy) continue;
+            if (mods[i].vars.reduction) for (const stat of Object.keys(mods[i].vars.reduction)) mods[i].vars.caster.mult[stat] ? (mods[i].vars.caster.base[stat] += mods[i].vars.reduction[stat]) && resetStat(mods[i].vars.caster, [stat]) : (mods[i].vars.caster.base[stat] += mods[i].vars.reduction[stat]) && (mods[i].vars.caster[stat] = Math.min(mods[i].vars.caster[stat] + mods[i].vars.reduction[stat], mods[i].vars.caster.base[stat]));
+            mods[i].vars.passive = false;
+            removeModifier(mods[i]);
         }
         for (const skill of ['passive', 'augment', 'conditional']) if (context.unit.skills[skill]) {
             currentAction.push([context.unit.skills[skill], context.unit]);

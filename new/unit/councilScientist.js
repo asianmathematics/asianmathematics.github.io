@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, createUnit } from './unit.js';
 
-export const CouncilScientist = new Unit("Science Council Member", [1000, 21, 28, 100, 80, 120, 80, 90, 130, "back", 100, 70, 6, , , 80, 9], 3, ["independence/loneliness"]);
+export const CouncilScientist = new Unit("Science Council Member", [1000, 21, 28, 100, 80, 110, 80, 90, 130, "back", 100, 70, 6, , , 80, 9], 3, ["independence/loneliness"]);
 
 CouncilScientist.skills = {
     special: [
@@ -76,9 +76,9 @@ CouncilScientist.skills = {
         {
             name: "Backup Power",
             properties: ["physical", "stamina-block", "stamina", "energy-gain"],
-            cost: { stamina: 30 },
-            description: "Recover a lot of energy (~45% max energy)",
-            code() { resourceChange(this, { energy: 4.5 * this.energyRegen }, true); }
+            cost: { stamina: 20 },
+            description: "Recover a lot of energy (~80% max energy)",
+            code() { resourceChange(this, { energy: 8 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -167,8 +167,8 @@ CouncilScientist.skills = {
             name: "Backup Power",
             properties: ["physical", "stamina-block", "stamina", "energy-gain"],
             cost: { stamina: 10 },
-            description: "Recover a lot of energy (~25% max energy)",
-            code() { resourceChange(this, { energy: 2.5 * this.energyRegen }, true); }
+            description: "Recover a lot of energy (~60% max energy)",
+            code() { resourceChange(this, { energy: 6 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -211,8 +211,8 @@ CouncilScientist.skills = {
         {
             name: "Backup Power",
             properties: ["physical", "stamina-block", "energy-gain"],
-            description: "Recover some energy (~15% max energy)",
-            code() { resourceChange(this, { energy: 1.5 * this.energyRegen }, true); }
+            description: "Recover some energy (~40% max energy)",
+            code() { resourceChange(this, { energy: 4 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -265,12 +265,12 @@ CouncilScientist.skills = {
             name: "Backup Power",
             properties: ["physical", "energy-gain"],
             reduction: { stamina: 20, staminaRegen: 2 },
-            description: "Regen energy (~10% max energy) each turn",
+            description: "Regen energy (~20% max energy) each turn",
             code() {
-                new Modifier("Backup Power", `Regen energy (~10% max energy) each turn`,
+                new Modifier("Backup Power", `Regen energy (~20% max energy) each turn`,
                     { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen }, true); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: 2* this.vars.target.energyRegen }, true); }
                 );
             }
         },
@@ -302,12 +302,12 @@ CouncilScientist.skills = {
             name: "Backup Power",
             properties: ["physical", "energy-gain"],
             reduction: { stamina: 20, staminaRegen: 2 },
-            description: "Regen energy (~15% max energy) each turn",
+            description: "Regen energy (~30% max energy) each turn",
             code() {
-                new Modifier("Backup Power", `Regen energy (~15% max energy) each turn`,
+                new Modifier("Backup Power", `Regen energy (~30% max energy) each turn`,
                     { target: this, properties: ["physical", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: this.vars.target.energyRegen * 1.5 }, true); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { energy: 3* this.vars.target.energyRegen }, true); }
                 );
             }
         },
@@ -344,7 +344,7 @@ CouncilScientist.defaultSkills = [
     { category: 'augment', name: 'Pursuit of Knowledge' }
 ];
 
-const Drone = new Unit("Drone", [450, 10, 14, 44, 36, 50, 36, 36, 60, "front", 44, 30, 4, , , 44, 6], 2);
+const Drone = new Unit("Drone", [400, 14, 10, 50, 36, 50, 36, 40, 60, "front", 40, 30, 4, , , 50, 6], 2);
 
 Drone.skills = [
     {
@@ -368,7 +368,7 @@ Drone.skills = [
             {
                 name: "Disrupt Energy",
                 properties: ["techno", "energy-block", "energy", "debuff"],
-                cost: { energy: 20 },
+                cost: { energy: 10 },
                 description: "Block target energy regen for 1 turn, 1% chance to fail",
                 target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
                 code(target) {
@@ -393,7 +393,7 @@ Drone.skills = [
             },
             {
                 name: "Disrupt Energy",
-                properties: ["techno", "energy-block", "debuff"],
+                properties: ["techno", "debuff"],
                 description: "Chance to block target energy regen for 1 turn",
                 code() {
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
@@ -440,7 +440,7 @@ Drone.skills = [
             {
                 name: "Disrupt Energy",
                 properties: ["techno", "energy-block", "energy", "debuff"],
-                cost: { energy: 30 },
+                cost: { energy: 20 },
                 description: "Block target energy regen for a few turns depending on chance, 1% chance to fail",
                 target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
                 code(target) {
@@ -452,8 +452,8 @@ Drone.skills = [
                 name: "Recharge",
                 properties: ["physical", "stamina-block", "stamina", "energy-gain"],
                 cost: { stamina: 20 },
-                description: "Recover a lot of energy (~35% max energy)",
-                code() { resourceChange(this, { energy: 3.5 * this.energyRegen }, true); }
+                description: "Recover a lot of energy (~60% max energy)",
+                code() { resourceChange(this, { energy: 6 * this.energyRegen }, true); }
             }
         ],
         basic: [
@@ -476,15 +476,15 @@ Drone.skills = [
                 description: "Chance to block target energy regen for 1 turn",
                 code() {
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
-                    will >= 30 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
+                    will >= 2 ? blockModifier("Disrupt Energy", { target: target[0], duration: 1, properties: ["techno", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } }, 'energy') : logAction(`${target[0].name} resists Disrupt Energy!`, 'miss');
                 }
             },
             {
                 name: "Recharge",
                 properties: ["physical", "stamina-block", "stamina", "energy-gain"],
                 cost: { stamina: 10 },
-                description: "Recover a lot of energy (~25% max energy)",
-                code() { resourceChange(this, { energy: 2.5 * this.energyRegen }, true); }
+                description: "Recover a lot of energy (~40% max energy)",
+                code() { resourceChange(this, { energy: 4 * this.energyRegen }, true); }
             }
         ],
         secondary: [
@@ -503,8 +503,8 @@ Drone.skills = [
             {
                 name: "Recharge",
                 properties: ["physical", "stamina-block", "energy"],
-                description: "Recover some energy (~15% max energy)",
-                code() { resourceChange(this, { energy: 1.5 * this.energyRegen }, true); }
+                description: "Recover some energy (~20% max energy)",
+                code() { resourceChange(this, { energy: 2 * this.energyRegen }, true); }
             }
         ],
         passive: [
@@ -555,9 +555,9 @@ const droneSkills = function(unit) {
 Drone.traits = [{
     name: "Internal Circuitry",
     properties: ["trait", "techno", "conditional", "stun"],
-    description: "More resistant to energy-block effects, but a successfun energy-block effect stuns",
+    description: "More resistant to energy-block effects, but a successful energy-block effect stuns",
     code() {
-        new Modifier("Internal Circuitry", "More resistant to energy-block effects, but a successfun energy-block effect stuns",
+        new Modifier("Internal Circuitry", "More resistant to energy-block effects, but a successful energy-block effect stuns",
             { target: this, properties: ["techno", "conditional", "stun"], listeners: { modifierStart: true, modifierEnd: false }, modifiers: [], passive: true, trait: true },
             function() {
                 for (const mod of modifiers.filter(m => m.vars.properties.includes('energy-block') && m.vars.target === this.vars.target)) mod.vars.debuff.call(mod, this.vars.target) ? this.vars.modifiers.push(mod) : mod.vars.parent.vars?.targets.includes(this.vars.target) ? mod.vars.parent.changeTarget([this.vars.target]) : mod.changeTarget(this.vars.target);
@@ -579,7 +579,7 @@ Drone.traits = [{
                     } else {
                         this.vars.modifiers.splice(this.vars.modifiers.indexOf(context.modifier), 1);
                         if (!this.vars.modifiers.length) {
-                            if (this.vars.applied) removeModifier(this.vars.child[0]);
+                            if (this.vars.applied) removeModifier(this.vars.child?.[0], false);
                             toggleListeners(this, [], ['modifierEnd']);
                         }
                     }

@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const DexSoldier = new Unit("DeX (Soldier)", [1600, 25, 50, 70, 50, 60, 80, 55, 200, "front", 200, 120, 24, 30, 5], 3, ["perfection/precision"]);
+export const DexSoldier = new Unit("DeX (Soldier)", [1600, 25, 50, 70, 50, 60, 70, 55, 200, "front", 200, 120, 24, 30, 5], 3, ["perfection/precision"]);
 
 DexSoldier.description = "3-star physical mystic frontline unit with high defensive stats but low speed, has strong sustain and defensive capabilities.";
 
@@ -39,12 +39,12 @@ DexSoldier.skills = {
         {
             name: "But It Refused",
             properties: ["physical", "stamina-block", "stamina", "revive"],
-            cost: { stamina: 70 },
-            description: `Revives once per turn for the next 5 turns`,
+            cost: { stamina: 50 },
+            description: `Revives once per turn for the next 6 turns`,
             code() {
                 logAction(`${this.name} refuses to die!`, "buff");
                 new Modifier("But It Refused", `Revives once per turn`,
-                    { target: this, duration: 5, properties: ["physical", "revive"], listeners: { turnStart: true, unitChange: true }, cancelListeners: ['unitChange'], uses: 1 },
+                    { target: this, duration: 6, properties: ["physical", "revive"], listeners: { turnStart: true, unitChange: true }, cancelListeners: ['unitChange'], uses: 1 },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.target && context.type === "downed") {
@@ -67,12 +67,12 @@ DexSoldier.skills = {
         {
             name: "Guardian",
             properties: ["physical", "stamina-block", "stamina", "redirect"],
-            cost: { stamina: 50 },
+            cost: { stamina: 30 },
             description: "Redirects all non-aoe, non-auto-hit attacks on the frontline to self with increased defense for 1 turn",
             code() {
                 logAction(`${this.name} protects the frontline!`, "buff");
                 new Modifier("Guardian", "Redirects attacks and increases defense",
-                    { target: this, duration: 1, properties: ["physical"], stats: { defense: 40 }, listeners: { attackStart: true, turnStart: true }, cancelListeners: ['attackStart'], focus: true },
+                    { target: this, duration: 1, properties: ["physical"], stats: { defense: 45 }, listeners: { attackStart: true, turnStart: true }, cancelListeners: ['attackStart'], focus: true },
                     function() {},
                     function(context) {
                         if (context.event === "attackStart" && context.attacker.team !== this.vars.target.team && !(currentAction.at(-2)[0].properties || currentAction.at(-2)[0].vars.properties).some(p => ["aoe", "auto-hit"].includes(p))) {
@@ -97,14 +97,14 @@ DexSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "buff"],
             cost: { stamina: 30 },
             description: "Increases defense, resist, and presence for 5 turns",
-            code() { basicModifier("Last Stand", "Defense, resist, and presence increase", { target: this, duration: 5, properties: ["physical", "buff"], stats: { defense: 45, resist: 60, presence: 200 }, listeners: { turnStart: true }, focus: true }); }
+            code() { basicModifier("Last Stand", "Defense, resist, and presence increase", { target: this, duration: 5, properties: ["physical", "buff"], stats: { defense: 30, resist: 100, presence: 200 }, listeners: { turnStart: true }, focus: true }); }
         },
         {
             name: "Quake Hammer",
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "mana", "attack", "aoe", "multi-target"],
-            cost: { stamina: 30, mana: 10 },
-            description: "Makes two AOE attacks on enemy frontline",
-            code() { attack(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 2); }
+            cost: { stamina: 40, mana: 15 },
+            description: "Makes three AOE attacks on enemy frontline",
+            code() { attack(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 3); }
         }
     ],
     basic: [
@@ -134,8 +134,7 @@ DexSoldier.skills = {
         },
         {
             name: "Guardian",
-            properties: ["physical", "stamina-block", "stamina", "redirect"],
-            cost: { stamina: 20 },
+            properties: ["physical", "stamina-block", "redirect"],
             description: "Redirects all non-aoe, non-auto-hit attacks on lowest hp frontline unit to self for 1 turn",
             code() {
                 const target = unitByStat(allUnits.filter(u => u.hp && u.position === "front" && u.team === this.team), 'hp', 'percent', false)[0];
@@ -165,14 +164,14 @@ DexSoldier.skills = {
             name: "Last Stand",
             properties: ["physical", "stamina-block", "buff"],
             description: "Increases defense, resist, and presence for 2 turns. If currently active, refreshes duration and allow stamina regen next turn",
-            code() { refreshModifier([{ name: "Last Stand", vars: { caster: this, target: this, parent: this.skills.basic } }])[0] ? this.previousAction[0] = false : basicModifier("Last Stand", "Defense, resist, and presence increase", { target: this, duration: 3, properties: ["physical", "buff"], stats: { defense: 30, resist: 30, presence: 150 }, listeners: { turnEnd: true }, focus: true }); }
+            code() { refreshModifier([{ name: "Last Stand", vars: { caster: this, target: this, parent: this.skills.basic } }])[0] ? this.previousAction[0] = false : basicModifier("Last Stand", "Defense, resist, and presence increase", { target: this, duration: 3, properties: ["physical", "buff"], stats: { defense: 15, resist: 60, presence: 150 }, listeners: { turnEnd: true }, focus: true }); }
         },
         {
             name: "Quake Hammer",
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "attack", "aoe", "multi-target"],
             cost: { stamina: 10 },
-            description: "Makes an AOE attack on enemy frontline with reduced attack and focus",
-            code() { attack(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 1, { attacker: { attack: { bonus: -8 }, focus: { bonus: -20 } } }); }
+            description: "Makes two AOE attacks on enemy frontline with reduced attack and focus",
+            code() { attack(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 2, { attacker: { attack: { bonus: -6 }, focus: { bonus: -16 } } }); }
         }
     ],
     secondary: [
@@ -205,19 +204,19 @@ DexSoldier.skills = {
             name: "Last Stand",
             properties: ["physical", "buff"],
             description: "Increases defense and presence for 1 turn",
-            code() { if (!refreshModifier([{ name: "Last Stand", vars: { caster: this, target: this, parent: this.skills.secondary } }], 2)[0]) basicModifier("Last Stand", "Defense and presence increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { defense: 20, presence: 75 }, listeners: { turnEnd: true }, focus: true }); }
+            code() { if (!refreshModifier([{ name: "Last Stand", vars: { caster: this, target: this, parent: this.skills.secondary } }], 2)[0]) basicModifier("Last Stand", "Defense and presence increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { defense: 10, presence: 75 }, listeners: { turnEnd: true }, focus: true }); }
         }
     ],
     passive: [
         {
             name: "Determination",
             properties: ["physical", "stamina", "conditional", "heal"],
-            description: `Heals (~5% max HP) at start of turn whenever stamina is at least half`,
+            description: `Heals (~7.5% max HP) at start of turn whenever stamina is at least half`,
             code() {
                 new Modifier("Determination", `Heals at start of turn whenever stamina is at least half`,
                     { target: this, properties: ["physical", "stamina", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.target && 2 * this.vars.target.stamina >= this.vars.target.base.stamina) heal(this.vars.caster, [this.vars.target], [.5]); }
+                    function(context) { if (context.unit === this.vars.target && 2 * this.vars.target.stamina >= this.vars.target.base.stamina) heal(this.vars.caster, [this.vars.target], [.75]); }
                 );
             }
         },
@@ -266,7 +265,7 @@ DexSoldier.skills = {
             name: "Last Stand",
             properties: ["physical", "buff"],
             description: "Increases defense and presence",
-            code() { basicModifier("Last Stand", "Increases defense and presence", { target: this, properties: ["physical", "buff"], stats: { defense: 15, presence: 50 }, focus: true, passive: true }); }
+            code() { basicModifier("Last Stand", "Increases defense and presence", { target: this, properties: ["physical", "buff"], stats: { defense: 10, presence: 50 }, focus: true, passive: true }); }
         },
         {
             name: "Quake Hammer",
@@ -290,12 +289,12 @@ DexSoldier.skills = {
         {
             name: "Determination",
             properties: ["physical", "stamina", "heal"],
-            description: `Moderately heals (~7.5% max HP) at start of turn whenever stamina is at least half`,
+            description: `Moderately heals (~10% max HP) at start of turn whenever stamina is at least half`,
             code() {
                 new Modifier("Determination", `Heals at start of turn whenever stamina is at least half`,
                     { target: this, properties: ["physical", "stamina", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit && 2 * this.vars.target.stamina >= this.vars.target.base.stamina) heal(this.vars.caster, [this.vars.target], [.75]); }
+                    function(context) { if (this.vars.target === context.unit && 2 * this.vars.target.stamina >= this.vars.target.base.stamina) heal(this.vars.caster, [this.vars.target], [1]); }
                 );
             }
         },
@@ -303,7 +302,7 @@ DexSoldier.skills = {
             name: "Last Stand",
             properties: ["physical", "buff"],
             description: "Increases defense, resist, and presence",
-            code() { basicModifier("Last Stand", "Increases defense, resist, and presence", { target: this, properties: ["physical", "buff"], stats: { defense: 20, resist: 20, presence: 100 }, focus: true, passive: true }); }
+            code() { basicModifier("Last Stand", "Increases defense, resist, and presence", { target: this, properties: ["physical", "buff"], stats: { defense: 15, resist: 40, presence: 100 }, focus: true, passive: true }); }
         }
     ]
 };

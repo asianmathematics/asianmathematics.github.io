@@ -353,7 +353,10 @@ export async function combatTick() {
             await new Promise(resolve => setTimeout(resolve, 120 / (combatSpeedMultiplier[0] || 1)));
         }
         logAction(`<strong>Turn ${turnCounter++}: ${turn.name}'s turn</strong>`, 'turn');
-        if (eventState.turnStart.length) handleEvent('turnStart', { unit: turn });
+        if (eventState.turnStart.length) {
+            handleEvent('turnStart', { unit: turn });
+            if (frontTest()) return;
+        }
     }
     if (!turn.stun) {
         regenerateResources(turn);
@@ -450,7 +453,11 @@ export function advanceWave(x = 0) {
         for (let i = modifiers.length - 1; i >= 0; i--) if (!allUnits.includes(modifiers[i].vars.caster)) removeModifier(modifiers[i]);
     } else return true;
     logAction(`<strong>Wave ${++wave}!</strong>`, 'turn');
-    for (const e of waveCalc(allUnits.filter(u => u.team === 'player'), wave-1 ? 1.5 : 1)) assignEnemySkills(createUnit(e, 'enemy'), e);
+    for (const e of waveCalc(allUnits.filter(u => u.team === 'player'), wave-1 ? 1.5 : 1)) {
+        const u = createUnit(e, 'enemy');
+        assignEnemySkills(u, e);
+        if (Math.random() < .5) u?.switchPosition(true);
+    }
     if (eventState.waveChange.length) handleEvent('waveChange', { wave });
     updateBattleDisplay();
 }
@@ -497,7 +504,7 @@ function waveCalc(units, mult) {
 }
 
 export function assignEnemySkills(newUnit, template) {
-    const categories = ['special', 'basic', 'secondary', 'passive', 'augment', 'conditional'];
+    const categories = ['special', 'basic', 'secondary', 'passive', 'augment', 'conditional'].map(val => ({ val, rand: Math.random() })).sort((a, b) => a.rand - b.rand).map(({ val }) => val);
     const getLoadoutForPosition = (pos) => {
         const defaultLoadout = (pos === 'front' ? template.frontDefaultSkills : template.backDefaultSkills) || template.defaultSkills;
         for (let attempt = 0;; attempt++) {
@@ -532,7 +539,6 @@ export function assignEnemySkills(newUnit, template) {
         newUnit.frontSkills = getLoadoutForPosition('front');
         newUnit.backSkills = getLoadoutForPosition('back');
         newUnit.skills = {...newUnit.backSkills};
-        if (Math.random() > 0.5) newUnit.switchPosition(true);
     } else newUnit.skills = getLoadoutForPosition(newUnit.position);
     (newUnit.traits || []).forEach(s => {
         currentAction.push([s, newUnit]);

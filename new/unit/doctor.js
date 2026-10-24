@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { Modifier, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit, allUnits } from './unit.js';
 
-export const Doctor = new Unit("Doctor", [1200, 25, 25, 140, 70, 150, 75, 85, 80, "back", 140, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
+export const Doctor = new Unit("Doctor", [1200, 20, 40, 140, 70, 140, 75, 80, 90, "back", 120, 60, 7, , , 120, 15], 3, ["independence/loneliness"]);
 
 Doctor.description = "3-star techno backline unit with healing and buff abilities";
 
@@ -18,9 +18,9 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["techno", "energy-block", "energy", "buff"],
-            cost: { energy: 40 },
-            description: "Increases all allies, except self, heal factor by half of heal factor for 3 turns",
-            code() { allUnits.filter(u => u.team === this.team).forEach(u => u !== this && basicModifier("Caring is Sharing", "Increased heal factor", { target: u, duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 2 }, listeners: { turnEnd: true } })); }
+            cost: { energy: 60 },
+            description: "Increases all allies, except self, heal factor by third of heal factor for 3 turns",
+            code() { allUnits.filter(u => u !== this && u.team === this.team).forEach(u => basicModifier("Caring is Sharing", "Increased heal factor", { target: u, duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 3 }, listeners: { turnEnd: true } })); }
         },
         {
             name: "Medical Malpractice",
@@ -43,7 +43,7 @@ Doctor.skills = {
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for all allies, except self, for 3 turns",
             code() {
                 const vars = { duration: 3, properties: ["techno", "buff"], listeners: { turnEnd: true } };
-                allUnits.filter(u => u.team === this.team).forEach(u => u !== this && (u.attack >= 37.5*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { ...vars, target: u, stats: { attack: 20, accuracy: 60, focus: 60 } }) : u.defense >= 37.5*1.5**(u.star-3) || u.evasion >= 125*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { ...vars, target: u, stats: { defense: 20, evasion: 60, presence: 150 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { ...vars, target: u, stats: { evasion: 120, speed: 75 } })));
+                allUnits.filter(u => u !== this && u.team === this.team).forEach(u => (u.attack >= 37.5*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { ...vars, target: u, stats: { attack: 20, accuracy: 60, focus: 60 } }) : u.defense >= 37.5*1.5**(u.star-3) || u.evasion >= 125*1.5**(u.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { ...vars, target: u, stats: { defense: 20, evasion: 60, presence: 150 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { ...vars, target: u, stats: { evasion: 120, speed: 75 } })));
             }
         },
         {
@@ -68,8 +68,8 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["techno", "energy-block", "buff"],
-            description: "Increases heal factor of the 3 lowest hp allies, except self, by half of heal factor for 3 turns",
-            code() { unitByStat(allUnits.filter(u => u.team === this.team), 'hp', 'percent', false, 3).forEach(u => u !== this && basicModifier("Caring is Sharing", "Increased heal factor", { target: u, duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 2 }, listeners: { turnEnd: true } })); }
+            description: "Increases heal factor of the 3 lowest hp allies, except self, by third of heal factor for 3 turns",
+            code() { unitByStat(allUnits.filter(u => u !== this && u.team === this.team), 'hp', 'percent', false, 3).forEach(u =>  basicModifier("Caring is Sharing", "Increased heal factor", { target: u, duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 2 }, listeners: { turnEnd: true } })); }
         },
         {
             name: "Medical Malpractice",
@@ -115,10 +115,10 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["physical", "buff"],
-            description: "Increases heal factor of the lowest hp ally by half of heal factor for 3 turns, if already active, refresh duration and regen resources",
+            description: "Increases heal factor of the lowest hp ally by third of heal factor for 3 turns, if already active, refresh duration and regen resources",
             code() {
                 const mods = modifiers.filter(m => m.name === "Caring is Sharing" && m.vars.caster === this).map(m => m.vars.target), targets = allUnits.filter(u => u.team === this.team && !mods.includes(u));
-                targets.length ? basicModifier("Caring is Sharing", "Increased heal factor", { target: unitByStat(targets, 'hp', 'percent', false)[0], duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 2 }, listeners: { turnEnd: true } }) : regenerateResources(this) || logAction(`${this.name} rests.`);
+                targets.length ? basicModifier("Caring is Sharing", "Increased heal factor", { target: unitByStat(targets, 'hp', 'percent', false)[0], duration: 3, properties: ["techno", "buff"], stats: { healFactor: this.healFactor / 3 }, listeners: { turnEnd: true } }) : regenerateResources(this) || logAction(`${this.name} rests.`);
             }
         },
         {
@@ -171,12 +171,12 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["techno", "buff"],
-            reduction: { energy: 20, energyRegen: 3 },
+            reduction: { energy: 20 },
             description: "Increases heal factor of all allies except self",
             code() {
                 auraModifier("Caring is Sharing", "Increased heal factor for allies",
-                    { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
-                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 30 } }); },
+                    { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
+                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 20 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
@@ -188,8 +188,8 @@ Doctor.skills = {
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for all allies, except self",
             code() {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",
-                    { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, passive: true },
-                    function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack: 5, accuracy: 20, focus: 20 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 5, evasion: 20, presence: 50 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 50, speed: 30 } }); },
+                    { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.passive.reduction, focus: true, passive: true },
+                    function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack: 10, accuracy: 20, focus: 20 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 10, evasion: 20, presence: 50 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 50, speed: 30 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
@@ -209,7 +209,7 @@ Doctor.skills = {
             name: "First Aid",
             properties: ["techno", "heal"],
             reduction: { energy: 10, energyRegen: 1 },
-            description: `Heals lowlest hp ally slightly (~7.5% max HP) at start of turn`,
+            description: `Heals lowest hp ally slightly (~7.5% max HP) at start of turn`,
             code() {
                 new Modifier("First Aid", `Heals at start of turn`,
                     { target: this, properties: ["techno", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
@@ -221,12 +221,12 @@ Doctor.skills = {
         {
             name: "Caring is Sharing",
             properties: ["techno", "buff"],
-            reduction: { energy: 20, energyRegen: 3 },
+            reduction: { energy: 20 },
             description: "Increases heal factor of all allies except self",
             code() {
                 auraModifier("Caring is Sharing", "Increased heal factor for allies",
-                    { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.augment.reduction, passive: true },
-                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 45 } }); },
+                    { targets: [], properties: ["techno", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.augment.reduction, focus: true, passive: true },
+                    function(target) { basicModifier("Caring is Sharing", "Increased heal factor", { target, properties: ["techno", "buff"], stats: { healFactor: 30 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
@@ -238,8 +238,8 @@ Doctor.skills = {
             description: "Gives offensive, defensive, or speed stimulants depending on target's stats for all allies, except self",
             code() {
                 auraModifier("Prescription Stimulant", "Gives offensive, defensive, or speed stimulants depending on target's stats for allies",
-                    { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.augment.reduction, passive: true },
-                    function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack: 15, accuracy: 40, focus: 40 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 15, evasion: 40, presence: 100 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 80, speed: 50 } }); },
+                    { targets: [], properties: ["techno", "conditional", "buff"], listeners: { unitChange: true, waveChange: true }, reduction: this.skills.augment.reduction, focus: true, passive: true },
+                    function(target) { target.attack >= 37.5*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Offensive", "Attack, accuracy, and focus increase", { target, properties: ["techno", "buff"], stats: { attack: 15, accuracy: 30, focus: 30 } }) : target.defense >= 37.5*1.5**(target.star-3) || target.evasion >= 125*1.5**(target.star-3) ? basicModifier("Prescription Stimulant: Defensive", "Defense, evasion, and presence increase", { target, properties: ["techno", "buff"], stats: { defense: 15, evasion: 30, presence: 75 } }) : basicModifier("Prescription Stimulant: Speed", "Evasion and speed increase", { target, properties: ["techno", "buff"], stats: { evasion: 75, speed: 45 } }); },
                     function(unit) { return unit.team === this.vars.caster.team && unit !== this.vars.caster; }
                 );
             }
@@ -257,8 +257,8 @@ Doctor.skills = {
 };
 
 Doctor.defaultSkills = [
-    { category: 'special', name: 'Medical Malpractice' },
-    { category: 'basic', name: 'First Aid' },
+    { category: 'special', name: 'First Aid' },
+    { category: 'basic', name: 'Medical Malpractice' },
     { category: 'secondary', name: 'Pursuit of Knowledge' },
     { category: 'passive', name: 'Prescription Stimulant' },
     { category: 'augment', name: 'Caring is Sharing' }

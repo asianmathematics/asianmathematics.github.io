@@ -46,13 +46,13 @@ class Unit {
     }
 }
 
-function createUnit(unit, team) {
+function createUnit(unit, team, position = "back") {
     const newUnit = cloneUnit(unit);
     let name = unit.name;
     let dupe = 1;
     while (allUnits.filter(obj => obj.name.includes(name)).some(obj => obj.name === name)) { name = `${unit.name} ${++dupe}`; }
     newUnit.name = name;
-    if (newUnit.position === "mid") newUnit.position = "back";
+    if (newUnit.position === "mid") newUnit.position = position;
     newUnit.team = team;
     allUnits.push(newUnit);
     newUnit.timer = 1000;

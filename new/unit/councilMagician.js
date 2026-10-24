@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const CouncilMagician = new Unit("Magic Council Member", [800, 45, 30, 60, 90, 100, 140, 90, 150, "back", 90, 70, 5, 140, 16], 3, ["independence/loneliness"]);
+export const CouncilMagician = new Unit("Magic Council Member", [800, 50, 25, 65, 120, 120, 140, 90, 150, "back", 80, 50, 5, 150, 16], 3, ["independence/loneliness"]);
 
 CouncilMagician.skills = {
     special: [
@@ -28,7 +28,7 @@ CouncilMagician.skills = {
         {
             name: "Dispel",
             properties: ["mystic", "mana-block", "mana", "debuff", "cancel"],
-            cost: { mana: 40 },
+            cost: { mana: 30 },
             description: "Ends non-passive mystic modifiers target is focusing, cancels mystic modifiers on target, and disables mana regen for a few turns depending on chance, 1% chance to fail",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
@@ -39,9 +39,9 @@ CouncilMagician.skills = {
         {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "stamina", "mana-gain"],
-            cost: { stamina: 30 },
-            description: "Recover a lot of mana (~45% max mana)",
-            code() { resourceChange(this, { mana: 4.5 * this.manaRegen }, true); }
+            cost: { stamina: 20 },
+            description: "Recover a lot of mana (~80% max mana)",
+            code() { resourceChange(this, { mana: 8 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -83,8 +83,7 @@ CouncilMagician.skills = {
         },
         {
             name: "Dispel",
-            properties: ["mystic", "mana-block", "mana", "debuff", "cancel"],
-            cost: { mana: 10 },
+            properties: ["mystic", "mana-block", "debuff", "cancel"],
             description: "Chance to end non-passive mystic modifiers target is focusing, cancel mystic modifiers on target, and disables mana regen for 1 turn",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team));
@@ -95,8 +94,8 @@ CouncilMagician.skills = {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "stamina", "mana-gain"],
             cost: { stamina: 10 },
-            description: "Recover a lot of mana (~25% max mana)",
-            code() { resourceChange(this, { mana: 2.5 * this.manaRegen }, true); }
+            description: "Recover a lot of mana (~60% max mana)",
+            code() { resourceChange(this, { mana: 6 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -136,8 +135,8 @@ CouncilMagician.skills = {
         {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "mana-gain"],
-            description: "Recover a lot of mana (~15% max mana)",
-            code() { resourceChange(this, { mana: 1.5 * this.manaRegen }, true); }
+            description: "Recover a lot of mana (~40% max mana)",
+            code() { resourceChange(this, { mana: 4 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -161,12 +160,12 @@ CouncilMagician.skills = {
             name: "Restore Mana",
             properties: ["physical", "mana-gain"],
             reduction: { stamina: 20, staminaRegen: 2 },
-            description: "Regen mana (~10% max mana) each turn",
+            description: "Regen mana (~20% max mana) each turn",
             code() {
-                new Modifier("Restore Mana", `Regen mana (~10% max mana) each turn`,
+                new Modifier("Restore Mana", `Regen mana (~20% max mana) each turn`,
                     { target: this, properties: ["physical", "mana-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: this.vars.target.manaRegen }, true); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: 2 * this.vars.target.manaRegen }, true); }
                 );
             }
         },
@@ -197,12 +196,12 @@ CouncilMagician.skills = {
             name: "Restore Mana",
             properties: ["physical", "mana-gain"],
             reduction: { stamina: 20, staminaRegen: 2 },
-            description: "Regen mana (~15% max mana) each turn",
+            description: "Regen mana (~30% max mana) each turn",
             code() {
-                new Modifier("Restore Mana", `Regen mana (~10% max mana) each turn`,
-                    { target: this, properties: ["physical", "mana-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.passive.reduction, focus: true, passive: true },
+                new Modifier("Restore Mana", `Regen mana (~30% max mana) each turn`,
+                    { target: this, properties: ["physical", "mana-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
                     function() {},
-                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: this.vars.target.manaRegen * 1.5 }, true); }
+                    function(context) { if (context.unit === this.vars.caster) resourceChange(this.vars.target, { mana: 3 * this.vars.target.manaRegen }, true); }
                 );
             }
         },
@@ -240,15 +239,15 @@ CouncilMagician.defaultSkills = [
 
 function wildMagic(buff) {
     switch (Math.floor(Math.random()*8)+1) {
-        case 1: {
+        case 1:
             if (buff) {
-                const targets = allUnits.filter(u => u.hp && u.base.position === "mid" && u.team !== this.team), target = targets.length ? targets[Math.floor(Math.random()*targets.length)] : 0;
-                (target && resistDebuff(this, [target])[0] >= 2) ? target.switchPosition() : logAction(`${this.name}'s wild magic fails to teleport anyone`, 'miss');
+                const targets = allUnits.filter(u => u.hp && u.base.position === "mid" && u.team !== this.team), will = resistDebuff(this, targets);
+                targets.length && will.some(w => w >= 2) ? targets.forEach((u, i) => will[i] < 99 || u.switchPosition() || (u.timer += 1000)) : logAction(`${this.name}'s wild magic fails to teleport anyone`, 'miss');
             } else new Modifier("Wild Magic: Teleport backfire", "Teleports caster to frontline for 1 turn",
                 { target: this, duration: 1, properties: ["mystic", "positional"], listeners: { turnStart: true }, penalty: true, perm: true },
                 function() {
                     this.vars.caster.position = "front";
-                    this.vars.caster.base = { ...this.vars.caster.base, defense: 20, evasion: 60, focus: 80, speed: 120, presence: 180 };
+                    this.vars.caster.base = { ...this.vars.caster.base, defense: 15, evasion: 100, focus: 100, speed: 130, presence: 180 };
                     logAction(`${this.vars.caster.name} teleports into the frontline.`, "info");
                     resetStat(this.vars.caster, ["defense", "evasion", "focus", "speed", "presence"]);
                     if (eventState.positionChange.length) handleEvent('positionChange', { unit: this.vars.caster, position: "front" });
@@ -257,26 +256,16 @@ function wildMagic(buff) {
                     if (context.unit === this.vars.caster) this.vars.duration--;
                     if (this.vars.duration <= 0) {
                         this.vars.caster.position = "back";
-                        this.vars.caster.base = { ...this.vars.caster.base, defense: 30, evasion: 80, focus: 100, speed: 80, presence: 150 };
+                        this.vars.caster.base = { ...this.vars.caster.base, defense: 25, evasion: 120, focus: 120, speed: 90, presence: 150 };
                         logAction(`${this.vars.caster.name} teleports back to the backline.`, "info");
                         resetStat(this.vars.caster, ["defense", "evasion", "focus", "speed", "presence"]);
                         if (eventState.positionChange.length) handleEvent('positionChange', { unit: this.vars.caster, position: "back" });
-                        if (!allUnits.filter(u => u.hp && u.position === "front" && u.team === this.vars.caster.team).length) {
-                            const midLine = allUnits.filter(u => u.hp && u.base.position === 'mid' && u.team === this.vars.caster.team);
-                            if (midLine.length) {
-                                for (const unit of midLine) {
-                                    unit.switchPosition();
-                                    unit.timer += 1000;
-                                }
-                            } else this.vars.caster.stun++;
-                        }
                         return !(this.vars.perm = false);
                     }
                 },
                 function() {}, function() {}
             );
             break;
-        }
         case 2:
             auraModifier(`Wild Magic: Defense${buff ? '' : ' backfire'}`, `Increases defense and resist of all frontline ${buff ? "allies" : "enemies"}`,
                 { targets: allUnits.filter(u => u.position === "front" && buff === (u.team === this.team)), duration: 1, properties: ["mystic", "buff"], listeners: { turnStart: true, positionChange: true }, cancelListeners: ['positionChange'] },
@@ -286,7 +275,7 @@ function wildMagic(buff) {
             break;
         case 3:
             currentAction.push([CouncilMagician.skills.special[0], this]);
-            CouncilMagician.skills.special[0].code.call(this, buff ? [randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 2, true).reduce((u, v) => (!u || v.position === "back") ? u = v : u, null)] : [this]);
+            CouncilMagician.skills.special[0].code.call(this, buff ? [randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 3, true).reduce((u, v) => (!u || v.position === "back") ? u = v : u, null)] : [this]);
             currentAction.pop();
             break;
         case 4:

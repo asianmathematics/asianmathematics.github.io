@@ -18,7 +18,7 @@ enemy.skills = {
             name: "Power Up",
             properties: ["physical", "stamina-block", "stamina", "buff"],
             cost: { stamina: 35 },
-            description: "Next attack gains double attack, accurracy, & focus",
+            description: "Next attack gains triple attack, accurracy, & focus",
             code() {
                 logAction(`${this.name} charges for the next attack!`, "buff");
                 new Modifier("Power Up", "Next attack gains double attack, accurracy, & focus",
@@ -26,7 +26,7 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        ['attack', 'accuracy', 'focus'].forEach(k => ((context.calcMods.attacker ??= {})[k] ??= {}).mult = (context.calcMods.attacker[k].mult || 1) + 1 );
+                        ['attack', 'accuracy', 'focus'].forEach(k => ((context.calcMods.attacker ??= {})[k] ??= {}).mult = (context.calcMods.attacker[k].mult || 1) + 2 );
                         return true;
                     }
                 );
@@ -37,7 +37,7 @@ enemy.skills = {
             properties: ["physical", "stamina-block", "stamina", "buff"],
             cost: { stamina: 20 },
             description: "Increases defense, evasion, and resist for 5 turns",
-            code() { basicModifier("Defend", "Defense, evasion, and resist increase", { target: this, duration: 5, properties: ["physical", "buff"], stats: { defense: 30, evasion: 25, resist: 50 }, listeners: { turnStart: true }, focus: true }); }
+            code() { basicModifier("Defend", "Defense, evasion, and resist increase", { target: this, duration: 5, properties: ["physical", "buff"], stats: { defense: 30, evasion: 50, resist: 100 }, listeners: { turnStart: true }, focus: true }); }
         },
         {
             name: "Taunt",
@@ -50,11 +50,11 @@ enemy.skills = {
                 if (will >= 2) {
                     logAction(`${this.name} taunts ${target[0].name}!`, "debuff");
                     new Modifier("Taunt", "Decreases target evasion, focus, and resist and increase chance for caster to be targeted by target",
-                        { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -20, focus: -35, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } },
+                        { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -40, focus: -70, resist: -50 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } },
                         function() {},
                         function(context) {
                             let i;
-                            if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult++;
+                            if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.indexOf(this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
                             return this.vars.duration <= 0;
                         }
@@ -88,8 +88,8 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 20;
-                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + 75;
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 40;
+                        ((context.calcMods.attacker ??= {}).accuracy ??= {}).bonus = (context.calcMods.attacker.accuracy.bonus || 0) + 125;
                         return true;
                     }
                 );
@@ -99,7 +99,7 @@ enemy.skills = {
             name: "Defend",
             properties: ["physical", "stamina-block", "buff"],
             description: "Increases defense and resist for 2 turns. If currently active, refreshes duration and allow stamina regen next turn",
-            code() { refreshModifier([{ name: "Defend", vars: { caster: this, target: this, parent: this.skills.basic } }], 2)[0] ? this.previousAction[0] = false : basicModifier("Defend", "Defense and resist increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { defense: 20, evasion: 15, resist: 30 }, listeners: { turnStart: true }, focus: true }); }
+            code() { refreshModifier([{ name: "Defend", vars: { caster: this, target: this, parent: this.skills.basic } }], 2)[0] ? this.previousAction[0] = false : basicModifier("Defend", "Defense and resist increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { defense: 20, evasion: 30, resist: 60 }, listeners: { turnStart: true }, focus: true }); }
         },
         {
             name: "Taunt",
@@ -110,11 +110,11 @@ enemy.skills = {
                 if (will >= 20) {
                     logAction(`${this.name} distracts ${target[0].name}`, "debuff");
                     new Modifier("Taunt", "Decreases target focus, and resist and doubles the chance for caster to be targeted by target",
-                        { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -25, resist: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true },
+                        { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -50, resist: -20 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true },
                         function() {},
                         function(context) {
                             let i;
-                            if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
+                            if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.indexOf(this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
                             return this.vars.duration <= 0;
                         }
@@ -148,7 +148,7 @@ enemy.skills = {
                     function() {},
                     function(context) {
                         if (context.attacker !== this.vars.caster) return;
-                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 20;
+                        ((context.calcMods.attacker ??= {}).attack ??= {}).bonus = (context.calcMods.attacker.attack.bonus || 0) + 40;
                         return true;
                     }
                 );
@@ -158,7 +158,7 @@ enemy.skills = {
             name: "Defend",
             properties: ["physical", "buff"],
             description: "Increases defense and resist for 1 turn",
-            code() { if (!refreshModifier([{ name: "Defend", vars: { caster: this, target: this, parent: this.skills.secondary } }], 2)[0]) basicModifier("Defend", "Defense and resist increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { defense: 10, resist: 15 }, listeners: { turnEnd: true }, focus: true }); }
+            code() { if (!refreshModifier([{ name: "Defend", vars: { caster: this, target: this, parent: this.skills.secondary } }], 2)[0]) basicModifier("Defend", "Defense and resist increase", { target: this, duration: 2, properties: ["physical", "buff"], stats: { defense: 15, resist: 40 }, listeners: { turnEnd: true }, focus: true }); }
         },
         {
             name: "Taunt",
@@ -169,11 +169,11 @@ enemy.skills = {
                 if (will > 33) {
                     logAction(`${this.name} distracts ${target[0].name}`, "debuff");
                     new Modifier("Taunt", "Decreases target focus and doubles the chance for caster to be targeted by target",
-                        { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -10 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; } },
+                        { target: target[0], duration: 1, properties: ["physical", "debuff"], stats: { focus: -20 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; } },
                         function() {},
                         function(context) {
                             let i;
-                            if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
+                            if (context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.indexOf(this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 1;
                             if (context.unit === this.vars.caster) this.vars.duration--;
                             return this.vars.duration <= 0;
                         }
@@ -195,7 +195,7 @@ enemy.skills = {
             description: "Increases attack and accuracy every turn until attacking or stuned, which it resets",
             code() {
                 new Modifier("Power Up", "Increases attack and accuracy every turn until attacking or stuned, which it resets",
-                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 10, accuracy: 35 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
+                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 20, accuracy: 50 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.target) return !++this.vars.charge;
@@ -224,7 +224,7 @@ enemy.skills = {
             name: "Defend",
             properties: ["physical", "buff"],
             description: "Increases defense and resist",
-            code() { basicModifier("Defend", "Defense and resist increase", { target: this, properties: ["physical", "buff"], stats: { defense: 10, resist: 20 }, listeners: { turnStart: true }, focus: true, passive: true }); }
+            code() { basicModifier("Defend", "Defense and resist increase", { target: this, properties: ["physical", "buff"], stats: { defense: 10, resist: 30 }, listeners: { turnStart: true }, focus: true, passive: true }); }
         },
         {
             name: "Taunt",
@@ -232,7 +232,7 @@ enemy.skills = {
             description: "At start of turn, chooses a target and has a chance to decrease target focus and resist and double the chance for caster to be targeted by target, can target backline",
             code() {
                 new Modifier("Taunt", "Decreases target focus and resist and double the chance for caster to be targeted by target",
-                    { target: null, properties: ["physical", "debuff"], stats: { focus: -25, resist: -15 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; }, fail: false },
+                    { target: null, properties: ["physical", "debuff"], stats: { focus: -50, resist: -30 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; }, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -242,7 +242,7 @@ enemy.skills = {
                             if (!this.vars.fail && will <= 33) this.cancel(this.vars.fail = true);
                         }
                         let i;
-                        if (this.vars.target && context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
+                        if (this.vars.target && context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.indexOf(this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 1;
                     }, undefined,
                     function(unit) {
                         if (!this.vars.target) resetStat(unit, Object.keys(this.vars.stats), Object.values(this.vars.stats));
@@ -276,7 +276,7 @@ enemy.skills = {
             description: "Increases attack/accuracy/focus every turn until attacking or stuned, which it resets",
             code() {
                 new Modifier("Power Up", "Increases attack/accuracy/focus every turn until attacking or stuned, which it resets",
-                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 20, accuracy: 65, focus: 50 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
+                    { target: this, properties: ["physical", "buff"], listeners: { attackStart: true, turnEnd: true }, cancelListeners: ['attackStart', 'turnEnd'], stats: { attack: 30, accuracy: 75, focus: 50 }, disableStatChange: true, focus: true, passive: true, charge: 0 },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.target) return !++this.vars.charge;
@@ -306,7 +306,7 @@ enemy.skills = {
             name: "Defend",
             properties: ["physical", "buff"],
             description: "Increases defense, evasion, and resist",
-            code() { basicModifier("Defend", "Defense, evasion, and resist increase", { target: this, properties: ["physical", "buff"], stats: { defense: 15, evasion: 15, resist: 30 }, listeners: { turnStart: true }, focus: true, passive: true }); }
+            code() { basicModifier("Defend", "Defense, evasion, and resist increase", { target: this, properties: ["physical", "buff"], stats: { defense: 25, evasion: 35, resist: 75 }, listeners: { turnStart: true }, focus: true, passive: true }); }
         },
         {
             name: "Taunt",
@@ -314,7 +314,7 @@ enemy.skills = {
             description: "At start of turn, chooses a target and has a chance to decrease target focus and resist and double the chance for caster to be targeted by target, can target backline",
             code() {
                 new Modifier("Taunt", "Decreases target focus, and resist and double the chance for caster to be targeted by target",
-                    { target: null, properties: ["physical", "debuff"], stats: { focus: -40, resist: -25 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; }, fail: false },
+                    { target: null, properties: ["physical", "debuff"], stats: { focus: -80, resist: -50 }, listeners: { turnStart: true, targetStart: true }, cancelListeners: ['targetStart'], focus: true, passive: true, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] > 33; }, fail: false },
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
@@ -324,7 +324,7 @@ enemy.skills = {
                             if (!this.vars.fail && will <= 33) this.cancel(this.vars.fail = true);
                         }
                         let i;
-                        if (this.vars.target && context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.findIndex(u => u === this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= { mult: 1 }).mult += 1;
+                        if (this.vars.target && context.event === 'targetStart' && context.targetMods && currentAction.at(-2)[1] === this.vars.target && (i = context.unitList.indexOf(this.vars.caster)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 1;
                     }, undefined,
                     function(unit) {
                         if (!this.vars.target) resetStat(unit, Object.keys(this.vars.stats), Object.values(this.vars.stats));

@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const ClassicJoy = new Unit("Classical (Joy)", [1300, 50, 45, 180, 160, 200, 140, 140, 170, "mid", 125, 120, 15], 4, ["ingenuity/insanity"]);
+export const ClassicJoy = new Unit("Classical (Joy)", [1200, 40, 40, 160, 160, 175, 140, 140, 170, "mid", 125, 120, 15], 4, ["ingenuity/insanity"]);
 
 ClassicJoy.description = "4-star unit with risky buff/debuff abilities and a lot of offensive abilities. Starts with high stat buffs that slowly decrease and eventually goes negative.";
 
@@ -973,11 +973,11 @@ ClassicJoy.backDefaultSkills = [
 ClassicJoy.switchPosition = function(silent = false) {
     if (this.position === "back") {
         this.position = "front";
-        this.base = { ...this.base, attack: 70, defense: 30, accuracy: 210, evasion: 125, resist: 110, speed: 170 };
+        this.base = { ...this.base, attack: 60, defense: 25, accuracy: 190, evasion: 125, resist: 110, speed: 170 };
         this.skills = {...this.frontSkills};
     } else {
         this.position = "back";
-        this.base = { ...this.base, attack: 50, defense: 45, accuracy: 180, evasion: 160, resist: 140, speed: 140 };
+        this.base = { ...this.base, attack: 40, defense: 40, accuracy: 160, evasion: 160, resist: 140, speed: 140 };
         this.skills = {...this.backSkills};
     }
     logAction(`${this.name} moves to the ${this.position}line.`, "info");

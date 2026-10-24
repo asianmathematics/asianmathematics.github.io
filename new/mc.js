@@ -15,15 +15,18 @@ import { Revolutionary } from './unit/revolutionary.js';
 import { regenerateResources, specialTarget, randTarget, attack, crit, damage, heal, hpChange, resistDebuff, resourceChange, unitByStat, kill, summon, elements, combatSpeedMultiplier } from './combatDictionary.js';
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState, stopOnErr } from './modifier.js';
 import { Unit, createUnit, cloneUnit } from './unit/unit.js';
-import { appendFileSync, writeFile } from 'node:fs';
+import { appendFileSync/*, writeFile*/ } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 
 const once = true;
 let seed;
 let id;
 let win = "draw";
-const unitList = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric, ClassicJoy, enemy, ArtificialSoldier, CouncilMagician, CouncilScientist, Experiment, Reject, Revolutionary];
+const unitList = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, /*Electric, ClassicJoy,*/ enemy, ArtificialSoldier, CouncilMagician, CouncilScientist, /*Experiment, Reject,*/ Revolutionary];
 combatSpeedMultiplier[0] = 1e9;
 stopOnErr[0] = true;
+const pending = new Set();
+let pendingBytes = 0;
 
 const mod = new Modifier("Simulation Log", "Logs all events", { caster: { name: "System" }, target: { name: "system" }, properties: ["system"], listeners: {}, list: [], perm: true },
     function() {
@@ -39,11 +42,13 @@ const mod = new Modifier("Simulation Log", "Logs all events", { caster: { name: 
         if (!once && !this.vars.off) {
             for (let i = 0; i < this.vars.list.length-1; i++) appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, ...clean(this.vars.list[i]) }) + '\n');
             this.vars.list = [this.vars.list.at(-1)];
-        }
+        } else if (this.vars.list.length > 1000000) throw new Error('Log length exceeded limits')
     },
     function() {},
     function() {}
 );
+
+const mods = [...modifiers];
 
 function generateHash(str) {
     let h1 = 0xdeadbeef;
@@ -88,23 +93,43 @@ function mulberry32(a) {
     }
 }
 
-function init(s = 1, units = [{ unit: enemy, team: "player", skills: 'random', count: 6 }, { unit: enemy, team: "enemy", skills: 'random', count: 6 }]) {
+function stateClear() {
+    allUnits.splice(0);
+    for (let i = modifiers.length-1; i >= 0; i--) if (!mods.includes(modifiers[i])) {
+        modifiers[i].vars.perm = false;
+        removeModifier(modifiers[i])
+    }
+    mod.vars.list = [];
+}
+
+export function init(s = 1, units) {
+    stateClear();
     seed = s;
     Math.random = mulberry32(seed);
+    if (!units) {
+        const num = Math.floor(Math.random()*8)+1;
+        units = Array.from({ length: num*2 }, (_, i) => ({ unit: 'random', skills: 'random', ...(i >= num && { team: 'enemy' }) }))
+    }
+    const temp = units.map(u => Object.fromEntries(Object.entries(u).map(([k, v]) => [k, Array.isArray(v) ? [...v] : v])));
     while (true) {
         let r;
         for (const template of units) {
+            let tempR;
             if (template.unit === 'random') {
                 template.unit = unitList[Math.floor(Math.random()*unitList.length)];
-                r = true;
+                tempR = r = true;
             }
-            if (template.skills === 'random') for (let i = template.count || 1; i > 0; i--) assignEnemySkills(createUnit(template.unit, template.team || 'player'), template.unit);
+            if (template.skills === 'random') for (let i = template.count || 1; i > 0; i--) {
+                const u = createUnit(template.unit, template.team || 'player');
+                assignEnemySkills(u, template.unit);
+                if (tempR && u.base.position === "mid" && Math.random() < .5) u.switchPosition(true);
+            }
         }
-        if (allUnits.some(u => u.position === "front" && u.team === "player") && allUnits.some(u => u.position === "front" && u.team === "enemy")) break;
+        if (allUnits.some(u => u.base.position !== "back" && u.team === "player") && allUnits.some(u => u.base.position !== "back" && u.team === "enemy")) break;
         else {
             if (!r) break;
-            allUnits.splice(0);
-            modifiers.splice(0, modifiers.length, ...modifiers.filter(m => m.vars.target?.name === "system"));
+            stateClear();
+            units = temp.map(u => Object.fromEntries(Object.entries(u).map(([k, v]) => [k, Array.isArray(v) ? [...v] : v])));
         }
     }
     Math.random = mulberry32(seed);
@@ -116,8 +141,16 @@ function init(s = 1, units = [{ unit: enemy, team: "player", skills: 'random', c
     combatTick();
 }
 
+export async function drainIfBusy() { while (pending.size >= 64 || pendingBytes >= 134217728) await Promise.race(pending); }
+export async function flush() { await Promise.all(pending); }
+
 function end() {
-    if (once) writeFile(`../../greanandin/sims2/${id}.json`, JSON.stringify({ [id]: mod.vars.list.concat({ win, allUnits: allUnits.map(u => clean(u, true)) }).map(c => c.allUnits ? c : clean(c)) }), () => {})
+    if (once) {
+        const fileId = id, data = JSON.stringify({ [fileId]: mod.vars.list.concat({ win, allUnits: allUnits.map(u => clean(u, true)) }).map(c => c.allUnits ? c : clean(c)) }), size = data.length;
+        pendingBytes += size;
+        const p = writeFile(`../../greanandin/sims3/${fileId}.json`, data).catch(e => console.error(`Failed to write file ${fileId}.json:`, e)).finally(() => { pending.delete(p); pendingBytes -= size});
+        pending.add(p);
+    }
     else {
         for (const c of mod.vars.list) appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, ...clean(c) }) + '\n');
         appendFileSync("../../greanandin/log.jsonl", JSON.stringify({ id, win, allUnits: allUnits.map(u => clean(u, true))}) + '\n');
@@ -128,7 +161,7 @@ function combatTick() {
     try {
         let round = 0;
         while (!frontTest()) {
-            if (round++ > 10000) throw new Error("Simulation ran too long");
+            if (round++ > 5000) throw new Error("Simulation ran too long");
             let turn;
             const alive = allUnits.filter(u => u.hp);
             while (turn == undefined) {
@@ -136,7 +169,10 @@ function combatTick() {
                 if (!list.length) for (const unit of alive) unit.timer -= unit.speed;
                 else turn = list.reduce((low, cur) => cur.timer < low.timer ? cur : low);
             }
-            if (eventState.turnStart.length) handleEvent('turnStart', { unit: turn });
+            if (eventState.turnStart.length) {
+                handleEvent('turnStart', { unit: turn });
+                if (frontTest()) break;
+            }
             if (!turn.stun) {
                 regenerateResources(turn);
                 action(turn);
@@ -148,13 +184,12 @@ function combatTick() {
         console.error("An error occurred:", e);
         win = "error";
         mod.vars.list.push({ error: Object.fromEntries(Object.getOwnPropertyNames(e).map(key => [key, e[key]])) });
-    }
-    finally { end(); }
+    } finally { end(); }
 }
 
 function action(unit) {
-    if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.2) return executeAction(unit, unit.skills.special);
-    if (Math.random() < 1/16){
+    if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.375) return executeAction(unit, unit.skills.special);
+    if (Math.random() < .2){
         if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: 'skip' });
         regenerateResources(unit);
         return;
@@ -197,7 +232,7 @@ function frontTest() {
 }
 
 function assignEnemySkills(newUnit, template) {
-    const categories = ['special', 'basic', 'secondary', 'passive', 'augment', 'conditional'];
+    const categories = ['special', 'basic', 'secondary', 'passive', 'augment', 'conditional'].map(val => ({ val, rand: Math.random() })).sort((a, b) => a.rand - b.rand).map(({ val }) => val);
     const getLoadoutForPosition = (pos) => {
         const defaultLoadout = (pos === 'front' ? template.frontDefaultSkills : template.backDefaultSkills) || template.defaultSkills;
         for (let attempt = 0;; attempt++) {
@@ -232,7 +267,6 @@ function assignEnemySkills(newUnit, template) {
         newUnit.frontSkills = getLoadoutForPosition('front');
         newUnit.backSkills = getLoadoutForPosition('back');
         newUnit.skills = {...newUnit.backSkills};
-        if (Math.random() > 0.5) newUnit.switchPosition(true);
     } else newUnit.skills = getLoadoutForPosition(newUnit.position);
     (newUnit.traits || []).forEach(s => {
         currentAction.push([s, newUnit]);
@@ -253,4 +287,5 @@ function assignEnemySkills(newUnit, template) {
     }
 }
 
-init(Date.now(), Array.from({ length: 12 }, (_, i) => ({ unit: 'random', skills: 'random', ...(i >= 6 && { team: 'enemy' }) })));
+//const num = Math.floor(Math.random()*8)+1;
+//init(Date.now(), Array.from({ length: num*2 }, (_, i) => ({ unit: 'random', skills: 'random', ...(i >= num && { team: 'enemy' }) })));

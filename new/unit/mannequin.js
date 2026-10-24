@@ -22,8 +22,8 @@ Mannequin.skills = {
             name: "Emergency Aid",
             properties: ["physical", "stamina-block", "stamina", "heal", "positional"],
             cost: { stamina: 50 },
-            description: "Heals self and all allies (around ~25% max hp) in the same position",
-            code() { heal(this, allUnits.filter(u => u.position === this.position && u.team === this.team), 2.5+.25*(allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))); }
+            description: "Heals self and all allies (~15% max hp) in the same position, increases heal (~2.5% max hp) if reloaded",
+            code() { heal(this, allUnits.filter(u => u.position === this.position && u.team === this.team), 1.5+(this.custom?.reload?.emergencyAid ? this.custom.reload.emergencyAid-- && .25 : 0)+.25*(allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))); }
         },
         {
             name: "Ex-Revolutionary",
@@ -41,7 +41,7 @@ Mannequin.skills = {
             cost: { stamina: 40, position: "front" },
             description: "Attacks with increased attack to a single target 6 times or two targets 3 times, adds two hits if reloaded",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), 2, false); },
-            code(targets) { attack(this, targets, (this.custom?.dualWield ? this.custom.dualWield-- && 8 : 6) / targets.length, { attacker: { attack: { bonus: 10 } } }); }
+            code(targets) { attack(this, targets, (this.custom?.reload?.dualWield ? this.custom.reload.dualWield-- && 8 : 6) / targets.length, { attacker: { attack: { bonus: 10 } } }); }
         },
         {
             name: "Snipe",
@@ -49,7 +49,7 @@ Mannequin.skills = {
             cost: { stamina: 40, position: "back" },
             description: "Attacks a single target with increased attack/accuracy/focus, can target backline, adds extra attack if reloaded",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.team !== this.team)); },
-            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: this.custom?.snipe ? this.custom.snipe-- && 180 : 120 }, accuracy: { bonus: 50 }, focus: { bonus: 60 } } }); }
+            code(target) { attack(this, target, 1, { attacker: { attack: { bonus: this.custom?.reload?.snipe ? this.custom.reload.snipe-- && 180 : 120 }, accuracy: { bonus: 50 }, focus: { bonus: 60 } } }); }
         },
         {
             name: "Focus Fire",
@@ -58,7 +58,7 @@ Mannequin.skills = {
             description: "Attacks a single target 3 times with increased attack/accuracy/focus, adds a hit and extra attack if reloaded",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
-                const bonus = this.custom?.focusFire ? +!!this.custom.focusFire-- : 0;
+                const bonus = this.custom?.reload?.focusFire ? +!!this.custom.reload.focusFire-- : 0;
                 attack(this, target, 3+bonus, { attacker: { attack: { bonus: 25*(2 + bonus) }, accuracy: { bonus: 50 }, focus: { bonus: 60 } } });
             }
         },
@@ -73,16 +73,18 @@ Mannequin.skills = {
                     { target: this, duration: 5, properties: ["physical", "pseudo-resource"], listeners: { turnStart: true }, focus: true },
                     function() {
                         if (this.vars.cancel) return;
-                        this.custom?.dualWield !== undefined && (this.custom.dualWield = 1);
-                        this.custom?.snipe !== undefined && (this.custom.snipe = 1);
-                        this.custom?.focusFire !== undefined && (this.custom.focusFire = 1);
+                        this.custom?.reload?.dualWield !== undefined && (this.custom.reload.dualWield = 1);
+                        this.custom?.reload?.snipe !== undefined && (this.custom.reload.snipe = 1);
+                        this.custom?.reload?.focusFire !== undefined && (this.custom.reload.focusFire = 1);
+                        this.custom?.reload?.emergencyAid !== undefined && (this.custom.reload.emergencyAid = 1);
                         logAction(`${this.vars.target.name} weapons turn automatic!`, "action");
                     },
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            this.custom?.dualWield !== undefined && (this.custom.dualWield = 1);
-                            this.custom?.snipe !== undefined && (this.custom.snipe = 1);
-                            this.custom?.focusFire !== undefined && (this.custom.focusFire = 1);
+                            this.custom?.reload?.dualWield !== undefined && (this.custom.reload.dualWield = 1);
+                            this.custom?.reload?.snipe !== undefined && (this.custom.reload.snipe = 1);
+                            this.custom?.reload?.focusFire !== undefined && (this.custom.reload.focusFire = 1);
+                            this.custom?.reload?.emergencyAid !== undefined && (this.custom.reload.emergencyAid = 1);
                             this.vars.duration--;
                         }
                         return this.vars.duration <= 0;
@@ -116,9 +118,16 @@ Mannequin.skills = {
         {
             name: "Emergency Aid",
             properties: ["physical", "stamina-block", "stamina", "heal", "positional"],
-            cost: { stamina: 20 },
-            description: "Heals lowest hp ally (around ~25% max hp) in the same position",
-            code() { heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [2.5+.5*(allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))]); }
+            description: "Heals lowest hp ally (around ~25% max hp) in the same position, requires reload to be used again",
+            code() {
+                ((this.custom ??= {}).reload ??= {}).emergencyAid ??= 1;
+                if (this.custom.reload.emergencyAid) this.custom.reload.emergencyAid--, heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [2.5+.5*(allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))]);
+                else {
+                    this.custom.reload.emergencyAid++;
+                    this.previousAction[0] = false;
+                    logAction(`${this.name} is restocking aid kits`);
+                }
+            }
         },
         {
             name: "Ex-Revolutionary",
@@ -137,13 +146,13 @@ Mannequin.skills = {
             cost: { position: "front" },
             description: "Attacks with increased attack to a single target 4 times or two targets 2 times, requires reload to be used again",
             code() {
-                (this.custom ??= {}).dualWield ??= 1;
-                if (this.custom.dualWield) {
-                    this.custom.dualWield--;
+                ((this.custom ??= {}).reload ??= {}).dualWield ??= 1;
+                if (this.custom.reload.dualWield) {
+                    this.custom.reload.dualWield--;
                     const targets = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team), Math.ceil(Math.random() * 2));
                     attack(this, targets, 4 / targets.length, { attacker: { attack: { bonus: 10 } } });
                 } else {
-                    this.custom.dualWield++;
+                    this.custom.reload.dualWield++;
                     this.previousAction[0] = false;
                     logAction(`${this.name} is reloading weapons`);
                 }
@@ -155,10 +164,10 @@ Mannequin.skills = {
             cost: { position: "back" },
             description: "Attacks a single target with increased attack/accuracy/focus, can target backline, requires reload to be used again",
             code() {
-                (this.custom ??= {}).snipe ??= 1;
-                if (this.custom.snipe) this.custom.snipe--, attack(this, randTarget(allUnits.filter(u => u.hp && u.team !== this.team)), 1, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 35 }, focus: { bonus: 40 } } });
+                ((this.custom ??= {}).reload ??= {}).snipe ??= 1;
+                if (this.custom.reload.snipe) this.custom.snipe--, attack(this, randTarget(allUnits.filter(u => u.hp && u.team !== this.team)), 1, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 35 }, focus: { bonus: 40 } } });
                 else {
-                    this.custom.snipe++;
+                    this.custom.reload.snipe++;
                     this.previousAction[0] = false;
                     logAction(`${this.name} is reloading a weapon`);
                 }
@@ -169,7 +178,7 @@ Mannequin.skills = {
             properties: ["physical", "stamina-block", "attack", "pseudo-resource"],
             description: "Attacks a single target 2 times with increased attack/accuracy/focus, increases attack and add a hit if reloaded",
             code() {
-                const bonus = this.custom?.focusFire ? +!!this.custom.focusFire-- : 0;
+                const bonus = this.custom?.reload?.focusFire ? +!!this.custom.reload.focusFire-- : 0;
                 attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2+bonus, { attacker: { attack: { bonus: 10*(2+bonus) }, accuracy: { bonus: 30 }, focus: { bonus: 40 } } });
             }
         },
@@ -195,12 +204,6 @@ Mannequin.skills = {
             }
         },
         {
-            name: "Emergency Aid",
-            properties: ["physical", "stamina-block", "heal", "positional"],
-            description: "Heals lowest hp ally (around ~15% max hp) in the same position",
-            code() { heal(this, unitByStat(allUnits.filter(u => u.position === this.position && u.team === this.team), 'hp', 'percent', false), [1.5+.5*(allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))]); }
-        },
-        {
             name: "Ex-Revolutionary",
             properties: ["physical", "buff", "penalty"],
             description: "Increased attack & accuracy and decreased evasion/resist/presence for 1 turn",
@@ -213,12 +216,13 @@ Mannequin.skills = {
         {
             name: "Reload",
             properties: ["physical", "pseudo-resource"],
-            description: `Reloads all attacks`,
+            description: `Reloads all skills`,
             code() {
-                this.custom?.dualWield !== undefined && (this.custom.dualWield = 2);
-                this.custom?.snipe !== undefined && (this.custom.snipe = 2);
-                this.custom?.focusFire !== undefined && (this.custom.focusFire = 2);
-                logAction(`${this.name} reloads all attacks`, "action");
+                this.custom?.reload?.dualWield !== undefined && (this.custom.reload.dualWield = 2);
+                this.custom?.reload?.snipe !== undefined && (this.custom.reload.snipe = 2);
+                this.custom?.reload?.focusFire !== undefined && (this.custom.reload.focusFire = 2);
+                this.custom?.reload?.emergencyAid !== undefined && (this.custom.reload.emergencyAid = 2);
+                logAction(`${this.name} reloads all skills`, "action");
             }
         },
         {
@@ -241,16 +245,16 @@ Mannequin.skills = {
         {
             name: "Emergency Aid",
             properties: ["physical", "heal", "positional"],
-            reduction: { stamina: 20, staminaRegen: 2 },
-            description: "Heals lowest hp ally (around ~5% max hp) in the same position times number of alive non-summon allies in same position",
+            reduction: { stamina: 10, staminaRegen: 2 },
+            description: "Heals lowest hp ally (~5% max hp) in the same position times number of alive non-summon allies in same position, increases heal (~5% max hp) if reloaded",
             code() {
-                new Modifier("Emergency Aid", `Heals lowest hp ally (around ~5% max hp) in the same position times number of alive non-summon allies in same position`,
+                new Modifier("Emergency Aid", `Heals lowest hp ally in the same position times number of alive non-summon allies in same position, increases heal if reloaded`,
                     { target: this, properties: ["physical", "heal", "positional"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
                     function(context) {
                         if (context.unit !== this.vars.caster) return;
                         const list = allUnits.filter(u => u.position === this.vars.caster.position && u.team === this.vars.caster.team);
-                        heal(this.vars.caster, unitByStat(list, 'hp', 'percent', false), [(list.filter(u => u.hp > 0 && !u.custom?.summoner).length - !allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))/2]);
+                        heal(this.vars.caster, unitByStat(list, 'hp', 'percent', false), [(list.filter(u => u.hp > 0 && !u.custom?.summoner).length+(this.vars.caster.custom?.reload?.emergencyAid ? !!this.vars.caster.custom.reload.emergencyAid-- : 0)+!allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))/2]);
                     }
                 );
             }
@@ -268,16 +272,17 @@ Mannequin.skills = {
             name: "Reload",
             properties: ["physical", "stamina", "pseudo-resource"],
             cost: { stamina: 10 },
-            description: `Spends stamina to instantly reload attacks, doesn't reload if stamina is too low`,
+            description: `Spends stamina to instantly reload skills, doesn't reload if stamina is too low`,
             code() {
                 new Modifier("Reload", `Ignores reload mechanic`,
                     { target: this, properties: ["physical", "stamina", "pseudo-resource"], listeners: { turnEnd: true }, cancelListeners: ['turnEnd'], cost: this.skills.passive.cost, focus: true, passive: true},
-                    function() { this.vars.caster.custom = { ...this.vars.caster.custom, dualWield: +!this.vars.cancel, snipe: +!this.vars.cancel, focusFire: +!this.vars.cancel }; },
+                    function() { (this.vars.caster.custom ??= {}).reload = { dualWield: +!this.vars.cancel, snipe: +!this.vars.cancel, focusFire: +!this.vars.cancel, emergencyAid: +!this.vars.cancel }; },
                     function(context) {
                         if (context.unit === this.vars.caster && this.vars.applied) {
-                            if (!this.vars.caster.custom.dualWield && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.dualWield = 1;
-                            if (!this.vars.caster.custom.snipe && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.snipe = 1;
-                            if (!this.vars.caster.custom.focusFire && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.focusFire = 1;
+                            if (!this.vars.caster.custom.reload.dualWield && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.reload.dualWield = 1;
+                            if (!this.vars.caster.custom.reload.snipe && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.reload.snipe = 1;
+                            if (!this.vars.caster.custom.reload.focusFire && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.reload.focusFire = 1;
+                            if (!this.vars.caster.custom.reload.emergencyAid && resourceChange(this.vars.caster, this.vars.cost, false, false)) this.vars.caster.custom.reload.emergencyAid = 1;
                         }
                     }
                 );
@@ -297,16 +302,16 @@ Mannequin.skills = {
         {
             name: "Emergency Aid",
             properties: ["physical", "stamina", "heal", "positional"],
-            reduction: { stamina: 20, staminaRegen: 2 },
-            description: "Reduce max stamina by 20 and base stamina regen by 2\nHeals lowest hp ally (around ~7.5% max hp) in the same position times number of alive non-summon allies in same position",
+            reduction: { stamina: 10, staminaRegen: 2 },
+            description: "Heals lowest hp ally (~7.5% max hp) in the same position times number of alive non-summon allies in same position, increases heal (~5% max hp) if reloaded",
             code() {
-                new Modifier("Emergency Aid", `Heals lowest hp ally (around ~7.5% max hp) in the same position times number of alive non-summon allies in same position`,
+                new Modifier("Emergency Aid", `Heals lowest hp ally in the same position times number of alive non-summon allies in same position, increases heal if reloaded`,
                     { target: this, properties: ["physical", "stamina", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
                     function() {},
                     function(context) {
                         if (context.unit !== this.vars.caster) return;
                         const list = allUnits.filter(u => u.position === this.vars.caster.position && u.team === this.vars.caster.team);
-                        heal(this.vars.caster, unitByStat(list, 'hp', 'percent', false), [(list.filter(u => u.hp > 0 && !u.custom?.summoner).length - !allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner)) * .75]);
+                        heal(this.vars.caster, unitByStat(list, 'hp', 'percent', false), [(list.filter(u => u.hp > 0 && !u.custom?.summoner).length+(this.vars.caster.custom?.reload?.emergencyAid ? !!this.vars.caster.custom.reload.emergencyAid-- : 0)+!allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))*75]);
                     }
                 );
             }
@@ -324,18 +329,18 @@ Mannequin.skills = {
 };
 
 Mannequin.frontDefaultSkills = [
-    { category: 'special', name: 'Switch Position' },
-    { category: 'basic', name: 'Dual Wield' },
-    { category: 'secondary', name: 'Emergency Aid' },
-    { category: 'passive', name: 'Reload' },
+    { category: 'special', name: 'Dual Wield' },
+    { category: 'basic', name: 'Emergency Aid' },
+    { category: 'secondary', name: 'Switch Position' },
+    { category: 'passive', name: 'Ex-Revolutionary' },
     { category: 'augment', name: 'A Wish to be an Artificial' }
 ];
 
 Mannequin.backDefaultSkills = [
-    { category: 'special', name: 'Switch Position' },
-    { category: 'basic', name: 'Snipe' },
-    { category: 'secondary', name: 'Emergency Aid' },
-    { category: 'passive', name: 'Reload' },
+    { category: 'special', name: 'Snipe' },
+    { category: 'basic', name: 'Emergency Aid' },
+    { category: 'secondary', name: 'Switch Position' },
+    { category: 'passive', name: 'Ex-Revolutionary' },
     { category: 'augment', name: 'A Wish to be an Artificial' }
 ];
 

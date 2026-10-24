@@ -15,8 +15,8 @@ function regenerateResources(unit) {
 function specialTarget(unit, list, count = 1, max = true) { (typeof document !== 'undefined' && unit.team === "player") ? selectTarget(unit, unit.skills.special, [count, max, list]) : unit.skills.special.code.call(unit, randTarget(list, max ? count : Math.floor(Math.random()*count)+1)); }
 
 function enemyTurn(unit) {
-    if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.2) return executeEnemyAction(unit, unit.skills.special);
-    if (Math.random() < 1/16){
+    if (unit.skills.special && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) && Math.random() < 0.375) return executeEnemyAction(unit, unit.skills.special);
+    if (Math.random() < .2){
         if (eventState.actionStart.length) handleEvent('actionStart', { unit, action: 'skip' });
         logAction(`${unit.name} is resting!`, 'info');
         regenerateResources(unit);

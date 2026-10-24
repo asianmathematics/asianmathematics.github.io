@@ -2,7 +2,7 @@ import { regenerateResources, specialTarget, enemyTurn, randTarget, selectTarget
 import { allUnits, Modifier, toggleListeners, handleEvent, removeModifier, refreshModifier, basicModifier, auraModifier, stunModifier, blockModifier, attribCancelMod, logAction, resetStat, comma, capital, modifiers, currentAction, eventState } from '../modifier.js';
 import { Unit } from './unit.js';
 
-export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 28, 28, 95, 80, 90, 70, 100, 110, "front", 120, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
+export const ArtificialSoldier = new Unit("Artificial Soldier", [1200, 26, 28, 95, 85, 90, 80, 100, 115, "front", 110, 90, 12, 60, 7, 40, 8], 3, ["perfection/precision"]);
 
 ArtificialSoldier.skills = {
     special: [
@@ -12,7 +12,7 @@ ArtificialSoldier.skills = {
             cost: { stamina: 20, mana: 30 },
             description: "Attacks a single target twice with increased attack, accuracy, and focus",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
-            code(target) { attack(this, target, 2, { attacker: { attack: { bonus: 24 }, accuracy: { bonus: 80 }, focus: { bonus: 60 } } }); }
+            code(target) { attack(this, target, 2, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 120 }, focus: { bonus: 100 } } }); }
         },
         {
             name: "Energy Rifle",
@@ -20,14 +20,14 @@ ArtificialSoldier.skills = {
             cost: { stamina: 30, energy: 20 },
             description: "Attacks a single target 4 times with increased attack and accuracy",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
-            code(target) { attack(this, target, 4, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 60 } } }); }
+            code(target) { attack(this, target, 4, { attacker: { attack: { bonus: 36 }, accuracy: { bonus: 80 } } }); }
         },
         {
             name: "Recharge",
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
             description: "Drains additional stamina by staminaRegen to regen missing mana and energy by regen amounts",
-            code() { resourceChange(this, { stamina: Math.min(5.5-(this.base.mana-this.mana)/this.manaRegen - (this.base.energy-this.energy)/this.energyRegen, 0), mana: this.base.mana/this.manaRegen, energy: this.base.energy/this.energyRegen}, true, true, true); }
+            code() { resourceChange(this, { stamina: Math.min(10-(this.base.mana-this.mana)/this.manaRegen -(this.base.energy-this.energy)/this.energyRegen, 0), mana: this.base.mana/this.manaRegen, energy: this.base.energy/this.energyRegen}, true, true, true); }
         },
         {
             name: "Perfect Form",
@@ -52,7 +52,7 @@ ArtificialSoldier.skills = {
             name: "Magic Weapon",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "attack", "conditional", "mana"],
             description: "Attacks a single target twice with increased accuracy and focus, can spend 15 mana to increase attack",
-            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -15 }) ? 18 : 0 }, accuracy: { bonus: 60 }, focus: { bonus: 30 } } }); }
+            code() { attack(this, randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), 2, { attacker: { attack: { bonus: resourceChange(this, { mana: -15 }) ? 20 : 0 }, accuracy: { bonus: 60 }, focus: { bonus: 30 } } }); }
         },
         {
             name: "Energy Rifle",
@@ -64,8 +64,8 @@ ArtificialSoldier.skills = {
             name: "Recharge",
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
-            description: "Regen mana and energy based on which is lower (40% and 15% max resource)",
-            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 1.5*this.manaRegen, energy: 4*this.energyRegen } : { mana: 4*this.manaRegen, energy: 1.5*this.energyRegen }, true); }
+            description: "Regen mana and energy based on which is lower (60% and 40% max resource)",
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 4*this.manaRegen, energy: 6*this.energyRegen } : { mana: 6*this.manaRegen, energy: 4*this.energyRegen }, true); }
         },
         {
             name: "Perfect Form",
@@ -101,8 +101,8 @@ ArtificialSoldier.skills = {
         {
             name: "Recharge",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
-            description: "Regen mana and energy based on which is lower (35% and 10% max resource)",
-            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: this.manaRegen, energy: 3.5*this.energyRegen } : { mana: 3.5*this.manaRegen, energy: this.energyRegen }, true); }
+            description: "Regen mana and energy based on which is lower (50% and 30% max resource)",
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 3*this.manaRegen, energy: 5*this.energyRegen } : { mana: 5*this.manaRegen, energy: 3*this.energyRegen }, true); }
         },
         {
             name: "Perfect Form",
@@ -125,12 +125,12 @@ ArtificialSoldier.skills = {
         {
             name: "Recharge",
             properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"],
-            description: "Regens some mana or stamina depending which one is lower, regen is 5% max resource per 25% of stamina remaining",
+            description: "Regens some mana or stamina depending which one is lower, regen is 10% max resource per 25% of stamina remaining",
             code() {
-                new Modifier("Recharge", "Regens some mana or stamina depending which one is lower, regen is 5% max resource per 25% of stamina remaining",
+                new Modifier("Recharge", "Regens some mana or stamina depending which one is lower",
                     { caster: this, target: this, properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)/2 }, true); }
+                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina) } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina) }, true); }
                 );
             }
         },
@@ -154,12 +154,12 @@ ArtificialSoldier.skills = {
         {
             name: "Recharge",
             properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"],
-            description: "Regens some mana or stam/ina depending which one is lower, regen is 7.5% max resource per 25% of stamina remaining",
+            description: "Regens some mana or stam/ina depending which one is lower, regen is 15% max resource per 25% of stamina remaining",
             code() {
-                new Modifier("Recharge", "Regens some mana or stamina depending which one is lower, regen is 5% max resource per 25% of stamina remaining",
+                new Modifier("Recharge", "Regens some mana or stamina depending which one is lower",
                     { caster: this, target: this, properties: ["physical", "mystic", "techno", "conditional", "mana-gain", "energy-gain"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], focus: true, passive: true },
                     function() {},
-                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*.75 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*.75 });}
+                    function(context) { if (this.vars.target === context.unit && 4 * this.vars.target.stamina >= this.vars.target.base.stamina) resourceChange(this.vars.target, this.vars.target.mana/this.vars.target.base.mana > this.vars.target.energy/this.vars.target.base.energy ? { energy: this.vars.target.energyRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*1.5 } : { mana: this.vars.target.manaRegen*Math.floor(4*this.vars.target.stamina/this.vars.target.base.stamina)*1.5 });}
                 );
             }
         },
@@ -182,9 +182,9 @@ ArtificialSoldier.skills = {
 };
 
 ArtificialSoldier.defaultSkills = [
-    { category: 'special', name: 'Perfect Form' },
-    { category: 'basic', name: 'Magic Weapon' },
-    { category: 'secondary', name: 'Energy Rifle' },
-    { category: 'passive', name: 'Made to Serve' },
-    { category: 'augment', name: 'Recharge' }
+    { category: 'special', name: 'Magic Weapon' },
+    { category: 'basic', name: 'Energy Rifle' },
+    { category: 'secondary', name: 'Perfect Form' },
+    { category: 'passive', name: 'Recharge' },
+    { category: 'augment', name: 'Made to Serve' }
 ];
