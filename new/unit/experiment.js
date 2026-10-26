@@ -21,7 +21,7 @@ Experiment.skills = {
             description: "Makes an attack on alive target. If attack reduced half of target's current hp or target is downed, chance to kill target",
             target() { specialTarget(this, allUnits.filter(u => u.position === "front" && u.team !== this.team)); },
             code(target) {
-                if ((!target[0].hp || attack(this, target)[0] >= target[0].hp) && resistDebuff(this, target)[0] > 50) kill(this, target);
+                if ((!target[0].hp || attack(this, target)[0] >= target[0].hp) && target[0].type === "physical" && resistDebuff(this, target)[0] > 50) kill(this, target);
                 else logAction(`${this.name} fails to consume ${target[0].name}!`, "miss");
             }
         },
@@ -60,7 +60,7 @@ Experiment.skills = {
             description: "Makes an attack on alive target. If attack downed target, chance to kill target",
             code() {
                 const target = randTarget(allUnits.filter(u => u.position === "front" && u.team !== this.team));
-                if ((!target[0].hp || (attack(this, target) && !target[0].hp)) && resistDebuff(this, target)[0] > 75) kill(this, target);
+                if ((!target[0].hp || (attack(this, target) && !target[0].hp)) && target[0].type === "physical" && resistDebuff(this, target)[0] > 75) kill(this, target);
                 else logAction(`${this.name} fails to consume ${target[0].name}!`, "miss");
             }
         },
@@ -135,9 +135,9 @@ Experiment.skills = {
                             toggleListeners(this, [], ['turnEnd']);
                         }
                         if (context.action === 'skip' && context.unit === this.vars.caster) {
-                            const unit = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.vars.caster.team), 1, true)[0];
+                            const unit = randTarget(allUnits.filter(u => u.hp && u.type === "physical" && u.position === "front" && u.team !== this.vars.caster.team), 1, true)[0];
                             if (unit && resistDebuff(this.vars.caster, [unit])[0] > 85) kill(this.vars.caster, unit);
-                        } else if (context.type === 'downed' && currentAction.at(-2)[1] === this.vars.caster && resistDebuff(this.vars.caster, [context.unit])[0] > 85) {
+                        } else if (context.type === 'downed' && context.unit.type === "physical" && currentAction.at(-2)[1] === this.vars.caster && resistDebuff(this.vars.caster, [context.unit])[0] > 85) {
                             this.vars.unit = context.unit;
                             toggleListeners(this, ['turnEnd']);
                         }
