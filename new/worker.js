@@ -1,11 +1,14 @@
 import { init, drainIfBusy, flush } from './mc.js';
 process.on('message', async (msg) => {
-    const { startSeed, endSeed, workerId } = msg;
-    for (let seed = startSeed; seed <= endSeed; seed++) {
-        init(seed);
-        await drainIfBusy();
+    if (msg.type === 'batch') {
+        for (let seed = msg.startSeed; seed <= msg.endSeed; seed++) {
+            init(seed);
+            await drainIfBusy();
+        }
+        process.send({ type: 'ready' });
+    } else if (msg.type === 'done') {
+        await flush();
+        process.send({ type: 'finished' }, () => process.exit(0));
     }
-    await flush();
-    process.send({ workerId, status: 'completed' });
-    process.exit(0);
 });
+process.send({ type: 'ready' });

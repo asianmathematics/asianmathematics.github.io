@@ -302,8 +302,8 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, bloc
             if (ignore) this.vars.ignore = modifiers.filter(m => ignore.call(this, m));
             if (!this.vars.cancel) {
                 for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes(m) && m.vars.properties.includes(attrib) && !m.vars.perm && !m.vars.trait && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
-                    if (mod.vars.caster === this.vars.target && mod.vars.focus && !mod.vars.passive) removeModifier(mod);
-                    else if (mod.vars.target === this.vars.target || mod.vars.focus) {
+                    if (!mod.vars.passive && ((mod.vars.caster === this.vars.target && mod.vars.focus) || (mod.vars.target === this.vars.target && !mod.vars.parent.vars))) removeModifier(mod);
+                    else if (mod.vars.target === this.vars.target) {
                         this.vars.modifiers.push(mod);
                         currentAction.push([mod, mod.vars.caster]);
                         mod.cancel();
@@ -336,8 +336,8 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, bloc
                 }
             }
             if (context.event === 'modifierStart' && context.modifier.vars.properties.includes(attrib) && !context.modifier.vars.perm && !context.modifier.vars.trait && (context.modifier.vars.caster === this.vars.target || context.modifier.vars.target === this.vars.target)) {
-                if (context.modifier.vars.caster === this.vars.target && context.modifier.vars.focus && !context.modifier.vars.passive) removeModifier(context.modifier);
-                else if (context.modifier.vars.target === this.vars.target || context.modifier.vars.focus) {
+                if (!context.modifier.vars.passive && ((context.modifier.vars.caster === this.vars.target && context.modifier.vars.focus) || (context.modifier.vars.target === this.vars.target && !context.modifier.vars.parent.vars))) removeModifier(context.modifier);
+                else if (context.modifier.vars.target === this.vars.target) {
                     this.vars.modifiers.push(context.modifier);
                     currentAction.push([context.modifier, context.modifier.vars.caster]);
                     context.modifier.cancel();
@@ -367,8 +367,8 @@ function attribCancelMod(name, vari, attrib, dur = "target", ignore = null, bloc
                     this.vars.applied = true;
                     toggleListeners(this, this.vars.cancelListeners);
                     for (const mod of modifiers.filter(m => m !== this && !this.vars.ignore?.includes(m) && m.vars.properties.includes(attrib) && !m.vars.perm && !m.vars.trait && (m.vars.caster === this.vars.target || m.vars.target === this.vars.target))) {
-                        if (mod.vars.caster === this.vars.target && mod.vars.focus && !mod.vars.passive) removeModifier(mod);
-                        else if (mod.vars.target === this.vars.target || mod.vars.focus) {
+                        if (!mod.vars.passive && ((mod.vars.caster === this.vars.target && mod.vars.focus) || (mod.vars.target === this.vars.target && !mod.vars.parent.vars))) removeModifier(mod);
+                        else if (mod.vars.target === this.vars.target) {
                             this.vars.modifiers.push(mod);
                             currentAction.push([mod, mod.vars.caster]);
                             mod.cancel();

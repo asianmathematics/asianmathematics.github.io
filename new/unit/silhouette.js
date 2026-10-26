@@ -40,6 +40,7 @@ Silhouette.skills = {
                     { target: this, duration: 5, properties: ["physical", "mystic", "buff", "debuff", "positional"], stats: { evasion: 60, focus: 45, presence: 30 }, listeners: { turnEnd: true, attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], focus: true, debuffing: 0 },
                     function() {},
                     function(context) {
+                        if (currentAction.at(-2)[0].name === this.name) return;
                         if (this.vars.caster.position === "back" && context.defenders?.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] >= 2) context.event === "attackStart" ? context.calcMods.attacker = { ...context.calcMods.attacker, accuracy: { ...context.calcMods?.attacker?.accuracy, bonus: (context.calcMods?.attacker?.accuracy?.bonus || 0) - 50} } : context.calcMods.attacker = { ...context.calcMods.attacker, focus: { ...context.calcMods?.attacker?.focus, bonus: (context.calcMods?.attacker?.focus?.bonus || 0) - 50} };
                         else if (this.vars.caster.position === "front" && context.attacker === this.vars.caster && !this.vars.debuffing++) for (const defender of context.defenders) if (resistDebuff(this.vars.caster, [defender])[this.vars.debuffing = 0] >= 2) (context.calcMods.all ??= { reroll: 0 }).reroll += 2;
                         if (context.unit === this.vars.caster) this.vars.duration--;
@@ -162,9 +163,9 @@ Silhouette.skills = {
             name: "Amulet of Darkness",
             properties: ["physical", "stamina-block", "stamina", "mana-gain", "positional", "heal"],
             cost: { stamina: 20 },
-            description: `Regen a lot of mana (~80% max mana). If in backline, spends double the cost to moderately heal (~15% max hp)`,
+            description: `Regen a lot of mana (~60% max mana). If in backline, spends double the cost to moderately heal (~15% max hp)`,
             code() {
-                resourceChange(this, { mana: 8 * this.manaRegen }, true);
+                resourceChange(this, { mana: 6 * this.manaRegen }, true);
                 if (this.position === 'back' && resourceChange(this, this.skills.special.cost)) heal(this, [this], [1.5]);
             }
         },
@@ -262,10 +263,10 @@ Silhouette.skills = {
             name: "Amulet of Darkness",
             properties: ["physical", "stamina-block", "stamina", "mana-gain", "positional", "heal"],
             cost: { stamina: 10 },
-            description: `Regen a lot of mana (~6% max mana). If in backline, spends double the cost to heal (~10% max hp)`,
+            description: `Regen a lot of mana (~45% max mana). If in backline, spends double the cost to heal (~10% max hp)`,
             code() {
-                resourceChange(this, { mana: 6 * this.manaRegen }, true);
-                if (this.position === 'back' && resourceChange(this, this.skills.basic.cost)) heal(this, [this], [10]);
+                resourceChange(this, { mana: 4.5 * this.manaRegen }, true);
+                if (this.position === 'back' && resourceChange(this, this.skills.basic.cost)) heal(this, [this], [1]);
             }
         },
         {
@@ -298,7 +299,7 @@ Silhouette.skills = {
             properties: ["physical", "mystic", "buff", "debuff", "positional"],
             description: "Increases evasion/focus/presence, chance to gives advantage to attacks at frontline, chance to decreases enemy accuracy or focus of attacks/debuff to self at the backline, until end of next turn",
             code() {
-                if (!refreshModifier([{ name: "Fear of the Dark", vars: { caster: this, target: this, parent: this.skills.secondary } }])) new Modifier("Fear of the Dark", "Gives advantage to attacks at frontline, decreases enemy accuracy or focus of attacks/debuff to self at the backline, 1% chance to fail",
+                if (!refreshModifier([{ name: "Fear of the Dark", vars: { caster: this, target: this, parent: this.skills.secondary } }])[0]) new Modifier("Fear of the Dark", "Gives advantage to attacks at frontline, decreases enemy accuracy or focus of attacks/debuff to self at the backline, 1% chance to fail",
                     { target: this, duration: 2, properties: ["physical", "mystic", "buff", "debuff", "positional"], stats: { evasion: 30, focus: 25, presence: 15 }, listeners: { turnEnd: true, attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], focus: true, debuffing: 0 },
                     function() {},
                     function(context) {
@@ -313,9 +314,9 @@ Silhouette.skills = {
         {
             name: "Amulet of Darkness",
             properties: ["physical", "mana-gain", "positional", "heal"],
-            description: `Regen mana (~2% max mana). If in backline, disable stamina regen to heal (~10% max hp)`,
+            description: `Regen mana (~1.5% max mana). If in backline, disable stamina regen to heal (~10% max hp)`,
             code() {
-                resourceChange(this, { mana: 2 * this.manaRegen }, true);
+                resourceChange(this, { mana: 1.5 * this.manaRegen }, true);
                 if (this.position === 'back') (this.previousAction[0] = true) && heal(this, [this], [1]);
             }
         },
@@ -337,6 +338,7 @@ Silhouette.skills = {
                     { target: this, properties: ["physical", "mystic", "buff", "debuff", "positional"], stats: { evasion: 20, focus: 15, presence: 10 }, listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], reduction: this.skills.passive.reduction, focus: true, passive: true, debuffing: 0 },
                     function() {},
                     function(context) {
+                        if (currentAction.at(-2)[0].name === this.name) return;
                         if (this.vars.caster.position === "back" && context.defenders.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] > 33) context.event === "attackStart" ? context.calcMods.attacker = { ...context.calcMods.attacker, accuracy: { ...context.calcMods?.attacker?.accuracy, bonus: (context.calcMods?.attacker?.accuracy?.bonus || 0) - 40} } : context.calcMods.attacker = { ...context.calcMods.attacker, focus: { ...context.calcMods?.attacker?.focus, bonus: (context.calcMods?.attacker?.focus?.bonus || 0) - 40} };
                         else if (this.vars.caster.position === "front" && context.attacker === this.vars.caster && !this.vars.debuffing++) for (const defender of context.defenders) if (resistDebuff(this.vars.caster, [defender])[this.vars.debuffing = 0] > 33) (context.calcMods.all ??= { reroll: 0 }).reroll++;
                     }
@@ -454,6 +456,7 @@ Silhouette.skills = {
                     { target: this, properties: ["physical", "mystic", "buff", "debuff", "positional"], stats: { evasion: 30, focus: 25, presence: 15 }, listeners: { attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], reduction: this.skills.augment.reduction, focus: true, passive: true, debuffing: 0 },
                     function() {},
                     function(context) {
+                        if (currentAction.at(-2)[0].name === this.name) return;
                         if (this.vars.caster.position === "back" && context.defenders.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] > 33) context.event === "attackStart" ? context.calcMods.attacker = { ...context.calcMods.attacker, accuracy: { ...context.calcMods?.attacker?.accuracy, bonus: (context.calcMods?.attacker?.accuracy?.bonus || 0) - 60} } : context.calcMods.attacker = { ...context.calcMods.attacker, focus: { ...context.calcMods?.attacker?.focus, bonus: (context.calcMods?.attacker?.focus?.bonus || 0) - 60} };
                         else if (this.vars.caster.position === "front" && context.attacker === this.vars.caster && !this.vars.debuffing++) for (const defender of context.defenders) if (resistDebuff(this.vars.caster, [defender])[this.vars.debuffing = 0] > 33) (context.calcMods.all ??= { reroll: 0 }).reroll += 2;
                     }
@@ -497,9 +500,9 @@ Silhouette.skills = {
 Silhouette.traits = [{
     name: "Shadow Friend",
     properties: ["trait", "mystic", "summon"],
-    description: "Gains a permanent summon that follows Silhouette. When summoning a shadow, Shadow Friend regains all hp and mana.",
+    description: "Gains a permanent summon that follows Silhouette. When summoning a shadow, Shadow Friend regains all hp and mana. When summon is downed or dies, reduce Silhouette's stats by half of summon's stats",
     code() {
-        new Modifier("Shadow Friend", "A permanent summon that follows Silhouette. When summoning a shadow, Shadow Friend regains all hp and mana.",
+        new Modifier("Shadow Friend", "A permanent summon that follows Silhouette. When summoning a shadow, Shadow Friend regains all hp and mana. When summon is downed or dies, reduce Silhouette's stats by summon's stats",
             { target: summon(this, Object.assign(new Unit("Shadow", [290, 13, 11, 49, 66, 60, 60, 30, 24, this.position, 16, 10, 1, 40, 8], 1, [], "mystic"), { traits: [trait] }), shadowSkills), properties: ["mystic", "summon"], listeners: { positionChange: true, unitChange: true }, passive: true, trait: true },
             function() {
                 let name = "Shadow Friend", dupe = 1;
@@ -510,6 +513,13 @@ Silhouette.traits = [{
                 if (context.type === "summon" && context.unit.custom.summoner === this.vars.caster) {
                     hpChange(this.vars.caster, [this.vars.target], [this.vars.target.base.hp]);
                     resourceChange(this.vars.target, { mana: this.vars.target.mana });
+                } else if (context.unit === this.vars.target) {
+                    if (!context.unit.hp && !this.vars.child && (context.type === "downed" || context.type === "death")) basicModifier("Shadow Friend loss", "Debuffed stats after losing Shadow Friend", { target: this.vars.caster, properties: ["mystic", "penalty"], stats: Object.fromEntries(Object.keys(context.unit.mult).map(k => [k, -Math.floor(context.unit.base[k]/2)])), passive: true, penalty: true, trait: true });
+                    if (context.type === "revive" && this.vars.child) {
+                        this.vars.child[0].vars.passive = false;
+                        this.vars.child[0].vars.trait = false;
+                        removeModifier(this.vars.child[0]);
+                    }
                 } else if (context.position && context.unit === this.vars.caster) this.vars.target.base.position = this.vars.target.position = context.position;
             }
         )
@@ -637,7 +647,13 @@ const trait = {
                     if (this.vars.cancel && this.vars.applied) this.vars.applied = false;
                     else if (!this.vars.cancel && !this.vars.applied) this.vars.applied = true;
                     const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('mana-block') && m.vars.modifiers?.includes(this)), 0);
-                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child?.[0], false) : (this.vars.cancel-count) || stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
+                    if (this.vars.modifiers.length) {
+                        if (this.vars.cancel-count && this.vars.child) {
+                            this.vars.child[0].vars.passive = false;
+                            this.vars.child[0].vars.trait = false;
+                            removeModifier(this.vars.child?.[0], false);
+                        }
+                    } else (this.vars.cancel-count) || stunModifier("Shadow Construct: Stun", { target: this.vars.target, properties: ["mystic", "stun"], trait: true });
                 }
             }
         );

@@ -165,7 +165,7 @@ Mannequin.skills = {
             description: "Attacks a single target with increased attack/accuracy/focus, can target backline, requires reload to be used again",
             code() {
                 ((this.custom ??= {}).reload ??= {}).snipe ??= 1;
-                if (this.custom.reload.snipe) this.custom.snipe--, attack(this, randTarget(allUnits.filter(u => u.hp && u.team !== this.team)), 1, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 35 }, focus: { bonus: 40 } } });
+                if (this.custom.reload.snipe) this.custom.reload.snipe--, attack(this, randTarget(allUnits.filter(u => u.hp && u.team !== this.team)), 1, { attacker: { attack: { bonus: 60 }, accuracy: { bonus: 35 }, focus: { bonus: 40 } } });
                 else {
                     this.custom.reload.snipe++;
                     this.previousAction[0] = false;
@@ -303,7 +303,7 @@ Mannequin.skills = {
             name: "Emergency Aid",
             properties: ["physical", "stamina", "heal", "positional"],
             reduction: { stamina: 10, staminaRegen: 2 },
-            description: "Heals lowest hp ally (~7.5% max hp) in the same position times number of alive non-summon allies in same position, increases heal (~5% max hp) if reloaded",
+            description: "Heals lowest hp ally (~7.5% max hp) in the same position times number of alive non-summon allies in same position, increases heal (~7.5% max hp) if reloaded",
             code() {
                 new Modifier("Emergency Aid", `Heals lowest hp ally in the same position times number of alive non-summon allies in same position, increases heal if reloaded`,
                     { target: this, properties: ["physical", "stamina", "heal"], listeners: { turnStart: true }, cancelListeners: ['turnStart'], reduction: this.skills.augment.reduction, focus: true, passive: true },
@@ -311,7 +311,7 @@ Mannequin.skills = {
                     function(context) {
                         if (context.unit !== this.vars.caster) return;
                         const list = allUnits.filter(u => u.position === this.vars.caster.position && u.team === this.vars.caster.team);
-                        heal(this.vars.caster, unitByStat(list, 'hp', 'percent', false), [(list.filter(u => u.hp > 0 && !u.custom?.summoner).length+(this.vars.caster.custom?.reload?.emergencyAid ? !!this.vars.caster.custom.reload.emergencyAid-- : 0)+!allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))*75]);
+                        heal(this.vars.caster, unitByStat(list, 'hp', 'percent', false), [(list.filter(u => u.hp > 0 && !u.custom?.summoner).length+(this.vars.caster.custom?.reload?.emergencyAid ? this.vars.caster.custom.reload.emergencyAid-- : 0)+!allUnits.some(u => u.name === "Classical (Joy)" && u.team === this.team && !u.custom?.summoner))*.75]);
                     }
                 );
             }

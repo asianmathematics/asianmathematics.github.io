@@ -21,13 +21,13 @@ Revolutionary.skills = {
             name: "Flashbang",
             properties: ["physical", "stamina-block", "stamina", "debuff", "stun"],
             cost: { stamina: 40, position: "front" },
-            description: "Decrease target accuracy/evasion/speed for a few turns depending on chance and stuns target for 1 turn, 1% chance to fail, increases stun duration by 1 if reloaded",
+            description: "Decrease target accuracy/evasion/speed for a few turns depending on chance and stuns target for 2 turns, 1% chance to fail, increases stun duration by 1 if reloaded",
             target() { specialTarget(this, allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)); },
             code(target) {
                 const will = resistDebuff(this, target)[0];
                 if (will >= 2) {
-                    basicModifier("Flashbang debuff", "Accuracy, evasion, and speed decrease", { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { accuracy: -30, evasion: -60, speed: -25 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
-                    stunModifier("Flashbang", { target: target[0], duration: this.custom?.reload?.flashbang ? this.custom.reload.flashbang-- && 2 : 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
+                    basicModifier("Flashbang debuff", "Accuracy, evasion, and speed decrease", { target: target[0], duration: will > 99 ? 7 : Math.ceil(will/20), properties: ["physical", "debuff"], stats: { accuracy: -30, evasion: -60, speed: -25 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
+                    stunModifier("Flashbang", { target: target[0], duration: this.custom?.reload?.flashbang ? this.custom.reload.flashbang-- && 3 : 2, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; } });
                 } else logAction(`${target[0].name} resists the flashbang!`, "miss");
             }
         },
@@ -142,10 +142,10 @@ Revolutionary.skills = {
                     this.custom.reload.flashbang--;
                     const target = randTarget(allUnits.filter(u => u.hp && u.position === "front" && u.team !== this.team)), will = resistDebuff(this, target)[0];
                     switch (true) {
-                        case will >= 50:
+                        case will >= 15:
                             stunModifier("Flashbang", { target: target[0], duration: 1, properties: ["physical", "stun", "debuff"], listeners: { turnEnd: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 50; } });
-                        case will >= 20:
-                            basicModifier("Flashbang debuff", "Evasion, and speed decrease", { target: target[0], duration: will > 99 ? 4 : Math.ceil(will/50), properties: ["physical", "debuff"], stats: { evasion: -30, speed: -15 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 20; } });
+                        case will >= 5:
+                            basicModifier("Flashbang debuff", "Evasion, and speed decrease", { target: target[0], duration: will > 99 ? 6 : Math.ceil(will/25), properties: ["physical", "debuff"], stats: { evasion: -30, speed: -15 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 20; } });
                             break;
                         default:
                             logAction(`${target[0].name} resists the flashbang!`, "miss");

@@ -40,8 +40,8 @@ CouncilMagician.skills = {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "stamina", "mana-gain"],
             cost: { stamina: 20 },
-            description: "Recover a lot of mana (~80% max mana)",
-            code() { resourceChange(this, { mana: 8 * this.manaRegen }, true); }
+            description: "Recover a lot of mana (~60% max mana)",
+            code() { resourceChange(this, { mana: 6 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -94,8 +94,8 @@ CouncilMagician.skills = {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "stamina", "mana-gain"],
             cost: { stamina: 10 },
-            description: "Recover a lot of mana (~60% max mana)",
-            code() { resourceChange(this, { mana: 6 * this.manaRegen }, true); }
+            description: "Recover a lot of mana (~45% max mana)",
+            code() { resourceChange(this, { mana: 4.5 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -135,8 +135,8 @@ CouncilMagician.skills = {
         {
             name: "Restore Mana",
             properties: ["physical", "stamina-block", "mana-gain"],
-            description: "Recover a lot of mana (~40% max mana)",
-            code() { resourceChange(this, { mana: 4 * this.manaRegen }, true); }
+            description: "Recover a lot of mana (~30% max mana)",
+            code() { resourceChange(this, { mana: 3 * this.manaRegen }, true); }
         },
         {
             name: "Wild Magic",
@@ -238,6 +238,7 @@ CouncilMagician.defaultSkills = [
 ];
 
 function wildMagic(buff) {
+    if (!allUnits.some(u => u.hp && u.position === "front" && u.team !== this.team)) return;
     switch (Math.floor(Math.random()*8)+1) {
         case 1:
             if (buff) {
@@ -275,7 +276,7 @@ function wildMagic(buff) {
             break;
         case 3:
             currentAction.push([CouncilMagician.skills.special[0], this]);
-            CouncilMagician.skills.special[0].code.call(this, buff ? [randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 3, true).reduce((u, v) => (!u || v.position === "back") ? u = v : u, null)] : [this]);
+            CouncilMagician.skills.special[0].code.call(this, buff ? [randTarget(allUnits.filter(u => u.hp && u.team !== this.team), 3, true).reduce((u, v) => (!u || v.position === "back") ? v : u, null)] : [this]);
             currentAction.pop();
             break;
         case 4:

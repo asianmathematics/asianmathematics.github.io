@@ -27,7 +27,7 @@ ArtificialSoldier.skills = {
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
             description: "Drains additional stamina by staminaRegen to regen missing mana and energy by regen amounts",
-            code() { resourceChange(this, { stamina: Math.min(10-(this.base.mana-this.mana)/this.manaRegen -(this.base.energy-this.energy)/this.energyRegen, 0), mana: this.base.mana/this.manaRegen, energy: this.base.energy/this.energyRegen}, true, true, true); }
+            code() { resourceChange(this, { stamina: Math.min(7.5-(this.base.mana-this.mana)/this.manaRegen-(this.base.energy-this.energy)/this.energyRegen, 0), mana: this.base.mana/this.manaRegen, energy: this.base.energy/this.energyRegen}, true, true, true); }
         },
         {
             name: "Perfect Form",
@@ -64,8 +64,8 @@ ArtificialSoldier.skills = {
             name: "Recharge",
             properties: ["physical", "stamina-block", "stamina", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
             cost: { stamina: 10 },
-            description: "Regen mana and energy based on which is lower (60% and 40% max resource)",
-            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 4*this.manaRegen, energy: 6*this.energyRegen } : { mana: 6*this.manaRegen, energy: 4*this.energyRegen }, true); }
+            description: "Regen mana and energy based on which is lower (45% and 30% max resource)",
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 3*this.manaRegen, energy: 4.5*this.energyRegen } : { mana: 4.5*this.manaRegen, energy: 3*this.energyRegen }, true); }
         },
         {
             name: "Perfect Form",
@@ -101,8 +101,8 @@ ArtificialSoldier.skills = {
         {
             name: "Recharge",
             properties: ["physical", "stamina-block", "mystic", "mana-block", "techno", "energy-block", "conditional", "drain", "mana-gain", "energy-gain"],
-            description: "Regen mana and energy based on which is lower (50% and 30% max resource)",
-            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 3*this.manaRegen, energy: 5*this.energyRegen } : { mana: 5*this.manaRegen, energy: 3*this.energyRegen }, true); }
+            description: "Regen mana and energy based on which is lower (40% and 20% max resource)",
+            code() { resourceChange(this, this.mana/this.base.mana > this.energy/this.base.energy ? { mana: 2*this.manaRegen, energy: 4*this.energyRegen } : { mana: 4*this.manaRegen, energy: 2*this.energyRegen }, true); }
         },
         {
             name: "Perfect Form",

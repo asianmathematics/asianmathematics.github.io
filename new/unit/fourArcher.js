@@ -40,7 +40,7 @@ FourArcher.skills = {
             name: "Lazing Around",
             properties: ["physical", "stamina-block", "stamina", "mana-gain", "penalty", "resource"],
             cost: { stamina: 10 },
-            description: "Reduces speed until next turn then regain mana (~70% max mana)",
+            description: "Reduces speed until next turn then regain mana (~55% max mana)",
             code() {
                 logAction(`${this.name} sits up!`);
                 new Modifier("Lazing Around", "Reduces speed and regen mana",
@@ -48,7 +48,7 @@ FourArcher.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen * 7 }, true);
+                            if (this.vars.applied) resourceChange(this.vars.caster, { mana: 5.5 * this.vars.caster.manaRegen }, true);
                             this.vars.duration--;
                         }
                         return this.vars.duration <= 0;
@@ -143,7 +143,7 @@ FourArcher.skills = {
         {
             name: "Lazing Around",
             properties: ["physical", "stamina-block", "mana-gain", "penalty", "resource"],
-            description: "Reduces speed until next turn then regain mana (~50% max mana)",
+            description: "Reduces speed until next turn then regain mana (~40% max mana)",
             code() {
                 logAction(`${this.name} lays down.`);
                 new Modifier("Lazing Around", "Reduces speed and regen mana",
@@ -151,7 +151,7 @@ FourArcher.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen * 5 }, true);
+                            if (this.vars.applied) resourceChange(this.vars.caster, { mana: 4 * this.vars.caster.manaRegen }, true);
                             this.vars.duration--;
                         }
                         return this.vars.duration <= 0;
@@ -214,7 +214,7 @@ FourArcher.skills = {
         {
             name: "Lazing Around",
             properties: ["mystic", "mana-gain", "penalty", "resource"],
-            description: "Reduces speed until next turn then regain mana (~30% max mana)",
+            description: "Reduces speed until next turn then regain mana (~25% max mana)",
             code() {
                 logAction(`${this.name} is napping.`);
                 new Modifier("Lazing Around", "Reduces speed and regen mana",
@@ -222,7 +222,7 @@ FourArcher.skills = {
                     function() {},
                     function(context) {
                         if (context.unit === this.vars.caster) {
-                            if (this.vars.applied) resourceChange(this.vars.caster, { mana: this.vars.caster.manaRegen * 3 }, true);
+                            if (this.vars.applied) resourceChange(this.vars.caster, { mana: 2.5 * this.vars.caster.manaRegen }, true);
                             this.vars.duration--;
                         }
                         return this.vars.duration <= 0;

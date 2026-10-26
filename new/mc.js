@@ -3,6 +3,7 @@ import { FourArcher } from './unit/fourArcher.js';
 import { Mannequin } from './unit/mannequin.js';
 import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
+import { Detective } from './unit/detective.js'
 import { Electric } from './unit/electric.js';
 import { ClassicJoy } from './unit/classicJoy.js';
 import { enemy } from './unit/enemy.js';
@@ -22,7 +23,7 @@ const once = true;
 let seed;
 let id;
 let win = "draw";
-const unitList = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, /*Electric, ClassicJoy,*/ enemy, ArtificialSoldier, CouncilMagician, CouncilScientist, /*Experiment, Reject,*/ Revolutionary];
+const unitList = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Detective, /*Electric, ClassicJoy,*/ enemy, ArtificialSoldier, CouncilMagician, CouncilScientist, /*Experiment, Reject,*/ Revolutionary];
 combatSpeedMultiplier[0] = 1e9;
 stopOnErr[0] = true;
 const pending = new Set();
@@ -94,12 +95,21 @@ function mulberry32(a) {
 }
 
 function stateClear() {
-    allUnits.splice(0);
-    for (let i = modifiers.length-1; i >= 0; i--) if (!mods.includes(modifiers[i])) {
-        modifiers[i].vars.perm = false;
-        removeModifier(modifiers[i])
+    allUnits.length = 0;
+    const mds = [...modifiers]
+    for (let i = mds.length-1; i >= 0; i--) if (!mods.includes(mds[i])) {
+        mds[i].vars.perm = false;
+        removeModifier(mds[i])
     }
     mod.vars.list = [];
+    const base = new Set(mods);
+    for (const e of Object.keys(eventState)) {
+        const keep = eventState[e].filter(m => base.has(m));
+        eventState[e].length = 0;
+        eventState[e].push(...keep);
+    }
+    for (const m of mods) if (m.vars.modList) m.vars.modList = {};
+    currentAction.length = 0;
 }
 
 export function init(s = 1, units) {

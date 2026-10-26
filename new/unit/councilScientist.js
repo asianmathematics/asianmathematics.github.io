@@ -77,8 +77,8 @@ CouncilScientist.skills = {
             name: "Backup Power",
             properties: ["physical", "stamina-block", "stamina", "energy-gain"],
             cost: { stamina: 20 },
-            description: "Recover a lot of energy (~80% max energy)",
-            code() { resourceChange(this, { energy: 8 * this.energyRegen }, true); }
+            description: "Recover a lot of energy (~60% max energy)",
+            code() { resourceChange(this, { energy: 6 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -167,8 +167,8 @@ CouncilScientist.skills = {
             name: "Backup Power",
             properties: ["physical", "stamina-block", "stamina", "energy-gain"],
             cost: { stamina: 10 },
-            description: "Recover a lot of energy (~60% max energy)",
-            code() { resourceChange(this, { energy: 6 * this.energyRegen }, true); }
+            description: "Recover a lot of energy (~45% max energy)",
+            code() { resourceChange(this, { energy: 4.5 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -211,8 +211,8 @@ CouncilScientist.skills = {
         {
             name: "Backup Power",
             properties: ["physical", "stamina-block", "energy-gain"],
-            description: "Recover some energy (~40% max energy)",
-            code() { resourceChange(this, { energy: 4 * this.energyRegen }, true); }
+            description: "Recover some energy (~30% max energy)",
+            code() { resourceChange(this, { energy: 3 * this.energyRegen }, true); }
         },
         {
             name: "First Aid",
@@ -590,7 +590,13 @@ Drone.traits = [{
                     if (this.vars.cancel && this.vars.applied) this.vars.applied = false;
                     else if (!this.vars.cancel && !this.vars.applied) this.vars.applied = true;
                     const count = modifiers.reduce((s, m) => (s += m.vars.properties.includes('energy-block') && m.vars.modifiers?.includes(this)), 0);
-                    this.vars.modifiers.length ? (this.vars.cancel-count) && removeModifier(this.vars.child?.[0], false) : (this.vars.cancel-count) || stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
+                    if (this.vars.modifiers.length) {
+                        if (this.vars.cancel-count && this.vars.child) {
+                            this.vars.child[0].vars.passive = false;
+                            this.vars.child[0].vars.trait = false;
+                            removeModifier(this.vars.child?.[0], false);
+                        }
+                    } else (this.vars.cancel-count) || stunModifier("Internal Circuitry: Stun", { target: this.vars.target, properties: ["techno", "stun"], trait: true });
                 }
             }
         );
