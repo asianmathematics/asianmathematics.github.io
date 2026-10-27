@@ -456,7 +456,7 @@ export function advanceWave(x = 0) {
     for (const e of waveCalc(allUnits.filter(u => u.team === 'player'), wave-1 ? 1.5 : 1)) {
         const u = createUnit(e, 'enemy');
         assignEnemySkills(u, e);
-        if (Math.random() < .5) u?.switchPosition(true);
+        if (u.base.position === "mid" && Math.random() < .5) u.switchPosition(true);
     }
     if (eventState.waveChange.length) handleEvent('waveChange', { wave });
     updateBattleDisplay();
