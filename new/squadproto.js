@@ -852,24 +852,35 @@ let mapLastSize = { w: 0, h: 0 };
 
 const clampNum = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const viewSize = () => ({ w: mapView.clientWidth, h: mapView.clientHeight });
+// World size in px. offsetWidth/Height are 0 whenever the world is not laid out yet (hidden,
+// mid-reflow on mobile, display:none ancestor), and dividing by 0 gave zoom = Infinity.
+// Fall back to the size layoutBattlefield() wrote, then to the CSS default.
+const worldW = () => mapWorld.offsetWidth || parseFloat(mapWorld.style.width) || 2400;
+const worldH = () => mapWorld.offsetHeight || parseFloat(mapWorld.style.height) || 2600;
+const FIT_FALLBACK = 0.3;
 function fitZoom() {
     const v = viewSize();
-    return v.w && v.h ? Math.min(v.w / mapWorld.offsetWidth, v.h / mapWorld.offsetHeight) : 1;
+    if (!(v.w > 0 && v.h > 0)) return Number.isFinite(camera.z) && camera.z > 0 ? camera.z : FIT_FALLBACK;
+    const z = Math.min(v.w / worldW(), v.h / worldH());
+    return Number.isFinite(z) && z > 0 ? z : FIT_FALLBACK;
 }
 function zoomLimits() {
     const fit = fitZoom();
     return { min: fit * 0.5, max: Math.max(fit * 6, 2.5) };
 }
+// Last line of defence: if x/y/z ever go non-finite, snap back to a fitted view.
+function camOk() { return Number.isFinite(camera.x) && Number.isFinite(camera.y) && Number.isFinite(camera.z) && camera.z > 0; }
 // Keep the map from being flung out of view, like a map app: the world can be dragged
 // freely as long as at least ~35% of the viewport's worth of it (or all of it, if smaller)
 // stays visible. This never fights cursor-anchored zooming.
 function clampCamera() {
-    const v = viewSize(), sw = mapWorld.offsetWidth * camera.z, sh = mapWorld.offsetHeight * camera.z;
+    const v = viewSize(), sw = worldW() * camera.z, sh = worldH() * camera.z;
     const kx = Math.min(sw, v.w * 0.35), ky = Math.min(sh, v.h * 0.35);
     camera.x = clampNum(camera.x, kx - sw, v.w - kx);
     camera.y = clampNum(camera.y, ky - sh, v.h - ky);
 }
 function applyCamera() {
+    if (!camOk()) { camera.z = fitZoom(); const v = viewSize(); camera.x = (v.w - worldW() * camera.z) / 2 || 0; camera.y = (v.h - worldH() * camera.z) / 2 || 0; camera.auto = true; }
     mapWorld.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.z})`;
     mapView.style.setProperty('--map-x', `${camera.x}px`);
     mapView.style.setProperty('--map-y', `${camera.y}px`);
@@ -879,13 +890,15 @@ function applyCamera() {
 function fitView() {
     const v = viewSize();
     camera.z = fitZoom();
-    camera.x = (v.w - mapWorld.offsetWidth * camera.z) / 2;
-    camera.y = (v.h - mapWorld.offsetHeight * camera.z) / 2;
+    camera.x = (v.w - worldW() * camera.z) / 2;
+    camera.y = (v.h - worldH() * camera.z) / 2;
     camera.auto = true;
     applyCamera();
 }
 // Zoom by `factor`, keeping the world point under viewport position (px, py) fixed.
 function zoomAt(factor, px, py) {
+    if (!camOk()) fitView();
+    if (!Number.isFinite(factor) || factor <= 0 || !Number.isFinite(px) || !Number.isFinite(py)) return;
     const { min, max } = zoomLimits();
     const z = clampNum(camera.z * factor, min, max);
     camera.x = px - (px - camera.x) * (z / camera.z);
@@ -915,7 +928,7 @@ function initMapView() {
     new ResizeObserver(() => {
         const v = viewSize();
         if (!v.w || !v.h) return;
-        if (camera.auto || !mapLastSize.w) fitView();
+        if (camera.auto || !mapLastSize.w || !mapLastSize.h || !camOk()) fitView();
         else {
             const wx = (mapLastSize.w / 2 - camera.x) / camera.z, wy = (mapLastSize.h / 2 - camera.y) / camera.z;
             const { min, max } = zoomLimits();
@@ -970,7 +983,7 @@ function initMapView() {
         } else if (pointers.size === 2) {
             const [a, b] = [...pointers.values()], r = mapView.getBoundingClientRect();
             const mx = (a.x + b.x) / 2 - r.left, my = (a.y + b.y) / 2 - r.top, d = Math.hypot(a.x - b.x, a.y - b.y);
-            if (pinch && pinch.d > 0) {
+            if (pinch && pinch.d > 8 && d > 8) {
                 camera.x += mx - pinch.mx; camera.y += my - pinch.my;
                 zoomAt(d / pinch.d, mx, my);
                 markUsed();
