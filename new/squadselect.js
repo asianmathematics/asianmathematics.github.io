@@ -63,6 +63,11 @@ function initUnitSelection() {
         if (!selectedUnits.find(u => u.startingPosition === "front")) return showMessage('Please select at least 1 non-backline unit!', 'error', 'selection');
         startCombatWithSelected();
     });
+    document.getElementById('start-proto').addEventListener('click', () => {
+        if (selectedUnits.length === 0) return showMessage('Please select at least 1 unit!', 'error', 'selection');
+        if (!selectedUnits.find(u => u.startingPosition === "front")) return showMessage('Please select at least 1 non-backline unit!', 'error', 'selection');
+        startCombatWithSelected('squadproto.html');
+    });
 }
 
 function getAllSkills(unitTemplate) { return Object.values(unitTemplate.skills).forEach(c => unitTemplate.skills[c]).flat(); }
@@ -298,14 +303,14 @@ function renderSelectedUnits() {
     });
 }
 
-function startCombatWithSelected() {
+function startCombatWithSelected(link = 'combat.html') {
     const squadData = selectedUnits.map(config => {
         const extractSkillInfo = (skill) => ({ name: skill.name, category: getSkillCategory(config.template, skill) });
         const skillsData = config.template.base.position === 'mid' ? { front: config.skills.front.map(extractSkillInfo), back: config.skills.back.map(extractSkillInfo) } : config.skills.map(extractSkillInfo);
         return { templateName: config.template.name, startingPosition: config.startingPosition, skills: skillsData, autoBehavior: config.autoBehavior };
     });
     localStorage.setItem('pendingSquad', JSON.stringify(squadData));
-    window.location.href = 'combat.html';
+    window.location.href = link;
 }
 
 function updateInfoDisplay(unit) {

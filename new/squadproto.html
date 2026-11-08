@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Squad Proto - Map Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   1. GLOBAL
+   The battlefield is a "world" drawn in plain px and moved/scaled by a camera
+   (see squadproto.js). Zone sizes/positions are computed in JS from these tokens
+   plus the BATTLEFIELD config (columns/rows), so changing a number here or there
+   re-flows the whole map consistently.
+   ========================================================================== */
+:root {
+  --tilt: 35deg;          /* zone rotation; cards counter-rotate by the same amount */
+  --slot-w: 156px;        /* world-space sizes: they never change with the window */
+  --slot-h: 96px;
+  --slot-gap: 10px;
+  --grid-pad: 16px;       /* space between a grid and its zone outline */
+  --zone-pad: 16px;       /* flat-edge padding of the two backline zones */
+  --zone-gap: 28px;       /* gap between stacked zones */
+  --world-margin: 70px;   /* empty border around the zones */
+  --handle-w: 14px;       /* width of the draggable column handles */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'Courier Prime', monospace;   /* same font as the original combat UI */
+}
+
+/* ==========================================================================
+   2. PAGE LAYOUT  (three resizable columns on desktop, stacked on narrow screens / high zoom)
+   ========================================================================== */
+.battleground-layout {
+  --left-w: clamp(220px, 20vw, 300px);       /* defaults; dragging/collapsing sets these in JS */
+  --right-w: clamp(240px, 22vw, 340px);
+  display: grid;
+  grid-template-columns: min(var(--left-w), 40vw) var(--handle-w) minmax(0, 1fr) var(--handle-w) min(var(--right-w), 40vw);
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+}
+
+.side-column {
+  background: rgba(5, 5, 5, 0.95);
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 10;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.left-panel  { border-right: 1px solid #00ff66; }
+.right-panel { border-left: 1px solid #00ff66; }
+
+.info-panel-static, .log-panel {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+/* the log panel takes all the height left under the Command box, so the log runs to the bottom */
+.left-panel .log-panel {
+  flex: 1 1 auto;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+.left-panel .log-panel .label { flex-shrink: 0; }
+
+.label {
+  font-weight: bold;
+  color: #00ff66;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ---- draggable column handles + collapse/grow buttons ---- */
+.col-resizer {
+  position: relative;
+  z-index: 12;
+  background: #050505;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.col-resizer::before {                       /* grip */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 56px;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+  background: rgba(0, 255, 102, 0.35);
+}
+.col-resizer:hover, .col-resizer.dragging, .col-resizer:focus-visible { background: rgba(0, 255, 102, 0.12); }
+.col-resizer:hover::before, .col-resizer.dragging::before, .col-resizer:focus-visible::before { background: #00ff66; }
+
+.panel-toggle {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border-radius: 3px;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  background: #000;
+  color: #00ff66;
+  border: 1px solid rgba(0, 255, 102, 0.5);
+}
+.panel-toggle:hover { background: rgba(0, 255, 102, 0.25); }
+
+body.resizing, body.resizing * { cursor: col-resize !important; user-select: none !important; -webkit-user-select: none !important; }
+
+@media (min-width: 901px) {
+  .battleground-layout[data-left="collapsed"] .left-panel,
+  .battleground-layout[data-right="collapsed"] .right-panel {
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+}
+
+body.resizing-y, body.resizing-y * { cursor: row-resize !important; user-select: none !important; -webkit-user-select: none !important; }
+
+.sheet-bar { display: none; }              /* mobile only (see the media query below) */
+
+@media (max-width: 900px) {
+  /* Phones / narrow windows / high browser zoom: the map fills the screen and ONE side column
+     at a time lives in a bottom sheet. Drag the sheet's top edge up/down to resize it, tap the
+     grip to collapse it, and use the two tabs to switch columns. */
+  .battleground-layout {
+    --sheet-h: 38vh;                         /* default; dragging sets px, collapsing sets 0 */
+    --sheet-h: 38dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, var(--sheet-h));
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+  }
+  .col-resizer { display: none; }
+  .battleground-layout .center-battlefield { grid-row: 1; grid-column: 1; }
+  .sheet-bar {
+    grid-row: 2;
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    background: #050505;
+    border-top: 1px solid #00ff66;
+    touch-action: none;                      /* vertical drags resize the sheet */
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: row-resize;
+    z-index: 12;
+  }
+  .sheet-grip {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sheet-grip::before {
+    content: "";
+    width: 56px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(0, 255, 102, 0.45);
+  }
+  .sheet-bar.dragging .sheet-grip::before { background: #00ff66; }
+  .sheet-tabs { display: flex; }
+  .sheet-tab {
+    flex: 1;
+    width: auto;
+    margin: 0;
+    padding: 10px 8px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #888;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .sheet-tab:hover { background: rgba(0, 255, 102, 0.08); }
+  .sheet-tab.active { color: #00ff66; border-bottom-color: #00ff66; background: rgba(0, 255, 102, 0.08); }
+
+  .side-column {
+    grid-row: 3;
+    grid-column: 1;
+    min-height: 0;
+    padding: 14px;
+    gap: 14px;
+    overflow-y: auto;
+    border: 0;
+  }
+  .battleground-layout[data-sheet="left"]  .right-panel,
+  .battleground-layout[data-sheet="right"] .left-panel,
+  .battleground-layout[data-sheet-open="false"] .side-column { display: none; }
+
+  /* compact Command box (2 x 2) so the log keeps its room */
+  .info-panel-static { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; padding: 10px; }
+  .info-panel-static .label, .info-panel-static hr { grid-column: 1 / -1; }
+  .left-panel .log-panel { min-height: 160px; order: -1; }   /* log first: it is the part worth seeing on a phone */
+}
+
+/* ==========================================================================
+   3. COMBAT LOG SYSTEM
+   ========================================================================== */
+#action-log {
+  flex: 1 1 0;        /* grows to fill the log panel */
+  min-height: 0;
+  background: #000;
+  border: 1px solid #222;
+  padding: 10px;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 0.85em;
+  color: #00ff66;
+}
+
+
+/* ==========================================================================
+   4. BATTLEFIELD MAP  (viewport + world + zones)
+   ========================================================================== */
+.center-battlefield {                      /* the map viewport */
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;                      /* we handle drag + pinch ourselves */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  outline: none;
+  background-color: #0a0a0a;
+  /* faint dot grid that follows the camera so panning/zooming reads as moving over a map */
+  background-image: radial-gradient(rgba(0, 255, 102, 0.14) 1px, transparent 1.5px);
+  background-size: calc(48px * var(--map-z, 1)) calc(48px * var(--map-z, 1));
+  background-position: var(--map-x, 0px) var(--map-y, 0px);
+}
+.center-battlefield.dragging { cursor: grabbing; }
+.center-battlefield:focus-visible { box-shadow: inset 0 0 0 2px rgba(0, 255, 102, 0.5); }
+
+#map-world {                               /* drawing surface, moved by the camera; size set by layoutBattlefield() */
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2400px;
+  height: 2600px;
+  transform-origin: 0 0;
+}
+
+.blob {                                    /* --cx/--cy/--w/--h are set by layoutBattlefield() */
+  position: absolute;
+  left: calc(var(--cx) - var(--w) / 2);
+  top:  calc(var(--cy) - var(--h) / 2);
+  width: var(--w);
+  height: var(--h);
+  transform: rotate(var(--tilt));
+  border: 2px solid #00ff66;
+  background: rgba(0, 255, 102, 0.03);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+}
+.blob.player-side { border-color: #00ff66; background: rgba(0, 255, 102, 0.02); }
+.blob.enemy-side  { border-color: #ff3333; background: rgba(255, 51, 51, 0.02); }
+
+.player-backline {
+  border-radius: 100% 100% 100% 100% / 0% 0% 100% 100%;
+  align-items: flex-start;
+  padding-top: var(--zone-pad);
+}
+.enemy-backline {
+  border-radius: 100% 100% 100% 100% / 100% 100% 0% 0%;
+  align-items: flex-end;
+  padding-bottom: var(--zone-pad);
+}
+.frontline {
+  border-radius: 5% / 50%;
+  border-color: #444;
+  align-items: center;
+}
+
+/* ==========================================================================
+   5. GRID CONTROLLER STYLES  (fixed px: the grid cannot reflow)
+   ========================================================================== */
+.grid-content {
+  box-sizing: border-box;
+  padding: var(--grid-pad);
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 6), var(--slot-w));
+  grid-auto-rows: var(--slot-h);
+  gap: var(--slot-gap);
+  justify-content: center;
+}
+
+.grid-slot {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* ---- map controls ---- */
+.map-controls {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: default;
+}
+.map-controls button {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  text-transform: none;
+  background: rgba(0, 0, 0, 0.75);
+  color: #00ff66;
+  border: 1px solid rgba(0, 255, 102, 0.5);
+}
+.map-controls button:hover { background: rgba(0, 255, 102, 0.2); }
+.map-zoom, .map-hint {
+  font-size: 11px;
+  color: rgba(0, 255, 102, 0.7);
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+.map-hint { color: rgba(224, 224, 224, 0.45); transition: opacity 0.6s; }
+.center-battlefield.used .map-hint { opacity: 0; }
+
+/* ==========================================================================
+   6. UNIT CARD DESIGN & COUNTER-ROTATION
+   ========================================================================== */
+.unit {
+  --theme-color: #00ff66;
+  --glow-color: rgba(0, 255, 102, 0.3);
+  
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid var(--theme-color);
+  border-radius: 8px;
+  color: #ffffff;
+  box-shadow: 0 0 10px var(--glow-color);
+  box-sizing: border-box;
+  padding: 8px;
+  
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  
+  /* Counter-rotation matches your angle to keep card text perfectly flat */
+  transform: rotate(calc(var(--tilt) * -1)) scale(0.95); 
+  
+  /* Anti-aliasing text optimization for transformed text rendering */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Team Variant Configurations */
+.unit.player-unit {
+  --theme-color: #00ff66;
+  --glow-color: rgba(0, 255, 102, 0.3);
+}
+
+.unit.enemy-unit {
+  --theme-color: #ff3333;
+  --glow-color: rgba(255, 51, 51, 0.3);
+}
+
+.unit-name {
+  font-size: 14px;
+  flex-shrink: 0; /* never let the name collapse when the bars need room */
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  white-space: normal;
+  overflow-wrap: anywhere;      /* names wrap onto extra lines ... */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;       /* ... up to 3, then ellipsis (full name is in the hover tooltip) */
+  line-clamp: 3;
+  overflow: hidden;
+  color: var(--theme-color);
+}
+
+/* ==========================================================================
+   7. RESOURCE BAR INDICATORS
+   ========================================================================== */
+.bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.bar-wrapper {
+  width: 100%;
+  height: 7px;
+  background: #222;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar {
+  height: 100%;
+  width: 100%;
+  border-radius: 2px;
+}
+
+/* Specific Resource Color Mappings */
+.bar.hp      { background: #ff3333; }
+.bar.stamina { background: #ffaa00; }
+.bar.mana    { background: #3399ff; }
+.bar.energy  { background: #ffff33; }
+.bar.timer   { background: #ffffff; width: 40%; }
+
+/* ==========================================================================
+   8. INTERACTION & BUTTON COMPONENTS
+   ========================================================================== */
+button {
+  background: #00ff66;
+  color: #0a0a0a;
+  border: none;
+  padding: 8px 12px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 6px;
+  font-family: inherit;
+  text-transform: uppercase;
+  font-size: 0.8em;
+  letter-spacing: 0.5px;
+}
+button:hover { 
+  background: #00cc52; 
+}
+
+button.spawn-enemy-btn { 
+  background: #ff3333; 
+  color: white; 
+}
+button.spawn-enemy-btn:hover { 
+  background: #cc2222; 
+}
+
+</style>
+<link rel="stylesheet" href="squadproto-ui.css">
+</head>
+<body>
+
+<div class="battleground-layout">
+
+  <div class="side-column left-panel">
+    <div class="info-panel-static" id="command">
+      <div class="label">COMMAND</div>
+      <button onclick="spawnUnit('player', 'player')">+ Player Backline</button>
+      <button onclick="spawnUnit('frontline', 'player')">+ Friendly Frontline</button>
+      <hr style="border:0; border-top:1px solid #333; margin:10px 0;">
+      <button class="spawn-enemy-btn" onclick="spawnUnit('frontline', 'enemy')">+ Enemy Frontline</button>
+      <button class="spawn-enemy-btn" onclick="spawnUnit('enemy', 'enemy')">+ Enemy Backline</button>
+    </div>
+    <div class="log-panel">
+      <div class="label">Combat Log</div>
+      <div id="action-log"></div>
+    </div>
+  </div>
+
+  <div class="col-resizer" data-side="left" role="separator" aria-orientation="vertical"
+       aria-label="Resize left panel (arrow keys, Enter to collapse)" tabindex="0">
+    <button type="button" class="panel-toggle" data-side="left" title="Collapse left panel" aria-label="Collapse left panel">&lsaquo;</button>
+  </div>
+
+  <div class="center-battlefield" id="map-viewport" tabindex="0" role="application"
+       aria-label="Battlefield map. Drag to pan, scroll or pinch to zoom, press 0 to fit.">
+    <div id="map-world">
+      <div class="blob enemy-backline enemy-side"><div class="grid-content" id="enemy-grid"></div></div>
+      <div class="blob frontline"><div class="grid-content" id="frontline-grid"></div></div>
+      <div class="blob player-backline player-side"><div class="grid-content" id="player-grid"></div></div>
+    </div>
+    <div class="map-controls">
+      <button type="button" data-map="in" title="Zoom in (+)">+</button>
+      <button type="button" data-map="out" title="Zoom out (-)">&minus;</button>
+      <button type="button" data-map="fit" title="Fit battlefield (0)">&#x2922;</button>
+      <span class="map-zoom">100%</span>
+      <span class="map-hint">Drag to pan &middot; scroll / pinch to zoom</span>
+    </div>
+  </div>
+
+  <div class="col-resizer" data-side="right" role="separator" aria-orientation="vertical"
+       aria-label="Resize right panel (arrow keys, Enter to collapse)" tabindex="0">
+    <button type="button" class="panel-toggle" data-side="right" title="Collapse right panel" aria-label="Collapse right panel">&rsaquo;</button>
+  </div>
+
+  <div class="side-column right-panel">
+    <div class="label">Unit Inspector</div>
+    <div id="unit-details-display">
+      <p style="color: #666; font-style: italic; text-align: center;">Select a unit to inspect stats...</p>
+    </div>
+  </div>
+
+  <div class="sheet-bar" role="toolbar" aria-label="Panels: drag up or down to resize, tap the grip to collapse">
+    <div class="sheet-grip" title="Drag to resize, tap to collapse"></div>
+    <div class="sheet-tabs">
+      <button type="button" class="sheet-tab active" data-sheet="left" aria-pressed="true">Command &amp; Log</button>
+      <button type="button" class="sheet-tab" data-sheet="right" aria-pressed="false">Inspector</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="squadproto.js"></script>
+</body>
+</html>

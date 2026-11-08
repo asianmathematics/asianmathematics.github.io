@@ -3,6 +3,7 @@ import { FourArcher } from './unit/fourArcher.js';
 import { Mannequin } from './unit/mannequin.js';
 import { Silhouette } from './unit/silhouette.js';
 import { Doctor } from './unit/doctor.js';
+import { Detective } from './unit/detective.js'
 import { Electric } from './unit/electric.js';
 import { ClassicJoy } from './unit/classicJoy.js';
 import { enemy } from './unit/enemy.js';
@@ -195,7 +196,7 @@ function renderUnitDetails(unit) {
         </div>
     `;
     if (unit.skills?.special && unit.hp > 0) html += `
-            <button class="activate-special-btn" data-unit="${unit.name}" ${!unit.specialReady && unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0) ? 'disabled' : ''}>
+            <button class="activate-special-btn" data-unit="${unit.name}" ${!unit.specialReady || !(unit.stamina >= (unit.skills.special.cost?.stamina || 0) && (unit.mana || 0) >= (unit.skills.special.cost?.mana || 0) && (unit.energy || 0) >= (unit.skills.special.cost?.energy || 0)) ? 'disabled' : ''}>
                 ⚡ Activate Special: ${unit.skills.special.name}
             </button>
         `;
@@ -233,7 +234,7 @@ function alterDesc(skill, category) {
 
 function updateModifiers() {
     const modifiersContent = document.getElementById('modifiers-content');
-    if (!modifiersContent) return;
+    if (!modifiersContent || !modifiersContent.parentElement.classList.contains("active")) return;
     //const down = (modifiersContent.scrollHeight - modifiersContent.scrollTop - modifiersContent.clientHeight) <= 90, scroll = modifiersContent.scrollTop;
     let modDisplay = `<h3 style="border-bottom:2px solid #ff0055; padding-bottom:5px; margin-bottom:10px;">Active Modifiers</h3>`;
     if (modifiers.length === 0) modDisplay += `<p style="color:#888;">No active modifiers</p>`;
@@ -276,6 +277,7 @@ function initTabSwitching() {
             button.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(content => { content.classList.remove('active'); });
             document.getElementById(`tab-${button.dataset.tab}`).classList.add('active');
+            if (button.innerHTML === "Modifiers") updateModifiers();
         });
     });
 }
@@ -381,8 +383,7 @@ export async function combatTick() {
                 } else if (behavior === 'both') executeBoth(turn);
                 else executeAutoAction(turn, behavior);
             }
-        }
-        if (turn.team === 'enemy') enemyTurn(turn);
+        } else enemyTurn(turn);
     } else {
         logAction(`${turn.name}'s turn was skipped due to being stunned!`, 'miss');
         if (eventState.turnEnd.length) handleEvent('turnEnd', { unit: turn });
@@ -453,7 +454,7 @@ export function advanceWave(x = 0) {
         for (let i = modifiers.length - 1; i >= 0; i--) if (!allUnits.includes(modifiers[i].vars.caster)) removeModifier(modifiers[i]);
     } else return true;
     logAction(`<strong>Wave ${++wave}!</strong>`, 'turn');
-    for (const e of waveCalc(allUnits.filter(u => u.team === 'player'), wave-1 ? 1.5 : 1)) {
+    for (const e of waveCalc(allUnits.filter(u => u.team === 'player'), wave-2 ? 1.5 : 1)) {
         const u = createUnit(e, 'enemy');
         assignEnemySkills(u, e);
         if (u.base.position === "mid" && Math.random() < .5) u.switchPosition(true);
@@ -485,7 +486,7 @@ function waveCalc(units, mult) {
             enemyPoints.delete(Reject);
         }
     }*/
-    const playerPoints = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Electric, ClassicJoy];
+    const playerPoints = [DexSoldier, FourArcher, Mannequin, Silhouette, Doctor, Detective, Electric, ClassicJoy];
     enemyPoints = [Experiment, Reject, CouncilMagician, CouncilScientist, Revolutionary, enemy, ArtificialSoldier];
     const enemies = [];
     let points = 0;
@@ -613,6 +614,7 @@ const unitLookup = {
     [Mannequin.name]: Mannequin,
     [Silhouette.name]: Silhouette,
     [Doctor.name]: Doctor,
+    [Detective.name]: Detective,
     [Electric.name]: Electric,
     [ClassicJoy.name]: ClassicJoy
 };

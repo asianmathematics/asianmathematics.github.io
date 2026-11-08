@@ -140,7 +140,7 @@ function handleEvent(eventType, context, list = eventState[eventType]) {
             } finally { currentAction.length = stack; }
         } finally { currentAction.pop(); }
     }
-    if (typeof window !== 'undefined') window.updateModifiers();
+    if (typeof window !== 'undefined' && !currentAction.length) window.updateModifiers();
 }
 
 function removeModifier(modifier, err=true) {
@@ -423,11 +423,11 @@ new Modifier("Remove Reduction", "Remove passive modifiers and reduction on midl
 
 const logAction = (function() {
     if (typeof document === 'undefined') return function() {};
+    const logContainer = document.getElementById('action-log');
+    if (!logContainer) return function() {};
     let lastLogState = {};
     const STAT_CHANGE_REGEX = /^(.+?)'s (.+ (?:increased|decreased)(?:, and .+ decreased)?\.)$/;
     return function (message, type = 'info') {
-        const logContainer = document.getElementById('action-log');
-        if (!logContainer) return;
         const diff = lastLogState?.diff ?? logContainer.scrollHeight - logContainer.scrollTop - logContainer.clientHeight;
         const actionPrefix = currentAction.length ? currentAction.at(-1)[0].name + ': ' : '';
         const match = message.match(STAT_CHANGE_REGEX);
@@ -470,6 +470,7 @@ function resetStat(unit, statList, values = [], add = true) {
         for (let i = 0; i < Math.min(statList.length, values.length); i++) {
             if (!values[i]) {
                 if ((values[i] == null || Number.isNaN(values[i])) && !nullCheck) nullCheck = !logAction("Stat change has null values!", "error");
+                if (nullCheck && stopOnErr[0]) throw new TypeError((currentAction.at(-2)?.[0].name || "The system") + " tried to change" + statList[i] + "by a non-numeric amount!"); 
                 continue;
             }
             unit.mult[statList[i]] += add ? values[i] : -values[i];

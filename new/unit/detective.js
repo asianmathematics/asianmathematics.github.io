@@ -4,6 +4,8 @@ import { Unit } from './unit.js';
 
 export const Detective = new Unit("Detective", [750, 28, 27, 50, 150, 180, 140, 90, 75, "front", 80, 60, 7, , , 90, 10], 3, ["independence/loneliness", "ingenuity/insanity"]);
 
+Detective.description = "3-star physical techno frontline unit with high debuff capabilities and abilities to bypass tanks.";
+
 Detective.skills = {
     special: [
         {
@@ -98,7 +100,7 @@ Detective.skills = {
             description: "Selects alive random unit. If the target is an ally, increases focus, resist, and presence. If target is an enemy, greatly increases presence and decreases accuracy, evasion, and speed, has a 1% chance of failure. Lasts for 6 turns. Can target backline",
             target() { this.team === "player" ? specialTarget(this, allUnits.filter(u => u.hp && u !== this)) : this.skills.special.code.call(this, randTarget(allUnits.filter(u => u.hp && u !== this), 1, true)); },
             code(target) {
-                if (target[0].team === this.team) basicModifier("Spotlight: buff", "Focus, resist, and presence increase", { target: target[0], duration: 6, properties: ["techno", "buff"], stats: { focus: 70, resist: 120, presence: 100 }, listeners: { turnStart: true }, focus: true }, 'caster');
+                if (target[0].team === this.team) basicModifier("Spotlight: buff", "Focus, resist, and presence increase", { target: target[0], duration: 6, properties: ["techno", "buff"], stats: { focus: 80, resist: 150, presence: 100 }, listeners: { turnStart: true }, focus: true }, 'caster');
                 else if (resistDebuff(this, target)[0] >= 2) {
                     basicModifier("Spotlight: presence", "Massive presence increase", { target: target[0], duration: 6, properties: ["techno", "buff"], stats: { presence: 200 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; }, focus: true }, 'caster');
                     basicModifier("Spotlight: debuff", "Accuracy, evasion, and speed decrease", { target: target[0], duration: 6, properties: ["techno", "debuff"], stats: { accuracy: -40, evasion: -80, speed: -20 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 2; }, focus: true }, 'caster');
@@ -118,8 +120,8 @@ Detective.skills = {
                     function(context) {
                         let i;
                         for (i = 0; i < (context.defenders?.length || 0); i++) if (context.defenders[i] === this.vars.target) {
-                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).div = (context.calcMods.defenders[i].resist.div || 1) + 1;
-                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).div = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].div || 1) + 1;
+                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).div = (context.calcMods.defenders[i].resist.div || 1) + 2;
+                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).div = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].div || 1) + 2;
                         }
                         if (context.targetMods && currentAction.at(-2)[1].team === this.vars.caster.team && (i = context.unitList.indexOf(this.vars.target)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 3*(1+!!currentAction.at(-2)[1].base.energy);
                         if (context.unit === this.vars.caster) this.vars.duration--;
@@ -226,7 +228,7 @@ Detective.skills = {
             description: "Selects random alive unit. If the target is an ally, increases focus, resist, and presence. If target is an enemy, chance to greatly increase presence and decreases accuracy, evasion, and speed. Lasts for 3 turns. If cast again on the same target, refreshes duration and allow energy regen next turn. Can target backline",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u !== this), 1, true)[0];
-                if (target.team === this.team) refreshModifier([{ name: "Spotlight: buff", vars: { caster: this, target, parent: this.skills.basic } }])[0] ? this.previousAction[2] = false : basicModifier("Spotlight: buff", "Focus, resist, and presence increase", { target, duration: 3, properties: ["techno", "buff"], stats: { focus: 40, resist: 80, presence: 75 }, listeners: { turnStart: true }, focus: true }, 'caster');
+                if (target.team === this.team) refreshModifier([{ name: "Spotlight: buff", vars: { caster: this, target, parent: this.skills.basic } }])[0] ? this.previousAction[2] = false : basicModifier("Spotlight: buff", "Focus, resist, and presence increase", { target, duration: 3, properties: ["techno", "buff"], stats: { focus: 50, resist: 100, presence: 75 }, listeners: { turnStart: true }, focus: true }, 'caster');
                 else if (resistDebuff(this, [target])[0] >= 35) {
                     const mod = refreshModifier([{ name: "Spotlight: presence", vars: { caster: this, target, parent: this.skills.basic } }, { name: "Spotlight: debuff", vars: { caster: this, target, parent: this.skills.basic } }]);
                     if (!mod[0]) basicModifier("Spotlight: presence", "Massive presence increase", { target, duration: 3, properties: ["techno", "buff"], stats: { presence: 150 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 35; }, focus: true }, 'caster');
@@ -247,8 +249,8 @@ Detective.skills = {
                     function(context) {
                         let i;
                         for (i = 0; i < (context.defenders?.length || 0); i++) if (context.defenders[i] === this.vars.target) {
-                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 35;
-                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 35;
+                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).div = (context.calcMods.defenders[i].resist.div || 1) + 1;
+                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).div = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].div || 1) + 1;
                         }
                         if (context.targetMods && currentAction.at(-2)[1].team === this.vars.caster.team && (i = context.unitList.indexOf(this.vars.target)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 2*(1+!!currentAction.at(-2)[1].base.energy);
                         if (context.unit === this.vars.caster) this.vars.duration--;
@@ -300,7 +302,7 @@ Detective.skills = {
             description: "Selects random alive unit. If the target is an ally, increases focus, resist, and presence. If target is an enemy, chance to greatly increase presence and decreases accuracy, evasion, and speed. Lasts for 2 turns",
             code() {
                 const target = randTarget(allUnits.filter(u => u.hp && u !== this && (u.team === this.team || u.position === "front")), 1, true)[0];
-                if (target.team === this.team) refreshModifier([{ name: "Spotlight: buff", vars: { caster: this, target, parent: this.skills.secondary } }], 2)[0] || basicModifier("Spotlight: buff", "Focus, resist, and presence increase", { target, duration: 2, properties: ["techno", "buff"], stats: { focus: 30, resist: 60, presence: 50 }, listeners: { turnStart: true }, focus: true }, 'caster');
+                if (target.team === this.team) refreshModifier([{ name: "Spotlight: buff", vars: { caster: this, target, parent: this.skills.secondary } }], 2)[0] || basicModifier("Spotlight: buff", "Focus, resist, and presence increase", { target, duration: 2, properties: ["techno", "buff"], stats: { focus: 40, resist: 75, presence: 50 }, listeners: { turnStart: true }, focus: true }, 'caster');
                 else if (resistDebuff(this, [target])[0] >= 30) {
                     const mod = refreshModifier([{ name: "Spotlight: presence", vars: { caster: this, target, parent: this.skills.secondary } }, { name: "Spotlight: debuff", vars: { caster: this, target, parent: this.skills.secondary } }], 2);
                     if (!mod[0]) basicModifier("Spotlight: presence", "Massive presence increase", { target, duration: 2, properties: ["techno", "buff"], stats: { presence: 100 }, listeners: { turnStart: true }, debuff: function(target, calcMods) { return resistDebuff(this.vars.caster, [target], calcMods)[0] >= 30; }, focus: true }, 'caster');
@@ -320,8 +322,8 @@ Detective.skills = {
                     function(context) {
                         let i;
                         for (i = 0; i < (context.defenders?.length || 0); i++) if (context.defenders[i] === this.vars.target) {
-                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 15;
-                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 15;
+                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 35;
+                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 35;
                         }
                         if (context.targetMods && currentAction.at(-2)[1].team === this.vars.caster.team && (i = context.unitList.indexOf(this.vars.target)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + (1+!!currentAction.at(-2)[1].base.energy);
                         if (context.unit === this.vars.caster) this.vars.duration--;
@@ -365,11 +367,11 @@ Detective.skills = {
                         if (this.vars.target === unit) unit = null;
                         if (this.vars.applied) {
                             this.cancel(true, true);
-                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 20, resist: 40, presence: 25 } : { presence: 75, accuracy: -10, evasion: -20, speed: -5 };
+                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 20, resist: 50, presence: 25 } : { presence: 75, accuracy: -10, evasion: -20, speed: -5 };
                             this.vars.target = unit;
                             this.cancel(false, true);
                         } else {
-                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 20, resist: 40, presence: 25 } : { presence: 75, accuracy: -10, evasion: -20, speed: -5 };
+                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 20, resist: 50, presence: 25 } : { presence: 75, accuracy: -10, evasion: -20, speed: -5 };
                             this.vars.target = unit;
                         }
                     }
@@ -394,8 +396,8 @@ Detective.skills = {
                         if (!this.vars.target) return;
                         let i;
                         for (i = 0; i < (context.defenders?.length || 0); i++) if (context.defenders[i] === this.vars.target) {
-                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 10;
-                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 10;
+                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 25;
+                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 25;
                         }
                         if (context.targetMods && currentAction.at(-2)[1].team === this.vars.caster.team && (i = context.unitList.indexOf(this.vars.target)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + (1+!!currentAction.at(-2)[1].base.energy);
                     }, undefined,
@@ -436,11 +438,11 @@ Detective.skills = {
                         if (this.vars.target === unit) unit = null;
                         if (this.vars.applied) {
                             this.cancel(true, true);
-                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 30, resist: 60, presence: 50 } : { presence: 150, accuracy: -20, evasion: -40, speed: -10 };
+                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 30, resist: 75, presence: 50 } : { presence: 150, accuracy: -20, evasion: -40, speed: -10 };
                             this.vars.target = unit;
                             this.cancel(false, true);
                         } else {
-                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 30, resist: 60, presence: 50 } : { presence: 150, accuracy: -20, evasion: -40, speed: -10 };
+                            if (unit) this.vars.stats = unit.team === this.vars.caster.team ? { focus: 30, resist: 75, presence: 50 } : { presence: 150, accuracy: -20, evasion: -40, speed: -10 };
                             this.vars.target = unit;
                         }
                     }
@@ -465,8 +467,8 @@ Detective.skills = {
                         if (!this.vars.target) return;
                         let i;
                         for (i = 0; i < (context.defenders?.length || 0); i++) if (context.defenders[i] === this.vars.target) {
-                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 25;
-                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 25;
+                            (((context.calcMods.defenders ??= [])[i] ??= {}).resist ??= {}).bonus = (context.calcMods.defenders[i].resist.bonus || 0) - 45;
+                            if (context.attacker.base.energy) (((context.calcMods.defenders ??= [])[i] ??= {})[context.event === 'attackStart' ? 'evasion' : 'presence'] ??= {}).bonus = (context.calcMods.defenders[i][context.event === 'attackStart' ? 'evasion' : 'presence'].bonus || 0) - 45;
                         }
                         if (context.targetMods && currentAction.at(-2)[1].team === this.vars.caster.team && (i = context.unitList.indexOf(this.vars.target)) > -1) (((context.targetMods.targets ??= [])[i] ??= {}).presence ??= {}).mult = (context.targetMods.targets[i].presence.mult || 1) + 2*(1+!!currentAction.at(-2)[1].base.energy);
                     }, undefined,
@@ -487,8 +489,8 @@ Detective.skills = {
 }
 
 Detective.defaultSkills = [
-    { category: 'special', name: 'Self Defense' },
-    { category: 'basic', name: 'Red String' },
+    { category: 'special', name: 'Red String' },
+    { category: 'basic', name: 'Camera Flash' },
     { category: 'secondary', name: 'Spotlight' },
     { category: 'passive', name: 'Bounty' },
     { category: 'augment', name: 'Investigative Journalism' }

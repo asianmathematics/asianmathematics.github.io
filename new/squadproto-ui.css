@@ -1,0 +1,461 @@
+/* =============================================================================
+   squadproto-ui.css  -  styles for the UI ported from combat.js into squadproto.html
+   Loaded AFTER the mockup's own <style>, and only styles things the mockup lacks
+   (inspector tabs/cards, modifier list, log colours, messages, target-selection panel,
+   unit state classes). Nothing here restyles the mockup's existing layout.
+   Section 2 is copied verbatim from combat.css; sections 1 and 3 are new.
+   ============================================================================= */
+
+/* ---- 1. NEW: undo the mockup's global `button` rule for ported buttons ----------
+   (it forces width:100%, margin-top, uppercase and rounded corners on every button).
+   Placed before section 2 so the verbatim rules below still win where they set a value. */
+.tab-button, .doctrine-btn, .activate-special-btn, .speed-btn, #selection button {
+  width: auto;
+  margin-top: 0;
+  border-radius: 0;
+  font-weight: normal;
+}
+.activate-special-btn { width: 100%; margin-top: 8px; }
+
+/* ---- 2. VERBATIM from combat.css ------------------------------------------------ */
+.inspector-tabs {
+    display: flex;
+    border-bottom: 2px solid #ff0055;
+    background: #111;
+}
+.tab-button {
+    flex: 1;
+    padding: 12px 10px;
+    background: #1a1a1a;
+    color: #888;
+    border: none;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.2s ease;
+    border-right: 1px solid #333;
+}
+.tab-button:last-child { border-right: none; }
+.tab-button:hover {
+    background: #222;
+    color: #00ff88;
+}
+.tab-button.active {
+    background: #0a0a0a;
+    color: #00ff88;
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+    border-bottom: 2px solid #00ff88;
+    margin-bottom: -2px;
+}
+.tab-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: none;
+    overflow: visible;
+}
+.tab-content.active { display: block; }
+#inspector-unit-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    align-content: flex-start;
+}
+.inspector-unit-card {
+    width: 280px;
+    flex: 0 0 280px;
+    margin-bottom: 10px;
+    background: linear-gradient(15deg, #0a0a0a, #1a1a1a);
+    border: 1px solid #00aaff;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+.inspector-unit-card:hover {
+    background: #002233;
+    box-shadow: 0 0 8px rgba(0,170,255,0.3);
+}
+.inspector-unit-card.expanded {
+    border-color: #00ff88;
+    box-shadow: 0 0 10px rgba(0,255,136,0.3);
+}
+.inspector-unit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+.inspector-unit-name {
+    font-weight: bold;
+    color: #00aaff;
+    font-size: 0.95em;
+}
+.inspector-unit-status {
+    font-size: 0.7em;
+    color: #ffd740;
+    text-transform: uppercase;
+}
+.inspector-unit-status.ready { color: #00ff88; }
+.inspector-unit-status.defending { color: #9c27b0; }
+.inspector-mini-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    font-size: .9em;
+}
+.inspector-unit-details {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #333;
+    display: none;
+    position: relative;
+    overflow: visible;
+}
+.inspector-unit-card.expanded .inspector-unit-details { display: block; }
+.activate-special-btn {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+    background: #1a1a1a;
+    border: 2px solid #ff9800;
+    color: #ff9800;
+    font-family: 'Courier Prime', monospace;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.activate-special-btn:hover:not(:disabled) {
+    background: #ff9800;
+    color: #0a0a0a;
+    box-shadow: 0 0 10px rgba(255,152,0,0.5);
+}
+.activate-special-btn:disabled {
+    border-color: #555;
+    color: #555;
+    cursor: not-allowed;
+}
+.doctrine-toggle {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+.doctrine-btn {
+    flex: 1;
+    padding: 4px;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    color: #888;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+.doctrine-btn.active {
+    background: #002233;
+    border-color: #00aaff;
+    color: #00aaff;
+    text-shadow: 0 0 5px rgba(0,170,255,0.5);
+}
+.modifier-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    /*max-height: 300px;*/
+    overflow-y: auto;
+}
+.modifier-list li {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 0;
+    border-left: 3px solid #ff0055;
+    background: linear-gradient(15deg, #0a0a0a, #1a1a1a);
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    flex-wrap: nowrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    transition: all 0.3s ease;
+}
+.modifier-caster { color: #00ff88; font-size: 0.9em; display: block; margin-bottom: 3px; }
+.modifier-name {
+    color: #fff;
+    font-weight: bold;
+    cursor: help;
+    position: relative;
+    display: inline-block;
+}
+.modifier-name:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0a0a0a;
+    color: #00ff88;
+    padding: 8px 12px;
+    border-radius: 0;
+    white-space: pre-line;
+    z-index: 1000;
+    width: max-content;
+    max-width: 300px;
+    box-shadow: 0 0 15px rgba(0,255,136,0.3);
+    font-family: 'Courier Prime', monospace;
+    font-size: 14px;
+    border: 1px solid #00ff88;
+    opacity: 1;
+}
+.modifier-list li:first-child .modifier-name:hover::after {
+    overflow: visible;
+    top: 100%;
+    bottom: auto;
+}
+.modifier-targets, .modifier-duration {
+    font-size: 0.85em;
+    color: #bdbdbd;
+    margin-top: 3px;
+}
+.modifier-targets.truncated:hover::after {
+    content: attr(data-full-targets);
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background-color: #0a0a0a;
+    color: #00ff88;
+    padding: 8px 12px;
+    white-space: pre-line;
+    z-index: 1000;
+    width: max-content;
+    max-width: 300px;
+    border: 1px solid #00ff88;
+    font-size: 14px;
+}
+.modifier-duration { color: #ff0055; }
+.modifier-item.cancelled {
+    opacity: 0.9;
+    background: linear-gradient(15deg, #000, #1a1a1a) !important;
+    border-left-color: #666 !important;
+}
+.modifier-item.cancelled .modifier-name,
+.modifier-item.cancelled .modifier-caster,
+.modifier-item.cancelled .modifier-targets,
+.modifier-item.cancelled .modifier-duration {
+    color: #666 !important;
+    text-decoration: line-through;
+}
+
+.cancelled-indicator {
+    color: #ff0055;
+    font-style: italic;
+    font-size: 0.8em;
+    margin-top: 3px;
+    text-align: center;
+    background-color: rgba(255,0,85,0.1);
+    padding: 2px 5px;
+}
+.log-entry {
+    margin-bottom: 4px;
+    padding: 2px 5px;
+    word-wrap: break-word;
+}
+.turn-entry    { background-color: #002233; color: #00aaff; padding: 5px; margin-top: 5px; border-left: 3px solid #00aaff; }
+.action-entry  { color: #00ff88; }
+.hit-entry     { color: #00ff88; text-shadow: 0 0 8px rgba(0,255,136,0.3); }
+.miss-entry    { color: #666; font-style: italic; }
+.crit-entry    { color: #ffd740; font-weight: 700; }
+.buff-entry    { color: #00ff88; }
+.debuff-entry  { color: #ff0055; }
+.heal-entry    { color: #40f9ff; }
+.warning-entry { color: #ffd740; }
+.error-entry   { background-color: white; color: darkred; }
+.info-entry    { color: #00aaff; }
+.message-container {
+    position: relative;
+    z-index: 100;
+    max-width: 100%;
+}
+.message {
+    margin-bottom: 10px;
+    padding: 12px 16px;
+    border-radius: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    animation: fadeIn 0.3s ease-out;
+    border: 1px solid;
+}
+.info-message    { background-color: #1a365d; color: #00aaff; border-color: #00aaff; }
+.success-message { background-color: #1b5e20; color: #00ff88; border-color: #00ff88; }
+.error-message   { background-color: #5d1a1a; color: #ff0055; border-color: #ff0055; }
+.warning-message { background-color: #332100; color: #ffd740; border-color: #ffd740; }
+.skillName {
+    border-bottom: 1px dashed #00aaff;
+    color: #00aaff;
+    cursor: help;
+    position: relative;
+    display: inline-block;
+    transition: color 0.2s ease;
+}
+.skillName:hover {
+    color: #00ff88;
+    text-shadow: 0 0 5px rgba(0,255,136,0.5);
+}
+.skillDesc {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 125%;
+    left: 0%;
+    transform: translateX(-0%);
+    z-index: 1000;
+    width: max-content;
+    max-width: 280px;
+    padding: 8px 12px;
+    background-color: #0a0a0a;
+    color: #00ff88;
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    border: 1px solid #00ff88;
+    border-radius: 0;
+    box-shadow: 0 0 12px rgba(0,255,136,0.3), inset 0 0 6px rgba(0,255,136,0.1);
+    white-space: normal;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.skillName:hover .skillDesc {
+    visibility: visible;
+    opacity: 1;
+}
+#selection {
+    background-color: #0a0a0a;
+    box-shadow: 0 0 15px rgba(0,255,136,0.2);
+    padding: 20px;
+    border: 1px solid #00aaff;
+    border-radius: 0;
+    color: #00ff88;
+}
+.action-button, button#back {
+    color: #fff;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+}
+.action-button {
+    background: #1a1a1a;
+    border: 2px solid #00aaff;
+    margin: 5px;
+    border-radius: 0;
+    font-size: 18px;
+    position: relative;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.action-button:hover {
+    background: #002233;
+    text-shadow: 0 0 8px #00aaff;
+}
+.action-button.disabled {
+    background-color: #333;
+    cursor: not-allowed;
+    border-color: #555;
+}
+form#targetSelection { margin-bottom: 15px; }
+form#targetSelection div { margin: 10px 0; }
+button#submit {
+    border: 1px solid #55ff00;
+    border-radius: 0;
+    color: #fff;
+    background-color: #0a0a0a;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+}
+button#back {
+    border: 1px solid #ff0055;
+    border-radius: 0;
+    background-color: #0a0a0a;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+    0%   { opacity: 1; transform: scale(1); }
+    50%  { opacity: 0.7; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---- 3. NEW: unit state styling on the mockup's card markup (.unit/.bar) ---------
+   combat.css styled these on its own card markup; the mockup's cards are different.
+   Only box-shadow/border/opacity are touched so the counter-rotation is preserved. */
+.unit.player-unit { cursor: pointer; }
+.unit.defeated {
+  opacity: 0.5;
+  background: #000;
+  border-color: #666;
+  box-shadow: none;
+}
+.unit.defeated .unit-name { color: #666; text-decoration: line-through; }
+.unit.current-turn {
+  border-color: #ffd740;
+  box-shadow: 0 0 12px rgba(255, 215, 64, 0.6), inset 0 0 12px rgba(255, 215, 64, 0.15);
+}
+.unit.stunned {
+  border-color: #40f9ff;
+  box-shadow: 0 0 8px rgba(64, 249, 255, 0.5);
+}
+.unit.stunned .unit-name { color: #40f9ff; }
+/*.unit.special-ready { animation: specialPulse 2s infinite; }
+@keyframes specialPulse {
+  0%, 100% { box-shadow: inset 0 0 12px rgba(255, 152, 0, 0.2), 0 0 5px rgba(255, 152, 0, 0.3); }
+  50%      { box-shadow: inset 0 0 18px rgba(255, 152, 0, 0.4), 0 0 15px rgba(255, 152, 0, 0.6); }
+}*/
+.turn-indicator, .stun-indicator {
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  font-size: 14px;
+  line-height: 1;
+  z-index: 2;
+  animation: pulse 1s infinite;
+}
+.turn-indicator { color: #ffd740; text-shadow: 0 0 5px rgba(255, 215, 64, 0.7); }
+.stun-indicator {
+  color: #40f9ff;
+  font-weight: bold;
+  background: #001418;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* Victory/Defeat banner: combat.html had it in normal flow at the top of the page;
+   the mockup layout is a fixed 3-column grid, so float it over the battlefield. */
+#message-container {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  min-width: 260px;
+  text-align: center;
+}
+
+/* The mockup's inspector column is narrower than combat.css's 280px fixed-width cards. */
+.inspector-unit-card { width: 100%; flex: 1 1 100%; box-sizing: border-box; }
+.tab-content { padding: 8px 0; }
+#inspector-unit-list { gap: 0; }
+
+/* Phones: the bottom sheet owns the bottom of the screen, so the speed bar (inline-styled by
+   JS at bottom-right) moves to the top-right corner of the map. !important beats the inline style. */
+@media (max-width: 900px) {
+  #speed-controls { top: 8px !important; bottom: auto !important; right: 8px !important; transform: scale(0.82); transform-origin: top right; }
+}

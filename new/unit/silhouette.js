@@ -40,7 +40,7 @@ Silhouette.skills = {
                     { target: this, duration: 5, properties: ["physical", "mystic", "buff", "debuff", "positional"], stats: { evasion: 60, focus: 45, presence: 30 }, listeners: { turnEnd: true, attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], focus: true, debuffing: 0 },
                     function() {},
                     function(context) {
-                        if (currentAction.at(-2)[0].name === this.name) return;
+                        if (currentAction.at(-2)?.[0].name === this.name) return;
                         if (this.vars.caster.position === "back" && context.defenders?.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] >= 2) context.event === "attackStart" ? context.calcMods.attacker = { ...context.calcMods.attacker, accuracy: { ...context.calcMods?.attacker?.accuracy, bonus: (context.calcMods?.attacker?.accuracy?.bonus || 0) - 50} } : context.calcMods.attacker = { ...context.calcMods.attacker, focus: { ...context.calcMods?.attacker?.focus, bonus: (context.calcMods?.attacker?.focus?.bonus || 0) - 50} };
                         else if (this.vars.caster.position === "front" && context.attacker === this.vars.caster && !this.vars.debuffing++) for (const defender of context.defenders) if (resistDebuff(this.vars.caster, [defender])[this.vars.debuffing = 0] >= 2) (context.calcMods.all ??= { reroll: 0 }).reroll += 2;
                         if (context.unit === this.vars.caster) this.vars.duration--;
@@ -303,6 +303,7 @@ Silhouette.skills = {
                     { target: this, duration: 2, properties: ["physical", "mystic", "buff", "debuff", "positional"], stats: { evasion: 30, focus: 25, presence: 15 }, listeners: { turnEnd: true, attackStart: true, resistStart: true }, cancelListeners: ['attackStart', 'resistStart'], focus: true, debuffing: 0 },
                     function() {},
                     function(context) {
+                        if (currentAction.at(-2)?.[0].name === this.name) return;
                         if (this.vars.caster.position === "back" && context.defenders?.includes(this.vars.caster) && !this.vars.debuffing++ && resistDebuff(this.vars.caster, [context.attacker])[this.vars.debuffing = 0] > 24) context.event === "attackStart" ? context.calcMods.attacker = { ...context.calcMods.attacker, accuracy: { ...context.calcMods?.attacker?.accuracy, bonus: (context.calcMods?.attacker?.accuracy?.bonus || 0) - 40} } : context.calcMods.attacker = { ...context.calcMods.attacker, focus: { ...context.calcMods?.attacker?.focus, bonus: (context.calcMods?.attacker?.focus?.bonus || 0) - 40} };
                         else if (this.vars.caster.position === "front" && context.attacker === this.vars.caster && !this.vars.debuffing++) for (const defender of context.defenders) if (resistDebuff(this.vars.caster, [defender])[this.vars.debuffing = 0] > 24) (context.calcMods.all ??= { reroll: 0 }).reroll++;
                         if (context.unit === this.vars.caster) this.vars.duration--;
